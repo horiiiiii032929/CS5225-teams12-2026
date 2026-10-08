@@ -1,0 +1,1 @@
+"""FlatSplit Python service scaffold."""

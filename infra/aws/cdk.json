@@ -1,0 +1,4 @@
+{
+  "app": "pnpm exec tsx src/app.ts",
+  "versionReporting": false
+}

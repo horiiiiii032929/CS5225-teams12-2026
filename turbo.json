@@ -1,0 +1,31 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "globalDependencies": [
+    "pyproject.toml",
+    "uv.lock",
+    ".python-version",
+    "eslint.config.mjs",
+    "packages/tsconfig/*.json"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["VITE_API_BASE_URL"],
+      "outputs": ["dist/**"]
+    },
+    "lint": {
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "env": ["VITE_API_BASE_URL"],
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

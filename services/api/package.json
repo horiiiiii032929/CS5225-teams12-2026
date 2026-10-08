@@ -1,0 +1,11 @@
+{
+  "name": "@flatsplit/api",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "uv run --package flatsplit-api uvicorn flatsplit_api.main:app --host 127.0.0.1 --port 8000 --reload",
+    "build": "uv build --package flatsplit-api --out-dir dist",
+    "lint": "uv run --package flatsplit-api ruff check --config ../../pyproject.toml src",
+    "typecheck": "uv run --package flatsplit-api mypy --config-file ../../pyproject.toml src"
+  }
+}

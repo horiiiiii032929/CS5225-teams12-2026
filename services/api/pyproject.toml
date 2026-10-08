@@ -1,0 +1,13 @@
+[project]
+name = "flatsplit-api"
+version = "0.0.0"
+description = "Optional Python service scaffold for FlatSplit"
+requires-python = ">=3.13,<3.14"
+dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.34,<1"]
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/flatsplit_api"]

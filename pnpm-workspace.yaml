@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+  - services/*
+  - infra/*
+
+saveExact: true
+strictPeerDependencies: true
+
+allowBuilds:
+  esbuild: true

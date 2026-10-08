@@ -1,0 +1,10 @@
+node_modules/
+dist/
+cdk.out/
+.turbo/
+.venv/
+pnpm-lock.yaml
+uv.lock
+apps/web/src/routeTree.gen.ts
+*.docx
+*.pdf

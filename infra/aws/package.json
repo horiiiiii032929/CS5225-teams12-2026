@@ -1,0 +1,21 @@
+{
+  "name": "@flatsplit/aws",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "synth": "cdk synth --no-lookups"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.272.0",
+    "constructs": "10.8.1"
+  },
+  "devDependencies": {
+    "@flatsplit/tsconfig": "workspace:*",
+    "aws-cdk": "2.1145.0",
+    "tsx": "4.23.15"
+  }
+}
