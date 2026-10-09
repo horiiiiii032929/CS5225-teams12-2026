@@ -18,7 +18,8 @@
     "format:check": "prettier --check . && uv run ruff format --check services",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck",
     "synth": "pnpm --filter @flatsplit/aws synth",
-    "setup:python": "uv sync --locked --all-packages --group dev"
+    "setup:python": "uv sync --locked --all-packages --group dev",
+    "test": "pnpm --filter @flatsplit/web test"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

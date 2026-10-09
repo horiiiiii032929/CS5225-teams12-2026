@@ -1,6 +1,8 @@
 # FlatSplit
 
-A React and TanStack monorepo with an optional Python API and an AWS infrastructure workspace. This commit-sized scaffold contains local wiring only: two frontend routes, a health endpoint, and an empty CDK stack.
+A React and TanStack monorepo with an optional Python API and an AWS infrastructure workspace. The frontend includes an interactive group flat-hunting wireframe with fictional data; the API still exposes a health endpoint and the CDK stack remains empty.
+
+For issue #1, start with the [user journey and responsive wireframes](docs/user-journey.md). Run `pnpm dev:web`, then use the Design review selector to explore group creation, member input, processing, ranked comparisons, and recovery states. This prototype runs locally without the API, does not share groups across devices, and resets on refresh.
 
 ## Get started
 
@@ -38,10 +40,11 @@ The root orchestrates commands. Each workspace owns its dependencies and scripts
 | `pnpm check`        | Check formatting, linting and types in both languages                 |
 | `pnpm format`       | Format TypeScript, configuration, Markdown and Python                 |
 | `pnpm build`        | Build the frontend, shared package, Python distributions and CDK code |
+| `pnpm test`         | Run the frontend behaviour tests                                      |
 | `pnpm synth`        | Produce a local template from the empty AWS stack; no deployment      |
 | `pnpm setup:python` | Recreate the Python environment from its lockfile                     |
 
-There is no test suite yet because the scaffold contains no application behavior. Add meaningful tests with the first feature; do not add commands that silently pass with zero tests.
+Run `pnpm test` for the wireframe’s readiness, validation, feasibility and ranking tests. CI runs these alongside formatting, linting, types, builds and local CDK synthesis. Browser verification remains necessary for visible changes.
 
 CDK synthesis warns that the empty stack has no resources; it is intentionally not deployable yet. The current TanStack route CLI may also emit a dependency circular-import warning while completing generation.
 
