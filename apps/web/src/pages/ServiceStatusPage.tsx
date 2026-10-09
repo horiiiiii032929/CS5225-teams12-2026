@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router';
+import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { healthQueryOptions } from '../lib/health';
 
@@ -5,7 +7,10 @@ export function ServiceStatusPage() {
   const health = useQuery(healthQueryOptions);
 
   return (
-    <section className="panel">
+    <main id="main-content" className="status-shell surface">
+      <Link to="/" search={{ review: 'create' }}>
+        ← Back to FlatSplit
+      </Link>
       <p className="eyebrow">Scaffold verification</p>
       <h1>Service status</h1>
       <div aria-live="polite" role="status">
@@ -23,13 +28,13 @@ export function ServiceStatusPage() {
           </p>
         )}
       </div>
-      <button
+      <Button
         type="button"
         disabled={health.isFetching}
         onClick={() => void health.refetch()}
       >
         {health.isFetching ? 'Checking…' : 'Refresh status'}
-      </button>
-    </section>
+      </Button>
+    </main>
   );
 }
