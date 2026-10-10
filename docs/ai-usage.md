@@ -41,3 +41,11 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Contribution: `docs/api-contract.md` with conventions, token model, errors, validation, endpoint shapes and JSON fixtures, DynamoDB items and access patterns A1–A10, assumptions awaiting #2 and #3, and open questions. `docs/backend-design.md` now links to the contract and maps design parts to issue owners.
 - Verification: example ranking values were computed by running the wireframe's `evaluateAreas` on its sample group (Node type stripping), not by hand. `pnpm format:check` passed. No code or infrastructure changed.
 - Pending: WK review, frontend and data pair sign-off, and confirmation of C1–C7 against #2 and #3.
+
+## 10 October 2026 — review of PR 48 and API request isolation
+
+- Tool: Codex, directed by Hikaru to review and merge the open PR stack while keeping main working.
+- Finding and fix: overlapping ASGI requests used Powertools' process-wide router event state without isolation. A regression test reproduced the first request returning the second request's query value. Added a thread lock around resolver execution, including requests that outlive ASGI cancellation, so each local process matches Lambda's single-invocation execution environment.
+- Verification: frozen pnpm install and locked uv sync passed; `pnpm format`, `pnpm check`, `pnpm test` (6 Python and 29 web tests), `pnpm build`, `pnpm synth`, and `git diff --check` passed. Reviewed synthesized arm64 Python 3.13 Lambda, DynamoDB on-demand/PITR/TTL, separate CloudFront API behavior, SPA rewrite and web deployment. Direct and Vite-proxied health requests returned the shared health schema.
+- Browser verification: Playwright CLI used because the Browser plugin is not available. Checked the results page at desktop and 390 × 844, priority reranking and the service-status page against the local adapter. Captures are temporary review evidence outside the repository.
+- Limits: local and synthesis checks only; AWS bootstrap/deployment and Lambda-container invocation remain unverified. Contract/data decisions and evaluation owner agreement remain proposed.

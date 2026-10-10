@@ -9,6 +9,7 @@ import base64
 import time
 import uuid
 from collections.abc import Awaitable, Callable, MutableMapping
+from threading import Lock
 from typing import Any
 from urllib.parse import parse_qsl
 
@@ -22,6 +23,15 @@ Receive = Callable[[], Awaitable[Message]]
 Send = Callable[[Message], Awaitable[None]]
 
 resolver.enable_swagger(path="/docs", title="FlatSplit API")
+
+# Powertools stores current_event on BaseRouter. Match Lambda's one invocation
+# per execution environment, including when an ASGI request is cancelled.
+_resolver_lock = Lock()
+
+
+def _resolve(event: dict[str, Any], context: LambdaContext) -> dict[str, Any]:
+    with _resolver_lock:
+        return resolver.resolve(event, context)
 
 
 def _local_context(request_id: str) -> LambdaContext:
@@ -93,7 +103,7 @@ async def app(scope: Scope, receive: Receive, send: Send) -> None:
 
     event = _to_event(scope, await _read_body(receive))
     context = _local_context(event["requestContext"]["requestId"])
-    result = await asyncio.to_thread(resolver.resolve, event, context)
+    result = await asyncio.to_thread(_resolve, event, context)
 
     body = result.get("body") or ""
     payload = base64.b64decode(body) if result.get("isBase64Encoded") else body.encode()
