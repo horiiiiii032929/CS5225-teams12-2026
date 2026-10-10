@@ -34,3 +34,10 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Dependencies: aws-lambda-powertools 3.35.0, pydantic 2.14.0, pytest 8.4.2. Re-resolving the lock also moved fastapi 0.142.4 → 0.143.0 (now local-only) and pydantic 2.13.5 → 2.14.0.
 - Verification: `pnpm format`, `pnpm check`, `pnpm test` (5 Python and 29 web tests), `pnpm build` and `pnpm synth` passed locally. The synthesized Lambda bundle (11 MB unzipped) contains the aarch64 pydantic-core binary and no FastAPI, uvicorn or boto3. The API Lambda role has only basic execution permissions. A local uvicorn run served `/health`, `/docs` and the generated OpenAPI document, and returned 404 for unknown routes.
 - Not verified: no AWS deployment or bootstrap was performed. The bundle was not invoked in a Lambda container because Docker was not running. CI was not run remotely. The API contract and open questions in the design doc still need team review.
+
+## 10 October 2026 — issue 6 API contract and access patterns
+
+- Tool: Claude Code (Claude Opus 5.5), directed by Shyam.
+- Contribution: `docs/api-contract.md` with conventions, token model, errors, validation, endpoint shapes and JSON fixtures, DynamoDB items and access patterns A1–A10, assumptions awaiting #2 and #3, and open questions. `docs/backend-design.md` now links to the contract and maps design parts to issue owners.
+- Verification: example ranking values were computed by running the wireframe's `evaluateAreas` on its sample group (Node type stripping), not by hand. `pnpm format:check` passed. No code or infrastructure changed.
+- Pending: WK review, frontend and data pair sign-off, and confirmation of C1–C7 against #2 and #3.
