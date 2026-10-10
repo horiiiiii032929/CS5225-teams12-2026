@@ -48,3 +48,17 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Contribution: `docs/evaluation-plan.md` mapping nine AWS techniques to application problems and ten experiments, each with a baseline, workload, metrics, evidence and owning issue (#15, #19, #20, #27, #28, #29, #30, #31, #34, #35, #36, #45); shared workloads W1–W6, checkpoints and decisions to confirm by 12 October.
 - Verification: experiment owners and acceptance criteria were checked against the current GitHub issues. `pnpm format:check` passed. No code or infrastructure changed; no experiment has been run.
 - Pending: WK review and each owner accepting their row.
+
+## 10 October 2026 — review of PR 48 and API request isolation
+
+- Tool: Codex, directed by Hikaru to review and merge the open PR stack while keeping main working.
+- Finding and fix: overlapping ASGI requests used Powertools' process-wide router event state without isolation. A regression test reproduced the first request returning the second request's query value. Added a thread lock around resolver execution, including requests that outlive ASGI cancellation, so each local process matches Lambda's single-invocation execution environment.
+- Verification: frozen pnpm install and locked uv sync passed; `pnpm format`, `pnpm check`, `pnpm test` (6 Python and 29 web tests), `pnpm build`, `pnpm synth`, and `git diff --check` passed. Reviewed synthesized arm64 Python 3.13 Lambda, DynamoDB on-demand/PITR/TTL, separate CloudFront API behavior, SPA rewrite and web deployment. Direct and Vite-proxied health requests returned the shared health schema.
+- Browser verification: Playwright CLI used because the Browser plugin is not available. Checked the results page at desktop and 390 × 844, priority reranking and the service-status page against the local adapter. Captures are temporary review evidence outside the repository.
+- Limits: local and synthesis checks only; AWS bootstrap/deployment and Lambda-container invocation remain unverified. Contract/data decisions and evaluation owner agreement remain proposed.
+
+## 10 October 2026 — review of PR 49 contract
+
+- Tool: Codex, directed by Hikaru to review and merge the open stack.
+- Corrections: made invite tokens creation-only with browser retention (hashes cannot recover a token), corrected the initial DynamoDB read budget to eight requests, specified missing-rent nulls, explicit expiry checks and transactional name reservations, and documented leased/idempotent commute enqueue recovery and retry semantics. These are provisional implementation requirements, not completed endpoints.
+- Verification: JSON fixtures parse; documentation formatting and diff checks pass. Carried the verified PR 48 request-isolation fix into this branch without rewriting the author’s commits. Rent/transport assumptions still await #2 and #3; issue #6 should stay open until those confirmations are recorded.

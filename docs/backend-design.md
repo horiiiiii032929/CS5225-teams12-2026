@@ -38,9 +38,9 @@ The endpoints, request and response shapes, errors, DynamoDB items and access pa
 - `POST /groups`, `GET /groups/{id}`, `POST /groups/{id}/members`, `PUT /groups/{id}/members/{memberId}` for group input, authorised by invite and member tokens.
 - `GET /places` for destination search with MRT-station snapping.
 - `POST /groups/{id}/searches` and `GET /groups/{id}/searches/{searchId}?priority=` for queued commute lookups, status, and ranked and excluded towns with per-member explanations.
-- One DynamoDB table with no scans or secondary indexes; reading results takes at most 7 single-partition requests.
+- One DynamoDB table with no scans or secondary indexes; the one-page read budget is 7 requests after the rent snapshot is pinned, or 8 for a first search that also reads the pointer. Long group histories require pagination and measurement.
 
-Search status is derived when it is read: if any required commute pair is `pending`, the search is pending. This avoids fan-in bookkeeping. Commute jobs are de-duplicated with a conditional write of the `pending` item, so two groups asking for the same pair produce one OneMap call.
+Search status is derived when it is read: if any required commute pair is `pending`, the search is pending. This avoids fan-in bookkeeping. Commute jobs use conditional pending leases and idempotent workers. Failed enqueue and expired leases are recoverable; the contract describes the claim and retry rules.
 
 ## Data assumptions
 
