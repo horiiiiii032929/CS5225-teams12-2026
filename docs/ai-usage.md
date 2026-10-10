@@ -34,3 +34,11 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Dependencies: aws-lambda-powertools 3.35.0, pydantic 2.14.0, pytest 8.4.2. Re-resolving the lock also moved fastapi 0.142.4 → 0.143.0 (now local-only) and pydantic 2.13.5 → 2.14.0.
 - Verification: `pnpm format`, `pnpm check`, `pnpm test` (5 Python and 29 web tests), `pnpm build` and `pnpm synth` passed locally. The synthesized Lambda bundle (11 MB unzipped) contains the aarch64 pydantic-core binary and no FastAPI, uvicorn or boto3. The API Lambda role has only basic execution permissions. A local uvicorn run served `/health`, `/docs` and the generated OpenAPI document, and returned 404 for unknown routes.
 - Not verified: no AWS deployment or bootstrap was performed. The bundle was not invoked in a Lambda container because Docker was not running. CI was not run remotely. The API contract and open questions in the design doc still need team review.
+
+## 10 October 2026 — review of PR 48 and API request isolation
+
+- Tool: Codex, directed by Hikaru to review and merge the open PR stack while keeping main working.
+- Finding and fix: overlapping ASGI requests used Powertools' process-wide router event state without isolation. A regression test reproduced the first request returning the second request's query value. Added a thread lock around resolver execution, including requests that outlive ASGI cancellation, so each local process matches Lambda's single-invocation execution environment.
+- Verification: frozen pnpm install and locked uv sync passed; `pnpm format`, `pnpm check`, `pnpm test` (6 Python and 29 web tests), `pnpm build`, `pnpm synth`, and `git diff --check` passed. Reviewed synthesized arm64 Python 3.13 Lambda, DynamoDB on-demand/PITR/TTL, separate CloudFront API behavior, SPA rewrite and web deployment. Direct and Vite-proxied health requests returned the shared health schema.
+- Browser verification: Playwright CLI used because the Browser plugin is not available. Checked the results page at desktop and 390 × 844, priority reranking and the service-status page against the local adapter. Captures are temporary review evidence outside the repository.
+- Limits: local and synthesis checks only; AWS bootstrap/deployment and Lambda-container invocation remain unverified. Contract/data decisions and evaluation owner agreement remain proposed.

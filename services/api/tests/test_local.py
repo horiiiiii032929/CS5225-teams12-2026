@@ -1,9 +1,12 @@
 import asyncio
 import json
+import threading
 from typing import Any
 
 import pytest
+from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 
+import flatsplit_api.local as local
 from flatsplit_api.local import app
 
 
@@ -34,3 +37,36 @@ def test_local_server_runs_the_lambda_routes(path: str) -> None:
 
     assert status == 200
     assert json.loads(body)["status"] == "ok"
+
+
+def test_overlapping_requests_keep_their_own_resolver_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolver = APIGatewayHttpResolver()
+    entered = threading.Event()
+    release = threading.Event()
+
+    @resolver.get("/probe/<name>")
+    def probe(name: str) -> dict[str, str]:
+        if name == "first":
+            entered.set()
+            assert release.wait(timeout=2)
+        return {"name": resolver.current_event.query_string_parameters["name"]}
+
+    monkeypatch.setattr(local, "resolver", resolver)
+
+    async def overlapping() -> list[tuple[int, bytes]]:
+        first = asyncio.create_task(call("/probe/first", b"name=first"))
+        assert await asyncio.to_thread(entered.wait, 2)
+        second = asyncio.create_task(call("/probe/second", b"name=second"))
+        try:
+            # Give the second request time to overlap the deliberately held first.
+            await asyncio.sleep(0.05)
+        finally:
+            release.set()
+        return list(await asyncio.gather(first, second))
+
+    responses = asyncio.run(overlapping())
+
+    assert [status for status, _ in responses] == [200, 200]
+    assert [json.loads(body)["name"] for _, body in responses] == ["first", "second"]
