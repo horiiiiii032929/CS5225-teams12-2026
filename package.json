@@ -19,7 +19,8 @@
     "check": "pnpm format:check && pnpm lint && pnpm typecheck",
     "synth": "pnpm --filter @flatsplit/aws synth",
     "setup:python": "uv sync --locked --all-packages --group dev",
-    "test": "pnpm --filter @flatsplit/web test"
+    "test": "turbo run test",
+    "deploy:aws": "pnpm build && pnpm --filter @flatsplit/aws run deploy"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

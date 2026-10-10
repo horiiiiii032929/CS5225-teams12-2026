@@ -11,7 +11,11 @@ package = false
 members = ["services/*"]
 
 [dependency-groups]
-dev = ["ruff>=0.11,<1", "mypy>=1.15,<2"]
+dev = [
+    "ruff>=0.11,<1",
+    "mypy>=1.15,<2",
+    "pytest>=8,<9",
+]
 
 [tool.ruff]
 target-version = "py313"
@@ -24,3 +28,6 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.mypy]
 python_version = "3.13"
 strict = true
+
+[tool.ruff.lint.isort]
+known-first-party = ["flatsplit_api"]

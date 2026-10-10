@@ -7,7 +7,9 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "synth": "cdk synth --no-lookups"
+    "synth": "cdk synth --no-lookups",
+    "diff": "cdk diff",
+    "deploy": "cdk deploy"
   },
   "dependencies": {
     "aws-cdk-lib": "2.272.0",
