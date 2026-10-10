@@ -62,3 +62,9 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Tool: Codex, directed by Hikaru to review and merge the open stack.
 - Corrections: made invite tokens creation-only with browser retention (hashes cannot recover a token), corrected the initial DynamoDB read budget to eight requests, specified missing-rent nulls, explicit expiry checks and transactional name reservations, and documented leased/idempotent commute enqueue recovery and retry semantics. These are provisional implementation requirements, not completed endpoints.
 - Verification: JSON fixtures parse; documentation formatting and diff checks pass. Carried the verified PR 48 request-isolation fix into this branch without rewriting the author’s commits. Rent/transport assumptions still await #2 and #3; issue #6 should stay open until those confirmations are recorded.
+
+## 10 October 2026 — review of PR 50 evaluation plan
+
+- Tool: Codex, directed by Hikaru to review and merge the open stack.
+- Corrections: aligned the measured search URL with the API contract, assigned E4 usage evidence to the owner of #34, and distinguished the 20 requests/s admission limit from the proposed 50 requests/s capacity workload. Specified isolated local worker processes for the fixed-instance comparison to avoid benchmarking the resolver’s safety lock as compute capacity.
+- Verification: documentation formatting and diff checks pass; the combined stack passes checks, 35 tests, build and synth. Evaluation owner agreement and decisions D-E1–D-E7 remain pending; no experiment results or AWS deployment are claimed.
