@@ -49,3 +49,9 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Verification: frozen pnpm install and locked uv sync passed; `pnpm format`, `pnpm check`, `pnpm test` (6 Python and 29 web tests), `pnpm build`, `pnpm synth`, and `git diff --check` passed. Reviewed synthesized arm64 Python 3.13 Lambda, DynamoDB on-demand/PITR/TTL, separate CloudFront API behavior, SPA rewrite and web deployment. Direct and Vite-proxied health requests returned the shared health schema.
 - Browser verification: Playwright CLI used because the Browser plugin is not available. Checked the results page at desktop and 390 × 844, priority reranking and the service-status page against the local adapter. Captures are temporary review evidence outside the repository.
 - Limits: local and synthesis checks only; AWS bootstrap/deployment and Lambda-container invocation remain unverified. Contract/data decisions and evaluation owner agreement remain proposed.
+
+## 10 October 2026 — review of PR 49 contract
+
+- Tool: Codex, directed by Hikaru to review and merge the open stack.
+- Corrections: made invite tokens creation-only with browser retention (hashes cannot recover a token), corrected the initial DynamoDB read budget to eight requests, specified missing-rent nulls, explicit expiry checks and transactional name reservations, and documented leased/idempotent commute enqueue recovery and retry semantics. These are provisional implementation requirements, not completed endpoints.
+- Verification: JSON fixtures parse; documentation formatting and diff checks pass. Carried the verified PR 48 request-isolation fix into this branch without rewriting the author’s commits. Rent/transport assumptions still await #2 and #3; issue #6 should stay open until those confirmations are recorded.

@@ -20,8 +20,8 @@ Once #12 starts, the Pydantic models in `services/api` become the source of trut
 | `inviteToken` | Anyone with the invite link | Join the group, and nothing else                          |
 
 - **Invite link:** `https://<site>/join/<groupId>#<inviteToken>`. The token sits in the URL fragment, so browsers never send it to the server, CloudFront logs or `Referer` headers. The frontend reads it from the fragment and sends it as a bearer token.
-- **Reload and device recovery:** the frontend keeps `{groupId, memberId, memberToken}` in `localStorage`. A member who loses it can rejoin through the invite link as a new member while there is still space (see open question Q3).
-- **Organiser:** the member who created the group. The only extra power is reading `inviteToken` again through `GET /groups/{groupId}` to re-share it. Any ready member may start a search (D02).
+- **Reload and device recovery:** the frontend keeps `{groupId, memberId, memberToken}` in `localStorage`, plus the `inviteToken` in the organiser’s browser. A member who loses it can rejoin through the invite link as a new member while there is still space (see open question Q3).
+- **Organiser:** the member who created the group. Creation returns the invite token once; the organiser’s browser retains it to re-share the link. `GET /groups/{groupId}` cannot return it because the server stores only its hash. Losing that browser copy means the original invite link must be recovered from another recipient; server-side token recovery or rotation is outside this version. Any ready member may start a search (D02).
 
 ### Errors
 
@@ -75,7 +75,7 @@ type Group = {
   readyCount: number;
   allReady: boolean; // members.length === size && every member ready
   latestSearch: SearchSummary | null;
-  inviteToken?: string; // only when the caller is the organiser
+  inviteToken?: string; // only in POST /groups; omitted from every later response
   createdAt: string;
   expiresAt: string; // createdAt + 30 days
 };
@@ -157,7 +157,7 @@ The prefixes (`m_`, `inv_`, `mem_`) are illustrative and only make the examples 
 
 ### `GET /groups/{groupId}` — read a group (and reload)
 
-Accepts a `memberToken` for this group. Returns `200 { "group": Group }`. The frontend polls this endpoint every 5 seconds in the waiting room. A group that has expired returns 404.
+Accepts a `memberToken` for this group. Returns `200 { "group": Group }` without `inviteToken`, including for the organiser. The frontend polls this endpoint every 5 seconds in the waiting room. A group that has expired returns 404.
 
 ### `POST /groups/{groupId}/members` — join
 
@@ -218,7 +218,7 @@ Accepts any `memberToken` for this group, with no body. Returns 409 `GROUP_NOT_R
 
 The server looks up every (member station, town) commute. Pairs that are not cached are queued for the commute worker (#15). The response is `201 Created` with the same body as reading the search. When every pair was already cached, `status` is `complete` immediately.
 
-Starting a search while an identical one (same `revision`) exists returns that search instead of creating another.
+Starting a search while an identical one (same `revision`) exists returns that search instead of creating another. An explicit repeat also retries unavailable pairs after their retry delay and reclaims expired pending leases; cached `ok` pairs are retained. The response keeps the same `searchId` and reports the refreshed progress.
 
 ### `GET /groups/{groupId}/searches/{searchId}?priority=balanced` — read status and results
 
@@ -247,9 +247,9 @@ type AreaResult = {
   displayName: string; // "Queenstown"
   rank: number | null; // 1-based; null when excluded
   score: number | null; // 0–100 demonstration index (D07); null when excluded
-  wholeFlatRent: number; // median monthly rent
-  rentPerPerson: number; // wholeFlatRent / size, unrounded
-  rentSampleSize: number; // approvals behind the median
+  wholeFlatRent: number | null; // null when rent is unavailable
+  rentPerPerson: number | null; // wholeFlatRent / size, unrounded; null when unavailable
+  rentSampleSize: number | null; // null when the rent summary is unavailable
   averageCommute: number | null;
   longestCommute: number | null;
   shortestCommute: number | null;
@@ -263,7 +263,7 @@ type MemberOutcome = {
   memberId: string;
   commuteMinutes: number | null; // null when the route is pending or unavailable
   routeStatus: 'ok' | 'pending' | 'unavailable';
-  budgetHeadroom: number; // budget - rentPerPerson; negative means over budget
+  budgetHeadroom: number | null; // null without rent; otherwise budget - rentPerPerson
   commuteHeadroom: number | null; // maxCommute - commuteMinutes
 };
 
@@ -395,7 +395,7 @@ The example shows one entry per list. With the wireframe data, the full balanced
 
 - A town is feasible when, for every member, `rentPerPerson <= budget` (unrounded) and `commuteMinutes <= maxCommute`, with both limits inclusive.
 - `score = max(0, round(100 × (1 − cost)))`, where `cost = wRent × rentPerPerson/2000 + wAvg × averageCommute/90 + wGap × commuteGap/90`. The weights per priority match the wireframe.
-- Order is score descending, then `displayName` ascending. Excluded towns follow the same order using the score they would have had.
+- Order is score descending, then `displayName` ascending. Excluded towns with complete inputs follow the same order using a hypothetical internal score; the response still exposes `score: null` for exclusions. Missing rent or route inputs give a null score; these towns follow scored exclusions in `displayName` order. A missing rent summary is represented by null rent and headroom fields, never a fabricated zero.
 
 ### `GET /meta` — data freshness
 
@@ -417,24 +417,24 @@ There is one on-demand table with keys `pk` and `sk` (both strings). Items with 
 | Rent summary | `RENT#<snapshotId>`   | `TOWN#<town>#<flatType>`        | median, p25, p75, count, period, sourceMonthFrom, sourceMonthTo                                       | rent ingestion (#10)                       |
 | Commute      | `COMMUTE#<stationId>` | `TOWN#<town>`                   | status (`pending`/`ok`/`unavailable`), minutes, transfers, walkMinutes, attempts, computedAt, error   | search API (pending), commute worker (#15) |
 
-Sort keys start with timestamps so members come back in join order and the latest search is last.
+Sort keys start with timestamps so members come back in join order and the latest search is last. Group reads and writes check `META.ttl` against the current time; DynamoDB TTL deletion is asynchronous and must not be relied on for access expiry. Name uniqueness uses a `NAME#<nameKey>` reservation item in the group partition (memberId and ttl), created in the same transaction as a join and replaced transactionally on a rename.
 
 ### Access patterns
 
-| #   | Pattern                                | Operation                                                                                                                                                                                                                               |
-| --- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A1  | Read a group with members and searches | `Query pk = GROUP#<id>` (one request, a few KB). Token checks use the hashes in this result                                                                                                                                             |
-| A2  | Create a group                         | `TransactWriteItems`: put `META` and the organiser `MEMBER`, both `attribute_not_exists(pk)`                                                                                                                                            |
-| A3  | Join                                   | `TransactWriteItems`: update `META` with condition `memberCount < size`, then `memberCount += 1, revision += 1`; put the new `MEMBER`. A failed condition becomes `GROUP_FULL`, so two people taking the last place cannot both succeed |
-| A4  | Save preferences                       | `TransactWriteItems`: update `MEMBER` with condition `tokenHash = :hash`; update `META` with `revision += 1`                                                                                                                            |
-| A5  | Resolve a place for a preference save  | `GetItem PLACE#<placeId> / META`                                                                                                                                                                                                        |
-| A6  | Rent for a search                      | `GetItem RENT / CURRENT`, then `Query pk = RENT#<snapshotId>, begins_with(sk, "TOWN#")` and filter to the chosen flat type in code (about 26 × 5 small items)                                                                           |
-| A7  | Commutes for a search                  | One `Query pk = COMMUTE#<stationId>` per distinct member station: at most 5 queries of about 26 items                                                                                                                                   |
-| A8  | Queue a missing pair once              | `PutItem COMMUTE#…/TOWN#…` with `status = pending` and condition `attribute_not_exists(pk)`. If it succeeds, send the SQS message; if not, another search already queued it                                                             |
-| A9  | Store a commute result                 | Worker `UpdateItem` to `ok` with minutes, or to `unavailable` after the final attempt or from the DLQ handler                                                                                                                           |
-| A10 | Data freshness                         | `GetItem RENT / CURRENT`                                                                                                                                                                                                                |
+| #   | Pattern                                | Operation                                                                                                                                                                                                                                                                                                                                                    |
+| --- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A1  | Read a group with members and searches | `Query pk = GROUP#<id>`; paginate if `LastEvaluatedKey` is present. Token checks use the hashes in this result                                                                                                                                                                                                                                               |
+| A2  | Create a group                         | `TransactWriteItems`: put `META`, the organiser `MEMBER` and its `NAME#<nameKey>` reservation, all `attribute_not_exists(pk)`                                                                                                                                                                                                                                |
+| A3  | Join                                   | `TransactWriteItems`: update `META` with condition `memberCount < size`, then `memberCount += 1, revision += 1`; put the new `MEMBER` and its `NAME#<nameKey>` reservation with `attribute_not_exists(pk)`. A capacity condition failure becomes `GROUP_FULL`; a name reservation conflict becomes 422. Two people taking the last place cannot both succeed |
+| A4  | Save preferences                       | `TransactWriteItems`: update `MEMBER` with condition `tokenHash = :hash`; update `META` with `revision += 1`; a rename also conditions on the previous `nameKey`, reserves the new name and releases the old reservation in this transaction                                                                                                                 |
+| A5  | Resolve a place for a preference save  | `GetItem PLACE#<placeId> / META`                                                                                                                                                                                                                                                                                                                             |
+| A6  | Rent for a search                      | `GetItem RENT / CURRENT`, then `Query pk = RENT#<snapshotId>, begins_with(sk, "TOWN#")` and filter to the chosen flat type in code (about 26 × 5 small items)                                                                                                                                                                                                |
+| A7  | Commutes for a search                  | One `Query pk = COMMUTE#<stationId>` per distinct member station: at most 5 queries of about 26 items                                                                                                                                                                                                                                                        |
+| A8  | Queue a missing pair once              | `PutItem COMMUTE#…/TOWN#…` with `status = pending`, a new `jobId` and bounded `leaseExpiresAt`; claim only an absent item, expired pending lease or retry-eligible unavailable item. The claimant sends SQS; other requests leave an active lease alone                                                                                                      |
+| A9  | Store a commute result                 | Worker `UpdateItem` to `ok` with minutes, or to `unavailable` with `retryAfter` after the final attempt/DLQ; condition on matching `jobId` and `status = pending`; an old attempt cannot overwrite a newer claim or completed result                                                                                                                         |
+| A10 | Data freshness                         | `GetItem RENT / CURRENT`                                                                                                                                                                                                                                                                                                                                     |
 
-There are no scans and no secondary indexes. Reading search results is A1 + A6 + A7: at most 7 requests, all single-partition, which leaves room within the 500 ms target. Commute and rent items carry no TTL. Commutes are refreshed by the monthly job.
+There are no scans and no secondary indexes. A first search uses A1 + A6 + A7: 8 single-partition requests when the group query fits one page (one group query, one rent-pointer read, one rent query and five commute queries). Later result reads use the search’s pinned `rentSnapshotId` and skip the pointer, so they use 7 under the same assumption. A long search history may require extra group-query pages; #12 must paginate and #30 must measure this case. These counts are a design budget; the 500 ms latency target still needs measurement in #30. Commute and rent items carry no TTL. Commutes are refreshed by the monthly job.
 
 ## Assumptions to confirm
 
@@ -454,3 +454,7 @@ There are no scans and no secondary indexes. Reading search results is A1 + A6 +
 - **Q2** Should the organiser be able to remove a member (for example, a duplicate after a lost device)? Not in this version.
 - **Q3** Device recovery: rejoining as a new member needs a free place. Should the organiser be able to reissue a member's link instead?
 - **Q4** Should `size` be editable after creation? Not in this version; create a new group instead.
+
+### Commute enqueue recovery
+
+DynamoDB and SQS do not share a transaction. If sending fails, release the pending claim only when its `jobId` still matches. A crash between claim and send is recovered when a subsequent search/status request reclaims the expired lease and resends the job. Choose the lease duration to cover the expected queue/worker time in #15, and record `jobId`, `leaseExpiresAt` and `retryAfter` on commute items. Queue delivery and worker retries are idempotent: duplicate jobs for the same claim may be acknowledged, but an older claim cannot publish over a newer one. No pair may remain pending indefinitely solely because its enqueue failed.
