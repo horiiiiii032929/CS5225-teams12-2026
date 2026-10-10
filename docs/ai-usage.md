@@ -28,7 +28,7 @@ For future entries, record the requested issue, tool, contribution, checks actua
 
 ## 10 October 2026 — backend design and M0 AWS skeleton
 
-- Tool: Claude Code (Claude Opus 5.5), directed by Shyam.
+- Tool: Claude Code (Claude Opus 5.5)
 - Request: plan the backend and AWS work from the preliminary report, then draft the design and build a deployable skeleton.
 - Contribution: `docs/backend-design.md` (proposed API contract, DynamoDB layout, data assumptions, security, cost and evaluation hooks, plus proposed changes from the preliminary report). Replaced the FastAPI health app with an AWS Lambda Powertools resolver (`handlers/http.py`) and an ASGI adapter (`local.py`) so local development runs the deployed routes. FastAPI was removed; uvicorn is a local-only extra. CDK `FlatSplit-<stage>` stack: DynamoDB table (on-demand, PITR, TTL), arm64 Python 3.13 Lambda behind an HTTP API with stage throttling, private S3 site behind CloudFront (OAC, SPA rewrite function, security headers) with `/api/*` routed to the HTTP API, optional cost budget. Lambda dependencies are bundled locally with uv for arm64 Linux, so Docker is not needed. Updated scripts (`pnpm test` now runs Python tests; `pnpm deploy:aws`), README and agent guidance.
 - Dependencies: aws-lambda-powertools 3.35.0, pydantic 2.14.0, pytest 8.4.2. Re-resolving the lock also moved fastapi 0.142.4 → 0.143.0 (now local-only) and pydantic 2.13.5 → 2.14.0.
@@ -37,7 +37,14 @@ For future entries, record the requested issue, tool, contribution, checks actua
 
 ## 10 October 2026 — issue 6 API contract and access patterns
 
-- Tool: Claude Code (Claude Opus 5.5), directed by Shyam.
+- Tool: Claude Code (Claude Opus 5.5)
 - Contribution: `docs/api-contract.md` with conventions, token model, errors, validation, endpoint shapes and JSON fixtures, DynamoDB items and access patterns A1–A10, assumptions awaiting #2 and #3, and open questions. `docs/backend-design.md` now links to the contract and maps design parts to issue owners.
 - Verification: example ranking values were computed by running the wireframe's `evaluateAreas` on its sample group (Node type stripping), not by hand. `pnpm format:check` passed. No code or infrastructure changed.
 - Pending: WK review, frontend and data pair sign-off, and confirmation of C1–C7 against #2 and #3.
+
+## 10 October 2026 — issue 46 evaluation plan
+
+- Tool: Claude Code (Claude Opus 5.5)
+- Contribution: `docs/evaluation-plan.md` mapping nine AWS techniques to application problems and ten experiments, each with a baseline, workload, metrics, evidence and owning issue (#15, #19, #20, #27, #28, #29, #30, #31, #34, #35, #36, #45); shared workloads W1–W6, checkpoints and decisions to confirm by 12 October.
+- Verification: experiment owners and acceptance criteria were checked against the current GitHub issues. `pnpm format:check` passed. No code or infrastructure changed; no experiment has been run.
+- Pending: WK review and each owner accepting their row.
