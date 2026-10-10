@@ -1,6 +1,6 @@
 # FlatSplit
 
-A React and TanStack monorepo with an optional Python API and an AWS infrastructure workspace. The frontend includes an interactive group flat-hunting wireframe with fictional data; the API still exposes a health endpoint and the CDK stack remains empty.
+A React and TanStack monorepo with Python Lambda handlers and an AWS CDK app. The frontend includes an interactive group flat-hunting wireframe with fictional data. The backend currently exposes a health endpoint; its CDK stack defines DynamoDB, an HTTP API Lambda, and CloudFront serving the web app with `/api`. See the [backend and AWS design](docs/backend-design.md).
 
 For issue #1, start with the [user journey and responsive wireframes](docs/user-journey.md). Run `pnpm dev:web`, then use the Design review selector to explore group creation, member input, processing, ranked comparisons, and recovery states. This prototype runs locally without the API, does not share groups across devices, and resets on refresh.
 
@@ -14,7 +14,7 @@ uv sync --locked --all-packages --group dev
 pnpm dev
 ```
 
-Open <http://127.0.0.1:5173>. Both the frontend and Python API start with `pnpm dev`. The API exposes <http://127.0.0.1:8000/health> and local interactive documentation at <http://127.0.0.1:8000/docs>.
+Open <http://127.0.0.1:5173>. Both the frontend and Python API start with `pnpm dev`. The API exposes <http://127.0.0.1:8000/health> and local interactive documentation at <http://127.0.0.1:8000/docs>. The local server runs the same Powertools resolver that is deployed to Lambda.
 
 To work on one side, use `pnpm dev:web` or `pnpm dev:api`. The frontend works without the API and shows an unavailable state on the status page.
 
@@ -22,13 +22,13 @@ Frontend-only contributors can skip the uv setup and run `pnpm dev:web` after th
 
 ## Workspaces
 
-| Location             | Responsibility                                          |
-| -------------------- | ------------------------------------------------------- |
-| `apps/web`           | React, Vite, TanStack file routes and server state      |
-| `services/api`       | Optional Python/FastAPI service, managed by uv          |
-| `packages/contracts` | Explicitly exported TypeScript response schemas         |
-| `packages/tsconfig`  | Shared strict TypeScript settings                       |
-| `infra/aws`          | TypeScript CDK app; currently contains no AWS resources |
+| Location             | Responsibility                                     |
+| -------------------- | -------------------------------------------------- |
+| `apps/web`           | React, Vite, TanStack file routes and server state |
+| `services/api`       | Python Lambda handlers (Powertools), managed by uv |
+| `packages/contracts` | Explicitly exported TypeScript response schemas    |
+| `packages/tsconfig`  | Shared strict TypeScript settings                  |
+| `infra/aws`          | TypeScript CDK app, one `FlatSplit-<stage>` stack  |
 
 The root orchestrates commands. Each workspace owns its dependencies and scripts. Use `workspace:*` for local TypeScript packages and import through their declared exports.
 
@@ -40,13 +40,18 @@ The root orchestrates commands. Each workspace owns its dependencies and scripts
 | `pnpm check`        | Check formatting, linting and types in both languages                 |
 | `pnpm format`       | Format TypeScript, configuration, Markdown and Python                 |
 | `pnpm build`        | Build the frontend, shared package, Python distributions and CDK code |
-| `pnpm test`         | Run the frontend behaviour tests                                      |
-| `pnpm synth`        | Produce a local template from the empty AWS stack; no deployment      |
+| `pnpm test`         | Run the frontend and Python behaviour tests                           |
+| `pnpm synth`        | Synthesize the AWS stack locally (bundles Lambda code with uv)        |
+| `pnpm deploy:aws`   | Build, then deploy the dev stack with your AWS credentials            |
 | `pnpm setup:python` | Recreate the Python environment from its lockfile                     |
 
-Run `pnpm test` for the wireframe’s readiness, validation, feasibility and ranking tests. CI runs these alongside formatting, linting, types, builds and local CDK synthesis. Browser verification remains necessary for visible changes.
+Run `pnpm test` for the wireframe’s readiness, validation, feasibility and ranking tests and the API handler tests. CI runs these alongside formatting, linting, types, builds and local CDK synthesis. Browser verification remains necessary for visible changes.
 
-CDK synthesis warns that the empty stack has no resources; it is intentionally not deployable yet. The current TanStack route CLI may also emit a dependency circular-import warning while completing generation.
+CDK synthesis warns when `apps/web/dist` is missing; run `pnpm build` first to include the web app. The current TanStack route CLI may also emit a dependency circular-import warning while completing generation.
+
+## Deploying to AWS
+
+Deployment is manual and needs credentials for the team account in `ap-southeast-1`. Once per account, run `pnpm --filter @flatsplit/aws exec cdk bootstrap`. Then `pnpm deploy:aws` builds everything and deploys `FlatSplit-dev`; the `SiteUrl` output serves the web app and `/api/health`. Use `pnpm --filter @flatsplit/aws exec cdk deploy -c stage=<name>` for another stage, and add `-c budgetEmail=<address>` on one stage to create the US$20/50/100 cost alerts. Non-`prod` stages delete their data when destroyed.
 
 ## Local configuration
 
