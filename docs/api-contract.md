@@ -439,6 +439,10 @@ The example shows one entry per list. With the wireframe data, the full balanced
 
 - A town is feasible only when `rentQualityStatus = USABLE` and, for every member, `rentPerPerson <= budget` (unrounded) and `commuteMinutes <= maxCommute`, with both limits inclusive.
 - `score = max(0, round(100 × (1 − cost)))`, where `cost = wRent × rentPerPerson/2000 + wAvg × averageCommute/90 + wGap × commuteGap/90`. The weights per priority match the wireframe.
+- Implementation (`services/api/src/flatsplit_api/ranking.py`): rounding is half-up, matching JavaScript's `Math.round` in the wireframe, not Python's round-half-to-even. The arithmetic follows the wireframe's order, and parity tests pin the wireframe's scores for all three priorities.
+- Weights: `balanced` 0.35 / 0.35 / 0.30, `fairness` 0.20 / 0.25 / 0.55, `budget` 0.70 / 0.20 / 0.10 (rent / average commute / commute gap).
+- Display rounding: `averageCommute` to 2 decimals; `OVER_BUDGET` amounts round up to whole dollars (S$0.01 over shows as S$1); `rentPerPerson` and `budgetHeadroom` stay unrounded. `mostBurdenedMemberId` and commute statistics are null unless every member has a route.
+- The engine runs only on complete searches: a pending or missing commute pair raises an error, so the search API must report `pending` instead.
 - Order is score descending, then `displayName` ascending. Excluded towns with complete, usable inputs follow the same order using a hypothetical internal score; the response still exposes `score: null` for exclusions. Missing, low-confidence, or unavailable rent/route inputs give a null score; these towns follow scored exclusions in `displayName` order. A missing rent summary has null rent fields. A low-confidence summary retains its observed distribution and sample evidence, but has null budget-headroom fields and never contributes a fabricated or weak score.
 
 ### `GET /meta` — data freshness
