@@ -7,6 +7,7 @@
     "build": "uv build --package flatsplit-api --out-dir dist",
     "lint": "uv run --package flatsplit-api ruff check --config ../../pyproject.toml src tests",
     "typecheck": "uv run --package flatsplit-api mypy --config-file ../../pyproject.toml src tests",
-    "test": "uv run --package flatsplit-api pytest"
+    "test": "uv run --package flatsplit-api pytest",
+    "test:e2e": "uv run --package flatsplit-api pytest tests/e2e"
   }
 }
