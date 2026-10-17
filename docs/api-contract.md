@@ -46,11 +46,15 @@ Every error uses the same body:
 | 404    | `NOT_FOUND`            | Unknown or expired group, member, place or search                    |
 | 409    | `GROUP_FULL`           | Joining a group that already has `size` members                      |
 | 409    | `GROUP_NOT_READY`      | Starting a search before every member is ready                       |
+| 409    | `CONFLICT`             | A concurrent change to the same group won; reload and retry          |
 | 422    | `VALIDATION_FAILED`    | Field rules broken; `details` lists `{field, message}` pairs         |
 | 429    | `RATE_LIMITED`         | API throttling                                                       |
 | 503    | `UPSTREAM_UNAVAILABLE` | OneMap search failed during `/places`; the request can be retried    |
+| 503    | `SERVICE_UNAVAILABLE`  | Storage is busy or not configured; the request can be retried        |
 
 An unknown or expired group returns 404. A token that doesn't belong to an existing group returns 401.
+
+Every group response carries `Cache-Control: no-store`, because create and join responses contain credentials.
 
 ### Validation
 
@@ -76,7 +80,7 @@ type Group = {
   members: Member[]; // in join order
   readyCount: number;
   allReady: boolean; // members.length === size && every member ready
-  latestSearch: SearchSummary | null;
+  latestSearch: SearchSummary | null; // always null until searches ship (#16, #18)
   inviteToken?: string; // only in POST /groups; omitted from every later response
   createdAt: string;
   expiresAt: string; // createdAt + 30 days

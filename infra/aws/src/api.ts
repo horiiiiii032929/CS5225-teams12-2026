@@ -1,6 +1,8 @@
 import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import { HttpApi, HttpStage } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import type { ITable } from 'aws-cdk-lib/aws-dynamodb';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, Function, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
@@ -10,6 +12,8 @@ import { pythonApiCode } from './python-code.js';
 export interface ApiProps {
   readonly stage: string;
   readonly removalPolicy: RemovalPolicy;
+  /** Single table from docs/api-contract.md. */
+  readonly table: ITable;
 }
 
 /** HTTP API whose $default route invokes the Powertools resolver Lambda. */
@@ -46,6 +50,7 @@ export class Api extends Construct {
         POWERTOOLS_LOG_LEVEL: 'INFO',
         STAGE: props.stage,
         ONEMAP_SECRET_NAME: onemapToken.secretName,
+        TABLE_NAME: props.table.tableName,
       },
       logGroup: new LogGroup(this, 'HttpHandlerLogs', {
         retention: RetentionDays.ONE_WEEK,
@@ -54,6 +59,35 @@ export class Api extends Construct {
     });
 
     onemapToken.grantRead(handler);
+
+    // Group APIs (#12) read and write only group partitions and read places.
+    // Rent and commute partitions belong to the data pipeline. Transactions are
+    // authorised per item action, so TransactWriteItems needs no action of its own.
+    handler.addToRolePolicy(
+      new PolicyStatement({
+        actions: [
+          'dynamodb:Query',
+          'dynamodb:GetItem',
+          'dynamodb:PutItem',
+          'dynamodb:UpdateItem',
+          'dynamodb:DeleteItem',
+          'dynamodb:ConditionCheckItem',
+        ],
+        resources: [props.table.tableArn],
+        conditions: {
+          'ForAllValues:StringLike': { 'dynamodb:LeadingKeys': ['GROUP#*'] },
+        },
+      }),
+    );
+    handler.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['dynamodb:GetItem', 'dynamodb:ConditionCheckItem'],
+        resources: [props.table.tableArn],
+        conditions: {
+          'ForAllValues:StringLike': { 'dynamodb:LeadingKeys': ['PLACE#*'] },
+        },
+      }),
+    );
 
     this.httpApi = new HttpApi(this, 'HttpApi', {
       description: `FlatSplit ${props.stage} API`,

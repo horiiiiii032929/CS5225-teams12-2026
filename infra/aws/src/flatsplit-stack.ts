@@ -19,7 +19,11 @@ export class FlatSplitStack extends Stack {
       props.stage === 'prod' ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY;
 
     const data = new Data(this, 'Data', { removalPolicy });
-    const api = new Api(this, 'Api', { stage: props.stage, removalPolicy });
+    const api = new Api(this, 'Api', {
+      stage: props.stage,
+      removalPolicy,
+      table: data.table,
+    });
     const web = new Web(this, 'Web', {
       apiOriginDomain: api.originDomain,
       removalPolicy,
