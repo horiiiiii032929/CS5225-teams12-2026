@@ -1,0 +1,273 @@
+{
+  "ANG MO KIO": {
+    "stationKey": "ANG_MO_KIO",
+    "stationName": "ANG MO KIO MRT STATION",
+    "codes": [],
+    "lat": 1.369933,
+    "lon": 103.849558,
+    "postal": "569811",
+    "exactMatch": true,
+    "routable": true
+  },
+  "BEDOK": {
+    "stationKey": "BEDOK",
+    "stationName": "BEDOK MRT STATION (EW5)",
+    "codes": ["EW5"],
+    "lat": 1.32398,
+    "lon": 103.929984,
+    "postal": "467347",
+    "exactMatch": true,
+    "routable": true
+  },
+  "BISHAN": {
+    "stationKey": "BISHAN",
+    "stationName": "BISHAN MRT STATION",
+    "codes": [],
+    "lat": 1.351019,
+    "lon": 103.850057,
+    "postal": "NIL",
+    "exactMatch": true,
+    "routable": true
+  },
+  "BUKIT BATOK": {
+    "stationKey": "BUKIT_BATOK",
+    "stationName": "BUKIT BATOK MRT STATION (NS2)",
+    "codes": ["NS2"],
+    "lat": 1.349033,
+    "lon": 103.749566,
+    "postal": "659958",
+    "exactMatch": true,
+    "routable": true
+  },
+  "BUKIT MERAH": {
+    "stationKey": "REDHILL",
+    "stationName": "REDHILL MRT STATION (EW18)",
+    "codes": ["EW18"],
+    "lat": 1.289635,
+    "lon": 103.816741,
+    "postal": "158792",
+    "exactMatch": true,
+    "routable": true
+  },
+  "BUKIT PANJANG": {
+    "stationKey": "BUKIT_PANJANG",
+    "stationName": "BUKIT PANJANG MRT STATION",
+    "codes": [],
+    "lat": 1.379561,
+    "lon": 103.761189,
+    "postal": "NIL",
+    "exactMatch": true,
+    "routable": true
+  },
+  "BUKIT TIMAH": {
+    "stationKey": "BEAUTY_WORLD",
+    "stationName": "BEAUTY WORLD MRT STATION",
+    "codes": [],
+    "lat": 1.340901,
+    "lon": 103.775747,
+    "postal": "NIL",
+    "exactMatch": true,
+    "routable": true
+  },
+  "CENTRAL": {
+    "stationKey": "DHOBY_GHAUT",
+    "stationName": "DHOBY GHAUT MRT STATION (CC1)",
+    "codes": ["CC1"],
+    "lat": 1.298912,
+    "lon": 103.846293,
+    "postal": "238893",
+    "exactMatch": true,
+    "routable": true
+  },
+  "CHOA CHU KANG": {
+    "stationKey": "CHOA_CHU_KANG",
+    "stationName": "CHOA CHU KANG MRT STATION (JS1)",
+    "codes": ["JS1"],
+    "lat": 1.385368,
+    "lon": 103.744085,
+    "postal": "689960",
+    "exactMatch": true,
+    "routable": true
+  },
+  "CLEMENTI": {
+    "stationKey": "CLEMENTI",
+    "stationName": "CLEMENTI MRT STATION (EW23)",
+    "codes": ["EW23"],
+    "lat": 1.315116,
+    "lon": 103.765191,
+    "postal": "129580",
+    "exactMatch": true,
+    "routable": true
+  },
+  "GEYLANG": {
+    "stationKey": "ALJUNIED",
+    "stationName": "ALJUNIED MRT STATION (EW9)",
+    "codes": ["EW9"],
+    "lat": 1.316433,
+    "lon": 103.882906,
+    "postal": "388310",
+    "exactMatch": true,
+    "routable": true
+  },
+  "HOUGANG": {
+    "stationKey": "HOUGANG",
+    "stationName": "HOUGANG MRT STATION",
+    "codes": [],
+    "lat": 1.370335,
+    "lon": 103.892262,
+    "postal": "NIL",
+    "exactMatch": true,
+    "routable": true
+  },
+  "JURONG EAST": {
+    "stationKey": "JURONG_EAST",
+    "stationName": "JURONG EAST MRT STATION (EW24 / NS1)",
+    "codes": ["EW24", "NS1"],
+    "lat": 1.333028,
+    "lon": 103.74237,
+    "postal": "609690",
+    "exactMatch": true,
+    "routable": true
+  },
+  "JURONG WEST": {
+    "stationKey": "BOON_LAY",
+    "stationName": "BOON LAY MRT STATION (EW27)",
+    "codes": ["EW27"],
+    "lat": 1.338604,
+    "lon": 103.706065,
+    "postal": "649846",
+    "exactMatch": true,
+    "routable": true
+  },
+  "KALLANG/WHAMPOA": {
+    "stationKey": "BOON_KENG",
+    "stationName": "BOON KENG MRT STATION",
+    "codes": [],
+    "lat": 1.31994,
+    "lon": 103.862053,
+    "postal": "NIL",
+    "exactMatch": true,
+    "routable": true
+  },
+  "MARINE PARADE": {
+    "stationKey": "MARINE_PARADE",
+    "stationName": "MARINE PARADE MRT STATION (TE26)",
+    "codes": ["TE26"],
+    "lat": 1.302612,
+    "lon": 103.904983,
+    "postal": "449971",
+    "exactMatch": true,
+    "routable": true
+  },
+  "PASIR RIS": {
+    "stationKey": "PASIR_RIS",
+    "stationName": "PASIR RIS MRT STATION (EW1)",
+    "codes": ["EW1"],
+    "lat": 1.373043,
+    "lon": 103.949285,
+    "postal": "519634",
+    "exactMatch": true,
+    "routable": true
+  },
+  "PUNGGOL": {
+    "stationKey": "PUNGGOL",
+    "stationName": "PUNGGOL MRT STATION (NE17)",
+    "codes": ["NE17"],
+    "lat": 1.404547,
+    "lon": 103.902073,
+    "postal": "828868",
+    "exactMatch": true,
+    "routable": true
+  },
+  "QUEENSTOWN": {
+    "stationKey": "QUEENSTOWN",
+    "stationName": "QUEENSTOWN MRT STATION (EW19)",
+    "codes": ["EW19"],
+    "lat": 1.294551,
+    "lon": 103.806077,
+    "postal": "149729",
+    "exactMatch": true,
+    "routable": true
+  },
+  "SEMBAWANG": {
+    "stationKey": "SEMBAWANG",
+    "stationName": "SEMBAWANG MRT STATION (NS11)",
+    "codes": ["NS11"],
+    "lat": 1.449051,
+    "lon": 103.820046,
+    "postal": "759775",
+    "exactMatch": true,
+    "routable": true
+  },
+  "SENGKANG": {
+    "stationKey": "SENGKANG",
+    "stationName": "SENGKANG MRT STATION (NE16)",
+    "codes": ["NE16"],
+    "lat": 1.391695,
+    "lon": 103.895485,
+    "postal": "545062",
+    "exactMatch": true,
+    "routable": true
+  },
+  "SERANGOON": {
+    "stationKey": "SERANGOON",
+    "stationName": "SERANGOON MRT STATION",
+    "codes": [],
+    "lat": 1.351048,
+    "lon": 103.87107,
+    "postal": "NIL",
+    "exactMatch": true,
+    "routable": true
+  },
+  "TAMPINES": {
+    "stationKey": "TAMPINES",
+    "stationName": "TAMPINES MRT STATION (DT32)",
+    "codes": ["DT32"],
+    "lat": 1.35515,
+    "lon": 103.94301,
+    "postal": "529544",
+    "exactMatch": true,
+    "routable": true
+  },
+  "TENGAH": {
+    "stationKey": "TENGAH",
+    "stationName": "MRT STATION (JS3)",
+    "codes": ["JS3"],
+    "lat": 1.366346890987177,
+    "lon": 103.7300631359935,
+    "postal": "699879",
+    "exactMatch": false,
+    "routable": false,
+    "note": "Jurong Region Line JS3/JS4 are not in service as of 2026-10-14: OneMap PT routing returns 404 NoRouteFound from these coordinates (verified against BUKIT BATOK, which routes in 39.8 min). OneMap search also returns SEARCHVAL 'MRT STATION (JS3)' with no town name, so the exact canonical-name rule used for the other 26 towns cannot match it. Present in the rent source (27 towns) but excluded from commute routing until the line opens."
+  },
+  "TOA PAYOH": {
+    "stationKey": "TOA_PAYOH",
+    "stationName": "TOA PAYOH MRT STATION (NS19)",
+    "codes": ["NS19"],
+    "lat": 1.332629,
+    "lon": 103.847502,
+    "postal": "319398",
+    "exactMatch": true,
+    "routable": true
+  },
+  "WOODLANDS": {
+    "stationKey": "WOODLANDS",
+    "stationName": "WOODLANDS MRT STATION (NS9)",
+    "codes": ["NS9"],
+    "lat": 1.43682,
+    "lon": 103.786067,
+    "postal": "738343",
+    "exactMatch": true,
+    "routable": true
+  },
+  "YISHUN": {
+    "stationKey": "YISHUN",
+    "stationName": "YISHUN MRT STATION (NS13)",
+    "codes": ["NS13"],
+    "lat": 1.429443,
+    "lon": 103.835005,
+    "postal": "769093",
+    "exactMatch": true,
+    "routable": true
+  }
+}

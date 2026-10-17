@@ -91,9 +91,11 @@ Deployment is manual and needs credentials for the team account in `ap-southeast
 
 ## Local configuration
 
-Vite proxies `/api` to the local Python service. No environment file or cloud credentials are required for this scaffold. If needed, copy `apps/web/.env.example` to `apps/web/.env.local`.
+Vite proxies `/api` to the local Python service. The prototype shell and health endpoint need no environment file or cloud credentials. If needed, copy `apps/web/.env.example` to `apps/web/.env.local`.
 
 Every `VITE_` variable is public in the browser bundle. Keep credentials on the server. A future static host must serve `index.html` for frontend routes, and needs its own API routing or an explicit public API URL; Vite's proxy only runs in development.
+
+Group/search APIs require server-side `TABLE_NAME` and SDK region/credentials; use `DYNAMODB_ENDPOINT_URL` for a local compatible service. Cache-miss searches also require `COMMUTE_QUEUE_URL` (optional local `SQS_ENDPOINT_URL`). Local emulators may use dummy SDK credentials, never real secrets in browser configuration. Preference saves need persisted `PLACE#` records; searches need a validated `RENT/CURRENT` pointer and snapshot summaries. The API does not seed those records or fabricate results. CDK provides the queue/table configuration, but the #15 worker must still consume jobs; without it, queued pairs stay pending until their results are written. See the [producer/worker contract](docs/api-contract.md#16-producer-and-15-worker-handoff).
 
 ## Codex and Claude Code
 

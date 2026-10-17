@@ -6,6 +6,7 @@ import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, Function, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
+import { Queue, QueueEncryption } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 import { pythonApiCode } from './python-code.js';
 
@@ -23,6 +24,8 @@ export class Api extends Construct {
   readonly originDomain: string;
   /** Rotate this by hand; see onemapToken below. */
   readonly onemapTokenSecretName: string;
+  /** Shared producer queue; #15 attaches its worker to this queue. */
+  readonly commuteJobsQueue: Queue;
 
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
@@ -38,19 +41,35 @@ export class Api extends Construct {
     });
     this.onemapTokenSecretName = onemapToken.secretName;
 
+    const commuteDlq = new Queue(this, 'CommuteDlq', {
+      encryption: QueueEncryption.SQS_MANAGED,
+      enforceSSL: true,
+      retentionPeriod: Duration.days(14),
+      removalPolicy: props.removalPolicy,
+    });
+    this.commuteJobsQueue = new Queue(this, 'CommuteJobs', {
+      encryption: QueueEncryption.SQS_MANAGED,
+      enforceSSL: true,
+      visibilityTimeout: Duration.minutes(3),
+      retentionPeriod: Duration.days(4),
+      deadLetterQueue: { queue: commuteDlq, maxReceiveCount: 3 },
+      removalPolicy: props.removalPolicy,
+    });
+
     const handler = new Function(this, 'HttpHandler', {
       runtime: Runtime.PYTHON_3_13,
       architecture: Architecture.ARM_64,
       code: pythonApiCode(),
       handler: 'flatsplit_api.handlers.http.handler',
       memorySize: 256,
-      timeout: Duration.seconds(10),
+      timeout: Duration.seconds(30),
       environment: {
         POWERTOOLS_SERVICE_NAME: 'flatsplit-api',
         POWERTOOLS_LOG_LEVEL: 'INFO',
         STAGE: props.stage,
         ONEMAP_SECRET_NAME: onemapToken.secretName,
         TABLE_NAME: props.table.tableName,
+        COMMUTE_QUEUE_URL: this.commuteJobsQueue.queueUrl,
       },
       logGroup: new LogGroup(this, 'HttpHandlerLogs', {
         retention: RetentionDays.ONE_WEEK,
@@ -59,10 +78,10 @@ export class Api extends Construct {
     });
 
     onemapToken.grantRead(handler);
+    this.commuteJobsQueue.grantSendMessages(handler);
 
-    // Group APIs (#12) read and write only group partitions and read places.
-    // Rent and commute partitions belong to the data pipeline. Transactions are
-    // authorised per item action, so TransactWriteItems needs no action of its own.
+    // Transactions are authorised per item action. The API writes groups and
+    // commute claims, but can only read places and validated rent snapshots.
     handler.addToRolePolicy(
       new PolicyStatement({
         actions: [
@@ -76,6 +95,7 @@ export class Api extends Construct {
         resources: [props.table.tableArn],
         conditions: {
           'ForAllValues:StringLike': { 'dynamodb:LeadingKeys': ['GROUP#*'] },
+          Null: { 'dynamodb:LeadingKeys': 'false' },
         },
       }),
     );
@@ -85,6 +105,36 @@ export class Api extends Construct {
         resources: [props.table.tableArn],
         conditions: {
           'ForAllValues:StringLike': { 'dynamodb:LeadingKeys': ['PLACE#*'] },
+          Null: { 'dynamodb:LeadingKeys': 'false' },
+        },
+      }),
+    );
+    handler.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['dynamodb:GetItem', 'dynamodb:Query'],
+        resources: [props.table.tableArn],
+        conditions: {
+          'ForAllValues:StringLike': {
+            'dynamodb:LeadingKeys': ['RENT', 'RENT#*'],
+          },
+          Null: { 'dynamodb:LeadingKeys': 'false' },
+        },
+      }),
+    );
+    handler.addToRolePolicy(
+      new PolicyStatement({
+        actions: [
+          'dynamodb:GetItem',
+          'dynamodb:Query',
+          'dynamodb:PutItem',
+          'dynamodb:DeleteItem',
+        ],
+        resources: [props.table.tableArn],
+        conditions: {
+          'ForAllValues:StringLike': {
+            'dynamodb:LeadingKeys': ['COMMUTE#*'],
+          },
+          Null: { 'dynamodb:LeadingKeys': 'false' },
         },
       }),
     );

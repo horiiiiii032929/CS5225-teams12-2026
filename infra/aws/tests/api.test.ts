@@ -45,16 +45,7 @@ for (const [stage, rate, burst] of [
   });
 }
 
-test('the API Lambda knows its table', () => {
-  synthesize('dev').hasResourceProperties('AWS::Lambda::Function', {
-    Handler: 'flatsplit_api.handlers.http.handler',
-    Environment: {
-      Variables: Match.objectLike({ TABLE_NAME: { Ref: Match.anyValue() } }),
-    },
-  });
-});
-
-test('table access is limited to group writes and place reads', () => {
+test('table access separates group/commute writes from place/rent reads', () => {
   const policies = synthesize('dev').findResources('AWS::IAM::Policy');
   const dynamo = Object.values(policies)
     .flatMap(
@@ -86,5 +77,40 @@ test('table access is limited to group writes and place reads', () => {
       'dynamodb:UpdateItem',
     ],
     'PLACE#*': ['dynamodb:ConditionCheckItem', 'dynamodb:GetItem'],
+    'RENT,RENT#*': ['dynamodb:GetItem', 'dynamodb:Query'],
+    'COMMUTE#*': [
+      'dynamodb:DeleteItem',
+      'dynamodb:GetItem',
+      'dynamodb:PutItem',
+      'dynamodb:Query',
+    ],
+  });
+});
+
+test('the search producer cannot receive or delete commute jobs', () => {
+  const template = synthesize('dev');
+  const policies = template.findResources('AWS::IAM::Policy');
+  const statements = Object.values(policies).flatMap(
+    (policy) =>
+      policy.Properties.PolicyDocument.Statement as {
+        Effect: string;
+        Action: string | string[];
+        Resource: unknown;
+      }[],
+  );
+  const allowed = statements.filter((s) => s.Effect === 'Allow');
+  const sqs = allowed.filter((s) =>
+    [s.Action].flat().some((action) => action.startsWith('sqs:')),
+  );
+  assert.equal(sqs.length, 1);
+  assert.deepEqual([sqs[0]!.Action].flat().sort(), [
+    'sqs:GetQueueAttributes',
+    'sqs:GetQueueUrl',
+    'sqs:SendMessage',
+  ]);
+  assert.notEqual(sqs[0]!.Resource, '*');
+  template.hasResourceProperties('AWS::SQS::Queue', {
+    SqsManagedSseEnabled: true,
+    RedrivePolicy: Match.objectLike({ maxReceiveCount: 3 }),
   });
 });

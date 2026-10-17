@@ -2,11 +2,12 @@
 
 import json
 import re
-from typing import Any
+from typing import Annotated, Any
 
 from aws_lambda_powertools import Logger
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver, Response
 from aws_lambda_powertools.event_handler.exceptions import NotFoundError
+from aws_lambda_powertools.event_handler.openapi.params import Query
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from botocore.exceptions import ClientError, HTTPClientError
 from botocore.exceptions import ConnectionError as BotocoreConnectionError
@@ -33,7 +34,9 @@ from flatsplit_api.onemap import (
     find_places,
     normalise_query,
 )
-from flatsplit_api.storage import group_store
+from flatsplit_api.ranking import WEIGHTS, Priority
+from flatsplit_api.search_models import SearchView
+from flatsplit_api.storage import group_store, search_store
 
 logger = Logger()
 
@@ -210,8 +213,11 @@ def create_group() -> Response[str]:
 
 @app.get("/groups/<group_id>", responses=_documented(200, GroupResponse))
 def read_group(group_id: str) -> Response[str]:
-    state = group_store().read(_id(group_id, "Group"), _bearer())
-    return _json(group_response(state))
+    groups = group_store()
+    state = groups.read(_id(group_id, "Group"), _bearer())
+    response = group_response(state)
+    response.group.latestSearch = search_store(groups).summary(state)
+    return _json(response)
 
 
 @app.post(
@@ -233,10 +239,43 @@ def join_group(group_id: str) -> Response[str]:
 def save_preferences(group_id: str, member_id: str) -> Response[str]:
     gid = _id(group_id, "Group")
     mid = _id(member_id, "Member")
-    state = group_store().save_preferences(
-        gid, mid, _bearer(), _body(PreferencesRequest)
-    )
-    return _json(group_response(state))
+    groups = group_store()
+    state = groups.save_preferences(gid, mid, _bearer(), _body(PreferencesRequest))
+    response = group_response(state)
+    response.group.latestSearch = search_store(groups).summary(state)
+    return _json(response)
+
+
+@app.post("/groups/<group_id>/searches", responses=_documented(201, SearchView))
+def start_search(group_id: str) -> Response[str]:
+    gid = _id(group_id, "Group")
+    return _json(search_store(group_store()).start(gid, _bearer()), 201)
+
+
+@app.get(
+    "/groups/<group_id>/searches/<search_id>",
+    responses=_documented(200, SearchView),
+)
+def read_search(
+    group_id: str,
+    search_id: str,
+    raw: Annotated[
+        str, Query(alias="priority", json_schema_extra={"enum": list(WEIGHTS)})
+    ] = "balanced",
+) -> Response[str]:
+    gid = _id(group_id, "Group")
+    sid = _id(search_id, "Search")
+    if raw not in WEIGHTS:
+        raise validation_failed("priority", "Use balanced, fairness or budget.")
+    # Membership in WEIGHTS validates the public literal without a second model.
+    priority: Priority
+    if raw == "fairness":
+        priority = "fairness"
+    elif raw == "budget":
+        priority = "budget"
+    else:
+        priority = "balanced"
+    return _json(search_store(group_store()).read(gid, sid, _bearer(), priority))
 
 
 @logger.inject_lambda_context

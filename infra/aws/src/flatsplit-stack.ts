@@ -37,6 +37,9 @@ export class FlatSplitStack extends Stack {
     });
     new CfnOutput(this, 'ApiUrl', { value: api.httpApi.apiEndpoint });
     new CfnOutput(this, 'TableName', { value: data.table.tableName });
+    new CfnOutput(this, 'CommuteQueueUrl', {
+      value: api.commuteJobsQueue.queueUrl,
+    });
     new CfnOutput(this, 'OneMapTokenSecret', {
       value: api.onemapTokenSecretName,
     });

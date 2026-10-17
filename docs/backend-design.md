@@ -38,9 +38,19 @@ The endpoints, request and response shapes, errors, DynamoDB items and access pa
 - `POST /groups`, `GET /groups/{id}`, `POST /groups/{id}/members`, `PUT /groups/{id}/members/{memberId}` for group input, authorised by invite and member tokens.
 - `GET /places` for destination search with MRT-station snapping.
 - `POST /groups/{id}/searches` and `GET /groups/{id}/searches/{searchId}?priority=` for queued commute lookups, status, and ranked and excluded towns with per-member explanations.
-- One DynamoDB table with no scans or secondary indexes; the one-page read budget is 7 requests after the rent snapshot is pinned, or 8 for a first search that also reads the pointer. Long group histories require pagination and measurement.
+- One DynamoDB table with no scans or secondary indexes; search-ID and per-revision reservations plus consistent revision fences add point reads beyond the original 7/8-request sketch. A warm complete status read with five distinct stations uses 11 requests when partitions fit one page; cold claims/enqueues, pagination and retries are additional. #30 must measure latency and cost.
 
 Search status is derived when it is read: if any required commute pair is `pending`, the search is pending. This avoids fan-in bookkeeping. Commute jobs use conditional pending leases and idempotent workers. Failed enqueue and expired leases are recoverable; the contract describes the claim and retry rules.
+
+### Search producer and status implementation (#16/#18)
+
+The API now implements member-authorised submission, idempotent revision reservations, pinned rent/cache reads, pending/complete/stale status, ranking integration and `latestSearch` composition. It packages the reviewed 27-town projection, including non-routable TENGAH. Missing snapshots return 503; unavailable/missing inputs never become invented recommendations.
+
+The SQS source queue/DLQ exist in CDK to carry cache-miss work, not to perform routing in the HTTP request. Both use SQS-managed encryption and deny non-TLS access. Source visibility is 180 seconds, retention four days, and redrive follows three receives; DLQ retention is 14 days. `Api.commuteJobsQueue` is the consumer attachment point, `CommuteQueueUrl` is the output, and `COMMUTE_QUEUE_URL` configures the producer. #15 must consume that same queue; no worker is attached by this change.
+
+The HTTP role can send to only that queue (no receive/delete), read rent/place partitions, read/write group partitions and read/claim/delete commute items. Partition-scoped DynamoDB grants require a non-null `dynamodb:LeadingKeys`. Conditional 900-second job leases recover failed sends/crashes; worker completion must be fenced by matching `jobId` and pending status. The [API contract](api-contract.md#16-producer-and-15-worker-handoff) records the payload and retry/profile semantics.
+
+Cost remains a request-based design assumption, not a billing measurement: this adds two queues, DynamoDB claims/metadata reads and SQS sends, without a VPC or continuously running compute. API timeout is 30 seconds to admit cold submissions; cold work can include 135 claims and 130 sends for five distinct stations, so the latency target still needs #30 evidence. Local tests use seeded rent/place records and injected worker-contract completions. Live ingestion (#10), place persistence (#14), routing/consumer/DLQ work (#15/#27), deployment and deployed performance acceptance remain separate.
 
 ## Data assumptions
 

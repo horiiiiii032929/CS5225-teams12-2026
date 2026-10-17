@@ -26,7 +26,7 @@ class GroupView(BaseModel):
     members: list[MemberState]
     readyCount: int
     allReady: bool
-    # Searches arrive with #16/#18; until then no group has one.
+    # SearchStore composes the summary for reads and preference-save responses.
     latestSearch: SearchSummary | None
     createdAt: datetime
     expiresAt: datetime
