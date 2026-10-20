@@ -2,15 +2,30 @@
 
 One row per assumption that must become a measurement before E9 / #45 can be completed (target 8 November 2026). Each row names the field in `model/workloads.json` or `model/onprem.json`, the owner, and the experiment that produces it. Paste the measured value in, re-run `model/cost_model.py`, and commit the new `evidence/cost_model_<utc>.*` files.
 
+## Already measured — 20 October 2026 (@lukerspace)
+
+Done with `model/measure_operations.py`; raw counts in `measured-operations-20261020.json`, and the corrections they caused are described in [cost-model.md](../cost-model.md#measured-per-request-operations-20-october-2026). These rows need no further work, only a re-measurement after a handler change.
+
+| Field                                                 | Was                         | Now measured                                                               |
+| ----------------------------------------------------- | --------------------------- | -------------------------------------------------------------------------- |
+| `measured_operations.*.ddb_reads` / `ddb_write_items` | design budget from A1/A6/A7 | Per-request DynamoDB call and item counts for all nine request shapes      |
+| `meta.fixed_facts.ddb_requests_first_search`          | 8 (budget)                  | **7** — one less than budgeted                                             |
+| `meta.fixed_facts.ddb_requests_repeat_read`           | 7 (budget)                  | 7 — matched exactly                                                        |
+| `meta.fixed_facts.towns_routable`                     | 26 from the #2 data profile | Confirmed by the handler: 52 sends and 2 unavailable pairs for two members |
+| `measured_operations.search_start.*`                  | `jobs × 2` writes assumed   | 1 write per uncached pair + a 3-item transaction; 1 SQS send per pair      |
+| `measured_operations.places_lookup_cold.onemap_calls` | not modelled at all         | **6** per cold lookup (1 search + 1 per candidate)                         |
+| `shared_assumptions.lambda_places_cold_duration_ms`   | folded into 120 ms          | 600 ms mean of four runs, dominated by real OneMap round trips             |
+| `shared_assumptions.lambda_places_warm_duration_ms`   | folded into 120 ms          | 16 ms, with zero upstream calls and zero writes                            |
+
 ## From WK (@wkkuu), #30 — E1 and E2
 
-| Field                                       | Currently                  | What to measure                                                                                                                    | Why it matters                                                                                |
-| ------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `shared_assumptions.lambda_api_duration_ms` | 120 ms (assumed)           | CloudWatch Lambda `Duration` p50 for `GET /groups/{id}/searches/{id}`, warm                                                        | Drives Lambda GB-seconds; at 100× demand it becomes a real line                               |
-| `shared_assumptions.cold_start_share`       | 5% (assumed)               | Cold-start share and `InitDuration` from E1                                                                                        | Also drives Secrets Manager API calls                                                         |
-| `onprem.capacity.sustained_rps_per_node`    | **25 req/s (placeholder)** | Admitted req/s that one `t4g.small` with 2 isolated uvicorn workers sustains under W2 while meeting the 500 ms target (D-E2, D-E6) | **Decides node count for options B and C — the largest single uncertainty in the comparison** |
-| —                                           | —                          | The eval-stage admission limit actually used for W2 (stage throttle is 20 req/s burst 40 today)                                    | Without it, W2 measures throttling, not capacity (noted in the evaluation plan)               |
-| `scenarios.bursty.burst_*`                  | 4 events, 50 req/s, 5 min  | The burst profile actually run                                                                                                     | Keeps the cost scenario and the load test comparable                                          |
+| Field                                       | Currently                  | What to measure                                                                                                                                                  | Why it matters                                                                                |
+| ------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `shared_assumptions.lambda_api_duration_ms` | 120 ms (assumed)           | CloudWatch Lambda `Duration` p50 for `GET /groups/{id}/searches/{id}`, warm. Now applies only to the non-lookup routes: the two `/places` durations are measured | Drives Lambda GB-seconds; at 100× demand it becomes a real line                               |
+| `shared_assumptions.cold_start_share`       | 5% (assumed)               | Cold-start share and `InitDuration` from E1                                                                                                                      | Also drives Secrets Manager API calls                                                         |
+| `onprem.capacity.sustained_rps_per_node`    | **25 req/s (placeholder)** | Admitted req/s that one `t4g.small` with 2 isolated uvicorn workers sustains under W2 while meeting the 500 ms target (D-E2, D-E6)                               | **Decides node count for options B and C — the largest single uncertainty in the comparison** |
+| —                                           | —                          | The eval-stage admission limit actually used for W2 (stage throttle is 20 req/s burst 40 today)                                                                  | Without it, W2 measures throttling, not capacity (noted in the evaluation plan)               |
+| `scenarios.bursty.burst_*`                  | 4 events, 50 req/s, 5 min  | The burst profile actually run                                                                                                                                   | Keeps the cost scenario and the load test comparable                                          |
 
 ## From Mani (@saravanamani1999), #34 — E8 and E9 usage evidence
 
@@ -27,11 +42,12 @@ One row per assumption that must become a measurement before E9 / #45 can be com
 
 ## From me (@lukerspace), #3 / #15 / #27
 
-| Field                                          | Currently                       | What to measure                                                         |
-| ---------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------- |
-| `scenarios.*.commute_cache_hit_ratio`          | 80 / 90 / 60% (assumed)         | Cache-hit ratio from E3 (Powertools metric)                             |
-| `shared_assumptions.lambda_worker_duration_ms` | 900 ms (assumed)                | Commute-worker duration per job                                         |
-| OneMap rate limit                              | 250 calls/min (C7, provisional) | Real measured limit from #3 — feeds D-E7 and the burst feasibility note |
+| Field                                          | Currently                       | What to measure                                                                                                                                                                     |
+| ---------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scenarios.*.commute_cache_hit_ratio`          | 80 / 90 / 60% (assumed)         | Cache-hit ratio from E3 (Powertools metric)                                                                                                                                         |
+| `scenarios.*.places_lookup_cache_hit_ratio`    | 20 / 40 / 50% (assumed)         | Share of `/places` calls served by the 24 h query cache. Added 20 October; now the largest single lever on OneMap quota, because a cold lookup costs six calls and a hit costs none |
+| `shared_assumptions.lambda_worker_duration_ms` | 900 ms (assumed)                | Commute-worker duration per job                                                                                                                                                     |
+| OneMap rate limit                              | 250 calls/min (C7, provisional) | Real measured limit from #3 — feeds D-E7 and the burst feasibility note                                                                                                             |
 
 ## Blocking action, not a measurement
 

@@ -1,6 +1,6 @@
 {
   "meta": {
-    "status": "PROVISIONAL — assumptions only, no measured data yet (issue #45, 12 October 2026)",
+    "status": "PARTIALLY MEASURED — every per-request DynamoDB, SQS and OneMap operation count was measured against the real Lambda resolver on 20 October 2026 (issue #45). Demand volumes, Lambda duration for non-lookup routes, cold-start share, log volume and the RRU/WRU conversions are still assumed and remain with #30 and #34.",
     "owner": "Ming (@lukerspace)",
     "reviewer": "Mani (@saravanamani1999)",
     "maps_to_evaluation_plan": {
@@ -8,14 +8,50 @@
       "typical": "W1 Steady (2 searches/s for 10 min, warm cache) extrapolated to a month",
       "bursty": "W2 Burst (ramp 1->50 req/s in 60 s, hold 5 min) plus W3 Long tail (cold commute cache)"
     },
-    "how_to_refine": "Replace any field whose source is 'assumed' with a measured value from #30 (E1/E2) or #34 (E8/E9). Every field is used by model/cost_model.py; nothing is hardcoded in the report text.",
+    "how_to_refine": "Replace any field whose source is 'assumed' with a measured value from #30 (E1/E2) or #34 (E8/E9). Fields in 'measured_operations' are already measured: re-measure them with the same method after a handler change. Every field is used by model/cost_model.py; nothing is hardcoded in the report text.",
     "fixed_facts": {
       "towns": 27,
       "towns_source": "docs/backend-design.md + #2 data profile (PR #52): 27 HDB towns in the September 2026 rent source, each represented by one MRT station. 26 are routable; TENGAH's only reference point is the unopened Jurong Region Line (JS3/JS4) and OneMap PT routing returns 404 from it, so its pairs are enqueued and recorded as unavailable rather than skipped.",
-      "ddb_requests_first_search": 8,
+      "towns_routable": 26,
+      "non_routable_pairs_per_member_station": 1,
+      "towns_routable_source": "measured 20 October 2026: a two-member search wrote 54 pair records (2 member stations x 27 towns) and sent exactly 52 SQS messages (2 x 26), reporting 2 pairs unavailable — one TENGAH pair per member station. The 27/26 split in the data profile is therefore confirmed by the handler's own behaviour.",
+      "ddb_requests_first_search": 7,
       "ddb_requests_repeat_read": 7,
-      "ddb_requests_source": "docs/api-contract.md access patterns A1+A6+A7 (design budget, to be measured in #30)"
+      "ddb_requests_source": "measured 20 October 2026 against the real resolver: a first search reads 7 times (4 GetItem + 3 Query) and every later result read also reads 7 times. The design budget in docs/api-contract.md (A1+A6+A7) said 8 and 7, so the repeat read matched exactly and the first search costs one request less than budgeted."
     }
+  },
+
+  "measured_operations": {
+    "source": "Measured on 20 October 2026 by driving API Gateway v2 events through flatsplit_api.handlers.http with Moto standing in for DynamoDB and SQS and live OneMap upstream, counting every botocore API call (and the items inside each transaction) and every OneMap round trip per request. Reproduce with tools/acceptance/serve_local.py plus the same counting hook; the raw per-request counts are in evidence/measured-operations-20261020.json.",
+    "caveats": "Moto is not DynamoDB, so these are request and item counts, not consumed capacity; RRU/WRU conversion is still assumed. Durations were measured on a laptop, not in Lambda, so only the OneMap-bound lookup paths are used as duration inputs: their cost is real upstream network time. #15's worker did not exist, so its result write and routing call remain assumed.",
+    "places_lookup_cold": {
+      "ddb_reads": 4,
+      "ddb_writes": 10,
+      "onemap_calls": 6,
+      "candidates": 5,
+      "duration_ms": 600,
+      "note": "Two queries measured, twice each: 'kent ridge' (3 reads, 9 writes) and 'raffles place' (5 reads, 11 writes), both 6 OneMap calls for 5 candidates. The four cold lookups took 697, 584, 561 and 557 ms, mean 600. OneMap cost is 1 search + 1 nearest-station call per candidate. Writes are 1 PLACE# per candidate + 1 STATION# per distinct station + 1 PLACELOOKUP#."
+    },
+    "places_lookup_warm": {
+      "ddb_reads": 5,
+      "ddb_writes": 0,
+      "onemap_calls": 0,
+      "duration_ms": 16,
+      "note": "A repeat of the same query within the 24 h cache: 1 PLACELOOKUP# read plus one PLACE# read per cached candidate to prove it has not expired. Zero upstream calls and zero writes, measured at 15 and 18 ms against 697 ms cold."
+    },
+    "group_create": { "ddb_reads": 1, "ddb_write_items": 3 },
+    "member_join": { "ddb_reads": 2, "ddb_write_items": 3 },
+    "preference_save": { "ddb_reads": 4, "ddb_write_items": 3 },
+    "group_read": { "ddb_reads": 2, "ddb_write_items": 0 },
+    "search_start": {
+      "ddb_reads": 7,
+      "ddb_write_items_fixed": 3,
+      "ddb_writes_per_pair_record": 1,
+      "sqs_sends_per_enqueued_pair": 1,
+      "note": "Measured: 7 reads, one TransactWriteItems of 3 items, one PutItem per pair without a usable cached result, and exactly one SendMessage per enqueued pair — the enqueue is not batched. A pair whose COMMUTE# record is already 'ok' at the same routing profile returns from the read with no write and no send, so the commute cache hit ratio removes both."
+    },
+    "search_poll": { "ddb_reads": 7, "ddb_write_items": 0 },
+    "search_start_repeat": { "ddb_reads": 8, "ddb_write_items": 0 }
   },
 
   "scenarios": {
@@ -24,32 +60,35 @@
       "groups_per_month": 50,
       "members_per_group": 3,
       "places_lookups_per_member": 4,
+      "places_lookup_cache_hit_ratio": 0.2,
       "preference_saves_per_member": 2,
       "searches_per_group": 2,
       "result_polls_per_search": 20,
       "commute_cache_hit_ratio": 0.8,
       "burst_events_per_month": 0,
       "web_page_loads_per_month": 400,
-      "notes": "Cache is cold-ish because few groups share destinations."
+      "notes": "Cache is cold-ish because few groups share destinations. The place-lookup cache only lives 24 h, so a hit needs a repeat on the same day: 50 groups a month is under two a day, hence the low lookup hit ratio even though the commute cache (shared across groups, far longer lived) is warm."
     },
     "typical": {
       "label": "Typical (normal term month)",
       "groups_per_month": 500,
       "members_per_group": 3,
       "places_lookups_per_member": 4,
+      "places_lookup_cache_hit_ratio": 0.4,
       "preference_saves_per_member": 2,
       "searches_per_group": 2,
       "result_polls_per_search": 20,
       "commute_cache_hit_ratio": 0.9,
       "burst_events_per_month": 0,
       "web_page_loads_per_month": 4000,
-      "notes": "W1 Steady is 2 searches/s for 10 minutes = 1200 searches; a month at that intensity for ~1 h/day would be ~36k searches, far above a student project. 500 groups x 2 searches = 1000 searches/month is the honest prototype figure; the W1 rate is used for latency, not for volume."
+      "notes": "W1 Steady is 2 searches/s for 10 minutes = 1200 searches; a month at that intensity for ~1 h/day would be ~36k searches, far above a student project. 500 groups x 2 searches = 1000 searches/month is the honest prototype figure; the W1 rate is used for latency, not for volume. The lookup cache hit ratio is assumed, not measured: ~17 groups a day typing a handful of campuses and the CBD, against a 24 h case-folded query cache."
     },
     "bursty": {
       "label": "Bursty (semester start, W2 peak + W3 cold cache)",
       "groups_per_month": 3000,
       "members_per_group": 3,
       "places_lookups_per_member": 4,
+      "places_lookup_cache_hit_ratio": 0.5,
       "preference_saves_per_member": 2,
       "searches_per_group": 2,
       "result_polls_per_search": 20,
@@ -59,7 +98,7 @@
       "burst_hold_seconds": 300,
       "burst_ramp_seconds": 60,
       "web_page_loads_per_month": 24000,
-      "notes": "W2 admitted at 50 req/s requires raising the HTTP API stage throttle (currently 20 req/s burst 40) on the eval stage only — D-E1/D-E2. Cache hit falls because destinations are long-tail at semester start (W3)."
+      "notes": "W2 admitted at 50 req/s requires raising the HTTP API stage throttle (currently 20 req/s burst 40) on the eval stage only — D-E1/D-E2. The commute cache hit falls because destinations are long-tail at semester start (W3), while the 24 h lookup cache improves instead: 100 groups a day repeat the same campus queries inside one day."
     }
   },
 
@@ -69,7 +108,11 @@
     "lambda_memory_mb": 256,
     "lambda_memory_source": "infra/aws/src/api.ts (memorySize: 256, arm64, Python 3.13)",
     "lambda_api_duration_ms": 120,
-    "lambda_api_duration_source": "assumed — MUST be replaced by #30 (E1) CloudWatch Lambda duration",
+    "lambda_api_duration_source": "assumed — MUST be replaced by #30 (E1) CloudWatch Lambda duration. The 20 October local run measured 10-93 ms for the non-lookup routes against Moto, with no network to DynamoDB and no cold start, so 120 ms is kept as the conservative assumption rather than replaced by a laptop figure.",
+    "lambda_places_cold_duration_ms": 600,
+    "lambda_places_cold_duration_source": "measured 20 October 2026, mean of four cold lookups (697, 584, 561, 557 ms): six real OneMap round trips dominate this path, so unlike the other routes it is network-bound and transfers to Lambda.",
+    "lambda_places_warm_duration_ms": 16,
+    "lambda_places_warm_duration_source": "measured 20 October 2026: a cache hit makes no upstream call, so the duration is the handler plus five DynamoDB reads. Understated against Lambda, which pays real network latency for those reads.",
     "lambda_worker_duration_ms": 900,
     "lambda_worker_duration_source": "assumed — one OneMap routing call per job; replace with #15/#27 worker metrics",
     "cold_start_share": 0.05,
@@ -77,9 +120,9 @@
     "log_bytes_per_invocation": 2048,
     "log_bytes_source": "assumed for Powertools structured JSON at INFO; replace with CloudWatch IncomingBytes from #34",
     "ddb_rru_per_read_request": 2.0,
-    "ddb_rru_source": "assumed: eventually-consistent reads of a few small items (0.5 RRU per 4 KB). Replace with ConsumedReadCapacityUnits from #34",
+    "ddb_rru_source": "assumed: eventually-consistent reads of a few small items (0.5 RRU per 4 KB). Now applied to measured request counts rather than budgeted ones. Replace with ConsumedReadCapacityUnits from #34",
     "ddb_wru_per_write": 1.5,
-    "ddb_wru_source": "assumed: 1 WRU per 1 KB item, transactional joins cost 2x. Replace with ConsumedWriteCapacityUnits from #34",
+    "ddb_wru_source": "assumed: 1 WRU per 1 KB item, transactional joins cost 2x. Now applied to measured write-item counts rather than budgeted ones. Replace with ConsumedWriteCapacityUnits from #34",
     "ddb_table_size_gb": 0.5,
     "api_response_kb": 8,
     "web_page_bytes": 600000,
@@ -87,7 +130,7 @@
     "web_build_size_mb": 5,
     "s3_raw_rent_gb": 0.05,
     "sqs_requests_per_job": 3,
-    "sqs_requests_per_job_source": "SendMessage + ReceiveMessage + DeleteMessage",
+    "sqs_requests_per_job_source": "SendMessage + ReceiveMessage + DeleteMessage. The SendMessage is measured as exactly one per enqueued pair (no batching); the receive and delete are assumed until #15's consumer exists",
     "sqs_idle_poll_requests_per_month": 650000,
     "sqs_idle_poll_source": "assumed: Lambda event-source mapping keeps ~5 long-polling consumers at 20 s waits (~130k receives each). VERIFY in #34 against the SQS request count in Cost Explorer — this is the one line item that is not zero when nobody uses the app",
     "cloudwatch_dashboards": 1,
