@@ -34,3 +34,14 @@ The frontend currently uses fictional prototype data. Group persistence/APIs, re
 Secrets Manager creates a placeholder for the OneMap token. The live token and its renewal must be provided through the server-side secret; deployment does not establish live destination-lookup acceptance.
 
 The read-only Cost Explorer `ListCostAllocationTags` request returned `AccessDeniedException`: the linked account cannot access cost allocation tags. The organisation's management/payer-account billing operator must verify the `project` tag activation and measurement window for #45. Application deployment credentials alone cannot resolve that control. No cost-tag activation, historical backfill or budget change was performed.
+
+## Acceptance run after a deployment — 20 October 2026
+
+`tools/acceptance/acceptance.py` runs the #44 acceptance gate against a deployed API in one command and writes a JSON evidence file that records the mode and the revision under test:
+
+```bash
+python3 tools/acceptance/acceptance.py \
+    --base-url https://<host>/api --mode deployed --revision "$(git rev-parse --short HEAD)"
+```
+
+It uses only the Python standard library, so it needs no repository setup on the machine that runs it, and it exits non-zero when a check fails. The live destination lookup still requires the OneMap token in the stage secret; without it `/places` returns 503 and the journey stops at stage 1. `tools/acceptance/README.md` records what each stage checks, and why an absent #15 worker is recorded as a measured gap instead of a failure.
