@@ -45,7 +45,7 @@ for (const [stage, rate, burst] of [
   });
 }
 
-test('table access separates group/commute writes from place/rent reads', () => {
+test('table access is scoped per item type, with rent read-only', () => {
   const policies = synthesize('dev').findResources('AWS::IAM::Policy');
   const dynamo = Object.values(policies)
     .flatMap(
@@ -76,7 +76,16 @@ test('table access separates group/commute writes from place/rent reads', () => 
       'dynamodb:Query',
       'dynamodb:UpdateItem',
     ],
-    'PLACE#*': ['dynamodb:ConditionCheckItem', 'dynamodb:GetItem'],
+    'PLACE#*': [
+      'dynamodb:ConditionCheckItem',
+      'dynamodb:GetItem',
+      'dynamodb:PutItem',
+    ],
+    'STATION#*': [
+      'dynamodb:GetItem',
+      'dynamodb:PutItem',
+      'dynamodb:UpdateItem',
+    ],
     'RENT,RENT#*': ['dynamodb:GetItem', 'dynamodb:Query'],
     'COMMUTE#*': [
       'dynamodb:DeleteItem',

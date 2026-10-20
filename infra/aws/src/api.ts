@@ -80,8 +80,10 @@ export class Api extends Construct {
     onemapToken.grantRead(handler);
     this.commuteJobsQueue.grantSendMessages(handler);
 
-    // Transactions are authorised per item action. The API writes groups and
-    // commute claims, but can only read places and validated rent snapshots.
+    // Transactions are authorised per item action. The API writes groups,
+    // commute claims and the place and station records a lookup creates (#14),
+    // and can only read validated rent snapshots. A pinned station may gain
+    // line-code aliases but is never deleted through the API.
     handler.addToRolePolicy(
       new PolicyStatement({
         actions: [
@@ -101,10 +103,28 @@ export class Api extends Construct {
     );
     handler.addToRolePolicy(
       new PolicyStatement({
-        actions: ['dynamodb:GetItem', 'dynamodb:ConditionCheckItem'],
+        actions: [
+          'dynamodb:GetItem',
+          'dynamodb:PutItem',
+          'dynamodb:ConditionCheckItem',
+        ],
         resources: [props.table.tableArn],
         conditions: {
           'ForAllValues:StringLike': { 'dynamodb:LeadingKeys': ['PLACE#*'] },
+          Null: { 'dynamodb:LeadingKeys': 'false' },
+        },
+      }),
+    );
+    handler.addToRolePolicy(
+      new PolicyStatement({
+        actions: [
+          'dynamodb:GetItem',
+          'dynamodb:PutItem',
+          'dynamodb:UpdateItem',
+        ],
+        resources: [props.table.tableArn],
+        conditions: {
+          'ForAllValues:StringLike': { 'dynamodb:LeadingKeys': ['STATION#*'] },
           Null: { 'dynamodb:LeadingKeys': 'false' },
         },
       }),

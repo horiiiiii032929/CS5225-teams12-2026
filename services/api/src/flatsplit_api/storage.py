@@ -15,18 +15,31 @@ from botocore.config import Config
 from flatsplit_api.commute_jobs import CommuteJobs
 from flatsplit_api.errors import ApiError
 from flatsplit_api.groups import GroupStore
+from flatsplit_api.places import PlaceStore
 from flatsplit_api.search_data import SearchDataReader
 from flatsplit_api.searches import SearchStore
 
 
-@cache
-def group_store() -> GroupStore:
+def _table(purpose: str) -> Any:
     table_name = os.environ.get("TABLE_NAME", "").strip()
     if not table_name:
-        raise ApiError(503, "SERVICE_UNAVAILABLE", "Group storage is not configured.")
+        raise ApiError(
+            503, "SERVICE_UNAVAILABLE", f"{purpose} storage is not configured."
+        )
     endpoint = os.environ.get("DYNAMODB_ENDPOINT_URL", "").strip() or None
     resource = boto3.resource("dynamodb", endpoint_url=endpoint)
-    return GroupStore(resource.Table(table_name))
+    return resource.Table(table_name)
+
+
+@cache
+def group_store() -> GroupStore:
+    return GroupStore(_table("Group"))
+
+
+@cache
+def place_store() -> PlaceStore:
+    """#14 writes the place and station records a preference save reads."""
+    return PlaceStore(_table("Place"))
 
 
 @cache

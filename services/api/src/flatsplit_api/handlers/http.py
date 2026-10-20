@@ -36,7 +36,7 @@ from flatsplit_api.onemap import (
 )
 from flatsplit_api.ranking import WEIGHTS, Priority
 from flatsplit_api.search_models import SearchView
-from flatsplit_api.storage import group_store, search_store
+from flatsplit_api.storage import group_store, place_store, search_store
 
 logger = Logger()
 
@@ -112,6 +112,15 @@ def places() -> PlacesResponse:
     if len(query) > QUERY_MAX_LENGTH:
         raise validation_failed("q", f"Use at most {QUERY_MAX_LENGTH} characters.")
 
+    # A repeated query must not spend quota again: one search plus one
+    # nearest-station call per candidate was measured at six calls for
+    # `kent ridge` (#14). A hit also proves every placeId it returns is still
+    # stored, so it can be saved.
+    store = place_store()
+    hit = store.cached(query)
+    if hit is not None:
+        return PlacesResponse.model_validate(hit)
+
     try:
         found = find_places(query)
     except OneMapRateLimited as exc:
@@ -127,7 +136,10 @@ def places() -> PlacesResponse:
             "Destination search is unavailable. Try again shortly.",
         ) from exc
 
-    return PlacesResponse.model_validate(found)
+    # A placeId that was never stored cannot be saved (#14): persist before
+    # answering, and let a storage failure surface instead of handing the
+    # client an id that groups.py will reject.
+    return PlacesResponse.model_validate(store.persist(found, query=query))
 
 
 # Group IDs and member IDs are 22-character URL-safe tokens; anything else cannot

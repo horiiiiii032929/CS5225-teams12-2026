@@ -8,10 +8,14 @@ token is unhealthy, and HTML bodies on 429 and 403.
 import builtins
 import json
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
 
+import boto3
 import pytest
+from moto import mock_aws
+from mypy_boto3_dynamodb.service_resource import Table
 
 from flatsplit_api import onemap
 from flatsplit_api.handlers import http as http_handler
@@ -23,6 +27,7 @@ from flatsplit_api.onemap import (
     normalise_query,
     station_display_name,
 )
+from flatsplit_api.places import PlaceStore
 
 
 @dataclass(frozen=True)
@@ -56,6 +61,31 @@ def places_event(query: str | None) -> dict[str, Any]:
 def call(query: str | None) -> tuple[int, Any]:
     response = handler(places_event(query), FakeContext())  # type: ignore[arg-type]
     return response["statusCode"], json.loads(response["body"])
+
+
+@pytest.fixture(autouse=True)
+def place_table(monkeypatch: pytest.MonkeyPatch) -> Iterator[Table]:
+    """#14 stores every selectable candidate, so a lookup needs the table.
+
+    Persistence itself is covered by `test_places_persistence.py`; this fixture
+    only keeps the lookup behaviour here reachable through the handler.
+    """
+    with mock_aws():
+        resource = boto3.resource("dynamodb", region_name="ap-southeast-1")
+        created = resource.create_table(
+            TableName="places-lookup-test",
+            KeySchema=[
+                {"AttributeName": "pk", "KeyType": "HASH"},
+                {"AttributeName": "sk", "KeyType": "RANGE"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "pk", "AttributeType": "S"},
+                {"AttributeName": "sk", "AttributeType": "S"},
+            ],
+            BillingMode="PAY_PER_REQUEST",
+        )
+        monkeypatch.setattr(http_handler, "place_store", lambda: PlaceStore(created))
+        yield created
 
 
 # --------------------------------------------------------------- OneMap stubs
