@@ -8,10 +8,12 @@ write. Three things are deliberately absent:
   the schedule is the source queue's 180-second visibility and three receives.
   Sleeping inside the invocation would be billed, would hold one of only three
   concurrent slots, and would risk the visibility timeout.
-- **No rate limiter.** The routing rate is bounded by concurrency: the event
-  source admits three concurrent invocations and #3 measured routing p50 at
-  861 ms, so about 3.5 calls/s (~209/min) against OneMap's 300/min cap. A
-  token bucket here would be a second limiter to keep in step with the first.
+- **No rate limiter.** The routing rate is bounded by concurrency. Draining a
+  real queue at the event source's three concurrent invocations measured 165
+  calls/min against OneMap's 300/min cap, and per-worker throughput held near
+  55-61 calls/min from one slot to six, so concurrency alone sets the rate
+  (docs/evaluation/worker-queue/). A token bucket here would be a second
+  limiter to keep in step with the first.
 - **No fan-in counter.** Search status is derived when it is read, so a worker
   never reports progress; it resolves its own pair and nothing else.
 

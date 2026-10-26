@@ -1,0 +1,311 @@
+{
+  "script": "measure_queue_drain.py",
+  "scriptVersion": "1.0.0",
+  "issue": 15,
+  "mode": "sweep",
+  "runAt": "2026-10-26T01:56:41.050984+00:00",
+  "question": "Does the achieved routing rate track the event source's concurrency, and where does it meet OneMap's published cap?",
+  "stands_in_for": {
+    "aws": "moto server (not AWS); queue semantics probed before use",
+    "onemap": {
+      "mode": "replayed latency, stubbed reply",
+      "source": "docs/evaluation/worker-routing/raw/2026-10-20/",
+      "latenciesMs": [
+        1174,
+        605,
+        997,
+        704,
+        496,
+        1125,
+        1454,
+        987
+      ],
+      "reason": "the shared OneMap token expired on 2026-10-23"
+    },
+    "concurrency": "one worker process per concurrent slot, one message each, emulating the event source's batchSize 1 and maxConcurrency; Lambda's own scaling is not under test"
+  },
+  "config": {
+    "onemapCallsPerMinuteCap": 300,
+    "deployedConcurrency": 3,
+    "visibilitySeconds": 180
+  },
+  "levels": [
+    {
+      "concurrency": 1,
+      "messagesEnqueuedByProducer": 26,
+      "invocations": 26,
+      "pairRecords": 27,
+      "pairsOk": 26,
+      "pairsUnavailable": 1,
+      "pairsPending": 0,
+      "redeliveries": 0,
+      "wallSeconds": 29.94,
+      "busyWindowSeconds": 25.49,
+      "maxObservedInFlight": 1,
+      "invocationMsP50": 1024.7,
+      "invocationMsMin": 523.9,
+      "invocationMsMax": 1478.7,
+      "achievedCallsPerMinute": 61.2,
+      "headroomUnderCap": 238.8,
+      "perWorkerInvocations": {
+        "0": 26
+      },
+      "searchStatusAfterDrain": {
+        "httpStatus": 200,
+        "status": "complete",
+        "progress": {
+          "total": 27,
+          "resolved": 27,
+          "unavailable": 1
+        },
+        "rankedTowns": 2,
+        "excludedTowns": 25,
+        "topTown": "CLEMENTI"
+      },
+      "dlqDepth": 0,
+      "sampleRecord": {
+        "pk": "COMMUTE#KENT_RIDGE",
+        "sk": "TOWN#CLEMENTI",
+        "status": "ok",
+        "jobId": "a04a9f12-71d8-4421-9c3e-02bbf4da5e65",
+        "routingProfileVersion": "pt-v1:2026-10",
+        "routingDate": "2026-10-27",
+        "routingTime": "08:30:00",
+        "attempts": 1,
+        "minutes": 30.5,
+        "transfers": 1,
+        "walkMinutes": 5,
+        "itineraries": 1,
+        "shortestWasFirst": true,
+        "computedAt": "2026-10-26T01:56:52.432584+00:00",
+        "source": "onemap:routingsvc/route?routeType=pt"
+      }
+    },
+    {
+      "concurrency": 2,
+      "messagesEnqueuedByProducer": 26,
+      "invocations": 26,
+      "pairRecords": 27,
+      "pairsOk": 26,
+      "pairsUnavailable": 1,
+      "pairsPending": 0,
+      "redeliveries": 0,
+      "wallSeconds": 17.63,
+      "busyWindowSeconds": 13.14,
+      "maxObservedInFlight": 2,
+      "invocationMsP50": 1013.5,
+      "invocationMsMin": 508.3,
+      "invocationMsMax": 1479.1,
+      "achievedCallsPerMinute": 118.7,
+      "headroomUnderCap": 181.3,
+      "perWorkerInvocations": {
+        "0": 13,
+        "1": 13
+      },
+      "searchStatusAfterDrain": {
+        "httpStatus": 200,
+        "status": "complete",
+        "progress": {
+          "total": 27,
+          "resolved": 27,
+          "unavailable": 1
+        },
+        "rankedTowns": 2,
+        "excludedTowns": 25,
+        "topTown": "CLEMENTI"
+      },
+      "dlqDepth": 0,
+      "sampleRecord": {
+        "pk": "COMMUTE#KENT_RIDGE",
+        "sk": "TOWN#CLEMENTI",
+        "status": "ok",
+        "jobId": "399d6f10-b103-4119-8ed2-3ef6e02b6843",
+        "routingProfileVersion": "pt-v1:2026-10",
+        "routingDate": "2026-10-27",
+        "routingTime": "08:30:00",
+        "attempts": 1,
+        "minutes": 30.5,
+        "transfers": 1,
+        "walkMinutes": 5,
+        "itineraries": 1,
+        "shortestWasFirst": true,
+        "computedAt": "2026-10-26T01:57:17.548674+00:00",
+        "source": "onemap:routingsvc/route?routeType=pt"
+      }
+    },
+    {
+      "concurrency": 3,
+      "messagesEnqueuedByProducer": 26,
+      "invocations": 26,
+      "pairRecords": 27,
+      "pairsOk": 26,
+      "pairsUnavailable": 1,
+      "pairsPending": 0,
+      "redeliveries": 0,
+      "wallSeconds": 13.9,
+      "busyWindowSeconds": 9.35,
+      "maxObservedInFlight": 3,
+      "invocationMsP50": 1020.3,
+      "invocationMsMin": 508.4,
+      "invocationMsMax": 1531.5,
+      "achievedCallsPerMinute": 166.8,
+      "headroomUnderCap": 133.2,
+      "perWorkerInvocations": {
+        "0": 8,
+        "1": 8,
+        "2": 10
+      },
+      "searchStatusAfterDrain": {
+        "httpStatus": 200,
+        "status": "complete",
+        "progress": {
+          "total": 27,
+          "resolved": 27,
+          "unavailable": 1
+        },
+        "rankedTowns": 2,
+        "excludedTowns": 25,
+        "topTown": "CLEMENTI"
+      },
+      "dlqDepth": 0,
+      "sampleRecord": {
+        "pk": "COMMUTE#KENT_RIDGE",
+        "sk": "TOWN#CLEMENTI",
+        "status": "ok",
+        "jobId": "b161d5c3-3e48-459a-8929-d986704832f9",
+        "routingProfileVersion": "pt-v1:2026-10",
+        "routingDate": "2026-10-27",
+        "routingTime": "08:30:00",
+        "attempts": 1,
+        "minutes": 30.5,
+        "transfers": 1,
+        "walkMinutes": 5,
+        "itineraries": 1,
+        "shortestWasFirst": true,
+        "computedAt": "2026-10-26T01:57:35.003912+00:00",
+        "source": "onemap:routingsvc/route?routeType=pt"
+      }
+    },
+    {
+      "concurrency": 4,
+      "messagesEnqueuedByProducer": 26,
+      "invocations": 26,
+      "pairRecords": 27,
+      "pairsOk": 26,
+      "pairsUnavailable": 1,
+      "pairsPending": 0,
+      "redeliveries": 0,
+      "wallSeconds": 10.88,
+      "busyWindowSeconds": 6.35,
+      "maxObservedInFlight": 4,
+      "invocationMsP50": 1007.2,
+      "invocationMsMin": 513.4,
+      "invocationMsMax": 1526.6,
+      "achievedCallsPerMinute": 245.5,
+      "headroomUnderCap": 54.5,
+      "perWorkerInvocations": {
+        "0": 6,
+        "1": 6,
+        "2": 7,
+        "3": 7
+      },
+      "searchStatusAfterDrain": {
+        "httpStatus": 200,
+        "status": "complete",
+        "progress": {
+          "total": 27,
+          "resolved": 27,
+          "unavailable": 1
+        },
+        "rankedTowns": 2,
+        "excludedTowns": 25,
+        "topTown": "CLEMENTI"
+      },
+      "dlqDepth": 0,
+      "sampleRecord": {
+        "pk": "COMMUTE#KENT_RIDGE",
+        "sk": "TOWN#CLEMENTI",
+        "status": "ok",
+        "jobId": "ceebd58e-93cf-4887-a137-fb7562187cc9",
+        "routingProfileVersion": "pt-v1:2026-10",
+        "routingDate": "2026-10-27",
+        "routingTime": "08:30:00",
+        "attempts": 1,
+        "minutes": 30.5,
+        "transfers": 1,
+        "walkMinutes": 5,
+        "itineraries": 1,
+        "shortestWasFirst": true,
+        "computedAt": "2026-10-26T01:57:48.386423+00:00",
+        "source": "onemap:routingsvc/route?routeType=pt"
+      }
+    },
+    {
+      "concurrency": 6,
+      "messagesEnqueuedByProducer": 26,
+      "invocations": 26,
+      "pairRecords": 27,
+      "pairsOk": 26,
+      "pairsUnavailable": 1,
+      "pairsPending": 0,
+      "redeliveries": 0,
+      "wallSeconds": 9.44,
+      "busyWindowSeconds": 4.8,
+      "maxObservedInFlight": 6,
+      "invocationMsP50": 1017.6,
+      "invocationMsMin": 511.7,
+      "invocationMsMax": 1551.6,
+      "achievedCallsPerMinute": 324.7,
+      "headroomUnderCap": -24.7,
+      "perWorkerInvocations": {
+        "0": 4,
+        "1": 4,
+        "2": 5,
+        "3": 4,
+        "4": 4,
+        "5": 5
+      },
+      "searchStatusAfterDrain": {
+        "httpStatus": 200,
+        "status": "complete",
+        "progress": {
+          "total": 27,
+          "resolved": 27,
+          "unavailable": 1
+        },
+        "rankedTowns": 2,
+        "excludedTowns": 25,
+        "topTown": "CLEMENTI"
+      },
+      "dlqDepth": 0,
+      "sampleRecord": {
+        "pk": "COMMUTE#KENT_RIDGE",
+        "sk": "TOWN#CLEMENTI",
+        "status": "ok",
+        "jobId": "de1e204a-1c9b-4306-80eb-65f2ee762e64",
+        "routingProfileVersion": "pt-v1:2026-10",
+        "routingDate": "2026-10-27",
+        "routingTime": "08:30:00",
+        "attempts": 1,
+        "minutes": 30.5,
+        "transfers": 1,
+        "walkMinutes": 5,
+        "itineraries": 1,
+        "shortestWasFirst": true,
+        "computedAt": "2026-10-26T01:57:58.903153+00:00",
+        "source": "onemap:routingsvc/route?routeType=pt"
+      }
+    }
+  ],
+  "perCallCapacity": {
+    "callsPerMinutePerWorker": [
+      61.2,
+      59.4,
+      55.6,
+      61.4,
+      54.1
+    ],
+    "concurrencyThatWouldMeetTheCap": 4.9
+  },
+  "verdict": "PASS"
+}
