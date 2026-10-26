@@ -4,11 +4,28 @@ import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations
 import type { ITable } from 'aws-cdk-lib/aws-dynamodb';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, Function, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Queue, QueueEncryption } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 import { pythonApiCode } from './python-code.js';
+
+/**
+ * Deliveries before a job is dead-lettered. The worker recognises its own
+ * final attempt from this number, so the queue and the handler must read the
+ * same one: see COMMUTE_MAX_RECEIVES below.
+ */
+const COMMUTE_MAX_RECEIVES = 3;
+
+/**
+ * Concurrent commute workers. The routing rate is bounded by this alone: #3
+ * measured OneMap routing p50 at 861 ms, so three in flight is ~209 calls/min
+ * against OneMap's 300/min cap, leaving /places its share. Set on the event
+ * source rather than as reserved concurrency, which a new account's Lambda
+ * quota cannot satisfy (docs/backend-design.md); 2 is the lowest CDK accepts.
+ */
+const COMMUTE_WORKER_CONCURRENCY = 3;
 
 export interface ApiProps {
   readonly stage: string;
@@ -24,7 +41,7 @@ export class Api extends Construct {
   readonly originDomain: string;
   /** Rotate this by hand; see onemapToken below. */
   readonly onemapTokenSecretName: string;
-  /** Shared producer queue; #15 attaches its worker to this queue. */
+  /** Producer queue, written by the API and drained by the commute worker. */
   readonly commuteJobsQueue: Queue;
 
   constructor(scope: Construct, id: string, props: ApiProps) {
@@ -52,7 +69,10 @@ export class Api extends Construct {
       enforceSSL: true,
       visibilityTimeout: Duration.minutes(3),
       retentionPeriod: Duration.days(4),
-      deadLetterQueue: { queue: commuteDlq, maxReceiveCount: 3 },
+      deadLetterQueue: {
+        queue: commuteDlq,
+        maxReceiveCount: COMMUTE_MAX_RECEIVES,
+      },
       removalPolicy: props.removalPolicy,
     });
 
@@ -129,6 +149,58 @@ export class Api extends Construct {
           'dynamodb:PutItem',
           'dynamodb:DeleteItem',
         ],
+        resources: [props.table.tableArn],
+        conditions: {
+          'ForAllValues:StringLike': {
+            'dynamodb:LeadingKeys': ['COMMUTE#*'],
+          },
+          Null: { 'dynamodb:LeadingKeys': 'false' },
+        },
+      }),
+    );
+
+    // The queue's consumer (#15): one station-town pair per message. Its
+    // timeout stays well inside the queue's 3-minute visibility timeout, so a
+    // message is never redelivered while an invocation is still working on it.
+    const commuteWorker = new Function(this, 'CommuteWorker', {
+      runtime: Runtime.PYTHON_3_13,
+      architecture: Architecture.ARM_64,
+      code: pythonApiCode(),
+      handler: 'flatsplit_api.handlers.commute_worker.handler',
+      memorySize: 256,
+      timeout: Duration.seconds(60),
+      environment: {
+        POWERTOOLS_SERVICE_NAME: 'flatsplit-commute-worker',
+        POWERTOOLS_LOG_LEVEL: 'INFO',
+        STAGE: props.stage,
+        ONEMAP_SECRET_NAME: onemapToken.secretName,
+        TABLE_NAME: props.table.tableName,
+        COMMUTE_MAX_RECEIVES: String(COMMUTE_MAX_RECEIVES),
+      },
+      logGroup: new LogGroup(this, 'CommuteWorkerLogs', {
+        retention: RetentionDays.ONE_WEEK,
+        removalPolicy: props.removalPolicy,
+      }),
+    });
+
+    onemapToken.grantRead(commuteWorker);
+    commuteWorker.addEventSource(
+      new SqsEventSource(this.commuteJobsQueue, {
+        // One pair per invocation: a batch would share one timeout and one
+        // failure, and the worker has nothing to gain from a second pair.
+        batchSize: 1,
+        maxConcurrency: COMMUTE_WORKER_CONCURRENCY,
+        // Without this a single retry would redeliver the whole batch.
+        reportBatchItemFailures: true,
+      }),
+    );
+
+    // The worker completes claims and does nothing else: it cannot read a
+    // group, a place or a rent snapshot, cannot delete a claim, and cannot
+    // enqueue work. Contract A9's write is an UpdateItem on the pair.
+    commuteWorker.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['dynamodb:UpdateItem'],
         resources: [props.table.tableArn],
         conditions: {
           'ForAllValues:StringLike': {

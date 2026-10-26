@@ -1,0 +1,224 @@
+{
+ "script": "verify_live_routing.py",
+ "scriptVersion": "1.0.0",
+ "issue": 15,
+ "module": "services/api/src/flatsplit_api/routing.py",
+ "source": "onemap:routingsvc/route?routeType=pt",
+ "runAt": "2026-10-20T08:58:00.152570+00:00",
+ "token": {
+  "fingerprint": "829a3c999601",
+  "userId": 26849,
+  "hoursLeft": 70.6
+ },
+ "request": {
+  "destination": {
+   "stationKey": "KENT_RIDGE",
+   "lat": 1.2936,
+   "lng": 103.7845
+  },
+  "routingDate": "2026-10-21",
+  "routingTime": "08:30:00",
+  "numItineraries": 3,
+  "maxWalkDistance": 1000
+ },
+ "pairs": {
+  "rows": [
+   {
+    "town": "ANG MO KIO",
+    "stationKey": "ANG_MO_KIO",
+    "origin": {
+     "lat": 1.369933,
+     "lng": 103.849558
+    },
+    "elapsedMs": 160,
+    "status": "ok",
+    "minutes": 45.3,
+    "transfers": 1,
+    "walkMinutes": 1.7,
+    "itineraries": 1,
+    "shortestWasFirst": true
+   },
+   {
+    "town": "TAMPINES",
+    "stationKey": "TAMPINES",
+    "origin": {
+     "lat": 1.35515,
+     "lng": 103.94301
+    },
+    "elapsedMs": 163,
+    "status": "ok",
+    "minutes": 56.7,
+    "transfers": 1,
+    "walkMinutes": 7.5,
+    "itineraries": 2,
+    "shortestWasFirst": true
+   },
+   {
+    "town": "WOODLANDS",
+    "stationKey": "WOODLANDS",
+    "origin": {
+     "lat": 1.43682,
+     "lng": 103.786067
+    },
+    "elapsedMs": 201,
+    "status": "ok",
+    "minutes": 45.4,
+    "transfers": 2,
+    "walkMinutes": 3.8,
+    "itineraries": 3,
+    "shortestWasFirst": true
+   },
+   {
+    "town": "JURONG WEST",
+    "stationKey": "BOON_LAY",
+    "origin": {
+     "lat": 1.338604,
+     "lng": 103.706065
+    },
+    "elapsedMs": 145,
+    "status": "ok",
+    "minutes": 26.2,
+    "transfers": 1,
+    "walkMinutes": 2.6,
+    "itineraries": 1,
+    "shortestWasFirst": true
+   },
+   {
+    "town": "CLEMENTI",
+    "stationKey": "CLEMENTI",
+    "origin": {
+     "lat": 1.315116,
+     "lng": 103.765191
+    },
+    "elapsedMs": 149,
+    "status": "ok",
+    "minutes": 14.6,
+    "transfers": 1,
+    "walkMinutes": 4.0,
+    "itineraries": 2,
+    "shortestWasFirst": true
+   },
+   {
+    "town": "PUNGGOL",
+    "stationKey": "PUNGGOL",
+    "origin": {
+     "lat": 1.404547,
+     "lng": 103.902073
+    },
+    "elapsedMs": 200,
+    "status": "ok",
+    "minutes": 47.7,
+    "transfers": 1,
+    "walkMinutes": 2.3,
+    "itineraries": 1,
+    "shortestWasFirst": true
+   },
+   {
+    "town": "BEDOK",
+    "stationKey": "BEDOK",
+    "origin": {
+     "lat": 1.32398,
+     "lng": 103.929984
+    },
+    "elapsedMs": 135,
+    "status": "ok",
+    "minutes": 42.9,
+    "transfers": 1,
+    "walkMinutes": 2.5,
+    "itineraries": 1,
+    "shortestWasFirst": true
+   },
+   {
+    "town": "YISHUN",
+    "stationKey": "YISHUN",
+    "origin": {
+     "lat": 1.429443,
+     "lng": 103.835005
+    },
+    "elapsedMs": 107,
+    "status": "ok",
+    "minutes": 57.1,
+    "transfers": 1,
+    "walkMinutes": 1.8,
+    "itineraries": 1,
+    "shortestWasFirst": true
+   }
+  ],
+  "coverage": "8/8",
+  "minutesRange": [
+   14.6,
+   57.1
+  ],
+  "shortestWasFirst": 8,
+  "latencyMs": {
+   "n": 8,
+   "min": 107,
+   "p50": 154,
+   "p95": 200,
+   "max": 201
+  },
+  "issue3LatencyMs": {
+   "n": 8,
+   "min": 109,
+   "p50": 140,
+   "p95": 233,
+   "max": 233
+  }
+ },
+ "failureProbes": {
+  "rows": [
+   {
+    "case": "起訖點相同",
+    "expectedOutcome": "RoutingUnroutable",
+    "expectedErrorCode": "NO_ROUTE",
+    "elapsedMs": 102,
+    "outcome": "RoutingUnroutable",
+    "errorCode": "NO_ROUTE",
+    "message": "No route found between the specified locations",
+    "asExpected": true
+   },
+   {
+    "case": "深夜 03:00",
+    "expectedOutcome": null,
+    "expectedErrorCode": null,
+    "elapsedMs": 111,
+    "outcome": "Route",
+    "errorCode": null,
+    "minutes": 182.6,
+    "asExpected": null
+   },
+   {
+    "case": "座標在新加坡境外(吉隆坡)",
+    "expectedOutcome": "RoutingRejected",
+    "expectedErrorCode": "INVALID_ROUTE_REQUEST",
+    "elapsedMs": 112,
+    "outcome": "RoutingRejected",
+    "errorCode": "INVALID_ROUTE_REQUEST",
+    "message": "Coordinates are outside Singapore's valid range.",
+    "asExpected": true
+   },
+   {
+    "case": "日期在一年前",
+    "expectedOutcome": "RoutingRejected",
+    "expectedErrorCode": "INVALID_ROUTE_REQUEST",
+    "elapsedMs": 132,
+    "outcome": "RoutingRejected",
+    "errorCode": "INVALID_ROUTE_REQUEST",
+    "message": "Date cannot be more than 1 year in the past.",
+    "asExpected": true
+   },
+   {
+    "case": "簽章錯誤的 token",
+    "expectedOutcome": "RoutingCredential",
+    "expectedErrorCode": "CREDENTIAL_UNAVAILABLE",
+    "elapsedMs": 112,
+    "outcome": "RoutingCredential",
+    "errorCode": "CREDENTIAL_UNAVAILABLE",
+    "message": "User is not authorized to access this resource with an explicit deny in an identity-based policy",
+    "asExpected": true
+   }
+  ],
+  "allAsExpected": true
+ },
+ "verdict": "PASS"
+}

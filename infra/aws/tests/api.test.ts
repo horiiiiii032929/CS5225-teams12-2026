@@ -8,6 +8,13 @@ import { Match, Template } from 'aws-cdk-lib/assertions';
 import { AttributeType, Table } from 'aws-cdk-lib/aws-dynamodb';
 import { Api } from '../src/api.js';
 
+interface Statement {
+  readonly Effect: string;
+  readonly Action: string | string[];
+  readonly Resource?: unknown;
+  readonly Condition?: Record<string, Record<string, string[] | string>>;
+}
+
 function synthesize(stage: string): Template {
   const outdir = mkdtempSync(join(tmpdir(), 'flatsplit-api-test-'));
   try {
@@ -25,6 +32,69 @@ function synthesize(stage: string): Template {
   } finally {
     rmSync(outdir, { recursive: true, force: true });
   }
+}
+
+function actions(statement: Statement): string[] {
+  return [statement.Action].flat().sort();
+}
+
+/**
+ * Allow statements grouped by the Lambda whose role carries them. The API and
+ * the commute worker are separate principals, so an unprefixed list of
+ * statements can no longer say who was granted what.
+ */
+function allowedByRole(template: Template): Record<string, Statement[]> {
+  const byRole: Record<string, Statement[]> = {};
+  for (const policy of Object.values(
+    template.findResources('AWS::IAM::Policy'),
+  )) {
+    const roles = policy.Properties.Roles as { Ref: string }[];
+    assert.equal(
+      roles.length,
+      1,
+      'a policy shared by roles cannot be attributed',
+    );
+    const named = /^Api(\w+?)ServiceRole/.exec(roles[0]!.Ref);
+    assert.ok(named, `unexpected role reference ${roles[0]!.Ref}`);
+    const statements = policy.Properties.PolicyDocument
+      .Statement as Statement[];
+    byRole[named[1]!] = [
+      ...(byRole[named[1]!] ?? []),
+      ...statements.filter((statement) => statement.Effect === 'Allow'),
+    ];
+  }
+  return byRole;
+}
+
+/** Each role's `prefix -> actions`, for the statements on one service. */
+function accessByRole(
+  template: Template,
+  service: string,
+  prefixKey: string,
+): Record<string, Record<string, string[]>> {
+  return Object.fromEntries(
+    Object.entries(allowedByRole(template)).map(([role, statements]) => [
+      role,
+      Object.fromEntries(
+        statements
+          .filter((statement) =>
+            actions(statement).some((action) =>
+              action.startsWith(`${service}:`),
+            ),
+          )
+          .map((statement) => {
+            assert.notEqual(
+              statement.Resource,
+              '*',
+              `${role} may not use ${service}:*`,
+            );
+            const prefixes =
+              statement.Condition?.['ForAllValues:StringLike']?.[prefixKey];
+            return [[prefixes].flat().join(','), actions(statement)];
+          }),
+      ),
+    ]),
+  );
 }
 
 for (const [stage, rate, burst] of [
@@ -46,71 +116,108 @@ for (const [stage, rate, burst] of [
 }
 
 test('table access separates group/commute writes from place/rent reads', () => {
-  const policies = synthesize('dev').findResources('AWS::IAM::Policy');
-  const dynamo = Object.values(policies)
-    .flatMap(
-      (policy) =>
-        policy.Properties.PolicyDocument.Statement as {
-          Action: string | string[];
-          Condition?: Record<string, Record<string, Record<string, string[]>>>;
-        }[],
-    )
-    .filter((statement) =>
-      [statement.Action].flat().some((a) => a.startsWith('dynamodb:')),
-    );
-
-  const byPrefix = Object.fromEntries(
-    dynamo.map((statement) => [
-      statement.Condition?.['ForAllValues:StringLike']?.[
-        'dynamodb:LeadingKeys'
-      ]?.join(','),
-      [statement.Action].flat().sort(),
-    ]),
+  assert.deepEqual(
+    accessByRole(synthesize('dev'), 'dynamodb', 'dynamodb:LeadingKeys'),
+    {
+      HttpHandler: {
+        'GROUP#*': [
+          'dynamodb:ConditionCheckItem',
+          'dynamodb:DeleteItem',
+          'dynamodb:GetItem',
+          'dynamodb:PutItem',
+          'dynamodb:Query',
+          'dynamodb:UpdateItem',
+        ],
+        'PLACE#*': ['dynamodb:ConditionCheckItem', 'dynamodb:GetItem'],
+        'RENT,RENT#*': ['dynamodb:GetItem', 'dynamodb:Query'],
+        'COMMUTE#*': [
+          'dynamodb:DeleteItem',
+          'dynamodb:GetItem',
+          'dynamodb:PutItem',
+          'dynamodb:Query',
+        ],
+      },
+      // The worker only ends claims: it cannot read a group, a place or a rent
+      // snapshot, and cannot delete the pair it failed to route.
+      CommuteWorker: { 'COMMUTE#*': ['dynamodb:UpdateItem'] },
+    },
   );
-  assert.deepEqual(byPrefix, {
-    'GROUP#*': [
-      'dynamodb:ConditionCheckItem',
-      'dynamodb:DeleteItem',
-      'dynamodb:GetItem',
-      'dynamodb:PutItem',
-      'dynamodb:Query',
-      'dynamodb:UpdateItem',
-    ],
-    'PLACE#*': ['dynamodb:ConditionCheckItem', 'dynamodb:GetItem'],
-    'RENT,RENT#*': ['dynamodb:GetItem', 'dynamodb:Query'],
-    'COMMUTE#*': [
-      'dynamodb:DeleteItem',
-      'dynamodb:GetItem',
-      'dynamodb:PutItem',
-      'dynamodb:Query',
-    ],
-  });
 });
 
-test('the search producer cannot receive or delete commute jobs', () => {
+test('the producer can only send commute jobs and the worker only consume them', () => {
   const template = synthesize('dev');
-  const policies = template.findResources('AWS::IAM::Policy');
-  const statements = Object.values(policies).flatMap(
-    (policy) =>
-      policy.Properties.PolicyDocument.Statement as {
-        Effect: string;
-        Action: string | string[];
-        Resource: unknown;
-      }[],
+  const sqs = Object.fromEntries(
+    Object.entries(allowedByRole(template)).map(([role, statements]) => [
+      role,
+      statements
+        .filter((statement) =>
+          actions(statement).some((action) => action.startsWith('sqs:')),
+        )
+        .flatMap((statement) => {
+          assert.notEqual(statement.Resource, '*');
+          return actions(statement);
+        }),
+    ]),
   );
-  const allowed = statements.filter((s) => s.Effect === 'Allow');
-  const sqs = allowed.filter((s) =>
-    [s.Action].flat().some((action) => action.startsWith('sqs:')),
-  );
-  assert.equal(sqs.length, 1);
-  assert.deepEqual([sqs[0]!.Action].flat().sort(), [
-    'sqs:GetQueueAttributes',
-    'sqs:GetQueueUrl',
-    'sqs:SendMessage',
-  ]);
-  assert.notEqual(sqs[0]!.Resource, '*');
+  assert.deepEqual(sqs, {
+    HttpHandler: [
+      'sqs:GetQueueAttributes',
+      'sqs:GetQueueUrl',
+      'sqs:SendMessage',
+    ],
+    CommuteWorker: [
+      'sqs:ChangeMessageVisibility',
+      'sqs:DeleteMessage',
+      'sqs:GetQueueAttributes',
+      'sqs:GetQueueUrl',
+      'sqs:ReceiveMessage',
+    ],
+  });
   template.hasResourceProperties('AWS::SQS::Queue', {
     SqsManagedSseEnabled: true,
     RedrivePolicy: Match.objectLike({ maxReceiveCount: 3 }),
   });
+});
+
+test('the commute worker drains the queue one pair at a time', () => {
+  const template = synthesize('dev');
+  template.resourceCountIs('AWS::Lambda::EventSourceMapping', 1);
+  template.hasResourceProperties('AWS::Lambda::EventSourceMapping', {
+    BatchSize: 1,
+    // Concurrency is the only limiter on the OneMap call rate (#3).
+    ScalingConfig: { MaximumConcurrency: 3 },
+    // Without this, one retried pair would redeliver its whole batch.
+    FunctionResponseTypes: ['ReportBatchItemFailures'],
+  });
+  // Reserved concurrency would be the alternative, and a new account's Lambda
+  // quota cannot satisfy it (docs/backend-design.md): deployment would fail.
+  for (const fn of Object.values(
+    template.findResources('AWS::Lambda::Function'),
+  )) {
+    assert.equal(fn.Properties.ReservedConcurrentExecutions, undefined);
+  }
+});
+
+test('a worker invocation cannot outlive the visibility timeout of its message', () => {
+  const template = synthesize('dev');
+  const worker = Object.values(
+    template.findResources('AWS::Lambda::Function'),
+  ).find(
+    (fn) =>
+      fn.Properties.Handler === 'flatsplit_api.handlers.commute_worker.handler',
+  );
+  assert.ok(worker, 'the commute worker was not synthesized');
+  const jobQueue = Object.values(
+    template.findResources('AWS::SQS::Queue'),
+  ).find((queue) => queue.Properties.RedrivePolicy !== undefined);
+  assert.ok(jobQueue);
+  assert.ok(
+    worker.Properties.Timeout < jobQueue.Properties.VisibilityTimeout,
+    'a redelivery could race an invocation that is still routing',
+  );
+  // The worker recognises its own last attempt, so both must read one number.
+  assert.equal(
+    worker.Properties.Environment.Variables.COMMUTE_MAX_RECEIVES,
+    String(jobQueue.Properties.RedrivePolicy.maxReceiveCount),
+  );
 });

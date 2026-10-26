@@ -109,7 +109,9 @@ def derive_usage(scenario: dict, shared: dict, facts: dict, scale: float) -> dic
         "api_requests": api_requests,
         "burst_requests": burst_requests,
         "commute_jobs": jobs,
-        "onemap_calls": jobs,
+        # One routing call per job: numItineraries=3 is still a single call, and a
+        # job is re-delivered only on a transient failure (#15).
+        "onemap_calls": jobs * shared["onemap_calls_per_job"],
         "lambda_invocations": lambda_invocations,
         "lambda_gb_seconds": gb_seconds,
         "ddb_read_requests": ddb_read_requests,

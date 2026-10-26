@@ -48,11 +48,36 @@ Search status is derived when it is read: if any required commute pair is `pendi
 
 The API now implements member-authorised submission, idempotent revision reservations, pinned rent/cache reads, pending/complete/stale status, ranking integration and `latestSearch` composition. It packages the reviewed 27-town projection, including non-routable TENGAH. Missing snapshots return 503; unavailable/missing inputs never become invented recommendations.
 
-The SQS source queue/DLQ exist in CDK to carry cache-miss work, not to perform routing in the HTTP request. Both use SQS-managed encryption and deny non-TLS access. Source visibility is 180 seconds, retention four days, and redrive follows three receives; DLQ retention is 14 days. `Api.commuteJobsQueue` is the consumer attachment point, `CommuteQueueUrl` is the output, and `COMMUTE_QUEUE_URL` configures the producer. #15 must consume that same queue; no worker is attached by this change.
+The SQS source queue/DLQ exist in CDK to carry cache-miss work, not to perform routing in the HTTP request. Both use SQS-managed encryption and deny non-TLS access. Source visibility is 180 seconds, retention four days, and redrive follows three receives; DLQ retention is 14 days. `Api.commuteJobsQueue` is the consumer attachment point, `CommuteQueueUrl` is the output, and `COMMUTE_QUEUE_URL` configures the producer. #15 attaches its consumer to that same queue; see the next section.
 
 The HTTP role can send to only that queue (no receive/delete), read rent/place partitions, read/write group partitions and read/claim/delete commute items. Partition-scoped DynamoDB grants require a non-null `dynamodb:LeadingKeys`. Conditional 900-second job leases recover failed sends/crashes; worker completion must be fenced by matching `jobId` and pending status. The [API contract](api-contract.md#16-producer-and-15-worker-handoff) records the payload and retry/profile semantics.
 
-Cost remains a request-based design assumption, not a billing measurement: this adds two queues, DynamoDB claims/metadata reads and SQS sends, without a VPC or continuously running compute. API timeout is 30 seconds to admit cold submissions; cold work can include 135 claims and 130 sends for five distinct stations, so the latency target still needs #30 evidence. Local tests use seeded rent/place records and injected worker-contract completions. Live summary publication (#10), place persistence (#14), routing/consumer/DLQ work (#15/#27), deployment and deployed performance acceptance remain separate.
+Cost remains a request-based design assumption, not a billing measurement: this adds two queues, DynamoDB claims/metadata reads and SQS sends, without a VPC or continuously running compute. API timeout is 30 seconds to admit cold submissions; cold work can include 135 claims and 130 sends for five distinct stations, so the latency target still needs #30 evidence. Local tests use seeded rent/place records, and queued pairs are now resolved by invoking the real worker handler with only OneMap's reply stubbed. Live summary publication (#10), place persistence (#14), routing/consumer/DLQ work (#15/#27), deployment and deployed performance acceptance remain separate.
+
+### Commute worker implementation (#15)
+
+`flatsplit_api.handlers.commute_worker.handler` consumes `CommuteJobs`: one station-town pair per message, routed once, then closed with contract A9's fenced write (`jobId` matches **and** the pair is still `pending`). A refused write is a normal outcome — a duplicate delivery, a lease another search has reclaimed, or an already-finished pair — and never fails the message. `attempts` is copied from `ApproximateReceiveCount`, so a failed attempt costs no extra write.
+
+Three things are deliberately absent. There is **no in-process retry loop**: the backoff is the source queue's 180-second visibility timeout across three receives, because sleeping inside a billed invocation would also hold one of only three concurrent slots. There is **no rate limiter**: concurrency is the only limit needed, since three in flight against a measured 861 ms p50 is about 209 routing calls/minute against OneMap's 300/minute cap. There is **no fan-in counter**, because search status is derived when it is read.
+
+The event source uses `batchSize: 1`, `maxConcurrency: 3` and `reportBatchItemFailures: true`. Concurrency is set on the event source, not as reserved concurrency, because reserving below a new account's Lambda quota fails to deploy (see Security). The worker's 60-second timeout stays inside the queue's visibility timeout so a message is never redelivered while an invocation is still routing, and `COMMUTE_MAX_RECEIVES` is synthesized from the same constant as the redrive policy's `maxReceiveCount`, since the handler recognises its own final delivery from that number.
+
+Routing failures are classified before they reach the cache, because the pair and our request and our credential are three different problems:
+
+| Upstream                                  | Stored `error`           | Terminal            | `retryAfter` |
+| ----------------------------------------- | ------------------------ | ------------------- | ------------ |
+| 404, or 200 with an empty plan            | `NO_ROUTE`               | yes                 | +86,400 s    |
+| Other 4xx (a request we built wrongly)    | `INVALID_ROUTE_REQUEST`  | yes                 | +86,400 s    |
+| 401/403                                   | `CREDENTIAL_UNAVAILABLE` | on the last receive | +900 s       |
+| 408, 429, 5xx, transport, unreadable body | `ROUTING_UNAVAILABLE`    | on the last receive | +900 s       |
+
+A routing 404 is never stored as zero minutes (D06). A day is the terminal delay because the monthly routing baseline cannot change sooner; 900 seconds is the transient one because throttling passes and a rotated token works immediately. On its final receive the worker writes the terminal `unavailable` itself rather than leaving the pair `pending` for a DLQ consumer to interpret, so the DLQ holds only what the handler could not account for: a payload that addresses no cache item, a crash, or a completion write that failed.
+
+The worker requests three itineraries and takes the minimum, and records `itineraries` and `shortestWasFirst` on the result so "was upstream's first itinerary the shortest" stays a measured value rather than an assumption (#6 found it was not, in one of eight sampled pairs). Before each call it reads the token's `exp` and fails fast on an expired one instead of spending quota, warning while a long drain can still be stopped.
+
+Its role grants `dynamodb:UpdateItem` on `COMMUTE#*` and nothing else: it cannot read a group, place or rent partition, cannot delete a claim and cannot enqueue work. It consumes the job queue and reads the OneMap secret.
+
+The module is verified against live OneMap in [evaluation/worker-routing/](evaluation/worker-routing/): 8/8 of #3's sampled pairs reproduce their October figures within 0.3 minutes, and each failure class arrives as the handler expects. Queue drain rate, DLQ behaviour and alarms remain E4/E5 work (#27).
 
 ### Local frontend integration (#7/#17)
 
