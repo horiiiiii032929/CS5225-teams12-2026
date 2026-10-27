@@ -36,7 +36,7 @@ from typing import Any, Protocol
 
 from aws_lambda_powertools import Logger
 
-from flatsplit_api.onemap import BASE_URL, resolve_token
+from flatsplit_api.onemap import BASE_URL, OneMapUnavailable, resolve_token
 
 logger = Logger(child=True)
 
@@ -133,8 +133,19 @@ def token_seconds_left(token: str, *, now: float | None = None) -> float | None:
 
 
 def _token() -> str:
-    """Resolve the token and refuse to spend quota on an expired one."""
-    token = resolve_token()
+    """Resolve the token and refuse to spend quota on an expired one.
+
+    `resolve_token` raises `/places`'s own `OneMapUnavailable` for a missing,
+    empty or unreadable secret. That is outside this module's hierarchy, so it
+    would escape the worker's terminal handling and leave the pair `pending`
+    with no `retryAfter` even on the final receive. It is the same class of
+    failure as an expired token - ours, not the pair's - so it arrives as
+    `RoutingCredential`: retried while receives remain, then closed honestly.
+    """
+    try:
+        token = resolve_token()
+    except OneMapUnavailable as exc:
+        raise RoutingCredential("The OneMap credential could not be loaded.") from exc
     left = token_seconds_left(token)
     if left is None:
         return token
@@ -281,7 +292,11 @@ def _shortest(payload: Any) -> Route:
     itinerary = itineraries[best]
     transfers = itinerary.get("transfers")
     return Route(
-        minutes=round(durations[best] / 60, 1),
+        # Unrounded: #18/#22 compare this with each member's maxCommute, and
+        # rounding 1,802 s to 30.0 would make a 30-minute limit feasible
+        # (api-contract.md: fractional values retained for comparisons).
+        # Display rounding belongs to the reader, not to the stored result.
+        minutes=durations[best] / 60,
         transfers=transfers if isinstance(transfers, int) and transfers >= 0 else 0,
         walk_minutes=_minutes(itinerary, "walkTime"),
         itineraries=len(itineraries),

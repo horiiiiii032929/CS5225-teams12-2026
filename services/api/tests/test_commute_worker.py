@@ -12,6 +12,7 @@ keeps only what the handler could not account for.
 """
 
 import json
+import urllib.request
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -25,9 +26,17 @@ from botocore.exceptions import ClientError
 from moto import mock_aws
 from mypy_boto3_dynamodb.service_resource import Table
 
+from flatsplit_api import routing
 from flatsplit_api.commute_results import CommuteResults
 from flatsplit_api.handlers import commute_worker
 from flatsplit_api.handlers.commute_worker import handler
+from flatsplit_api.onemap import OneMapUnavailable
+from flatsplit_api.ranking import (
+    Commute,
+    MemberInput,
+    RentSummary,
+    rank_towns,
+)
 from flatsplit_api.routing import (
     SOURCE,
     Route,
@@ -327,6 +336,90 @@ def test_a_transient_failure_returns_to_the_queue_until_the_last_receive(
     # Short: throttling passes and a rotated token works at once.
     assert stored["retryAfter"] == int(NOW.timestamp()) + 900
     assert stored["attempts"] == 3
+
+
+def test_a_pair_just_over_a_limit_is_not_rounded_into_feasibility(
+    table: Table, store: CommuteResults, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The seam #18/#22 read across: what the worker stores, ranking compares.
+
+    1,802 s is 30.03 minutes. Stored as 30.0 it would make `maxCommute: 30`
+    feasible and put the town in the results, so the record keeps the whole
+    value and only a reader rounds it.
+    """
+
+    class Response:
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *exc: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            itinerary = {"duration": 1802, "transfers": 1, "walkTime": 300}
+            return json.dumps({"plan": {"itineraries": [itinerary]}}).encode()
+
+    # The real routing path, so the rounding under test is the one in
+    # `_shortest` rather than a value this test chose.
+    monkeypatch.setattr(routing, "resolve_token", lambda: "token")
+    monkeypatch.setattr(
+        urllib.request, "urlopen", lambda request, timeout=None: Response()
+    )
+    claim(table)
+
+    assert run(record()) == []
+    stored = item(table)
+    assert stored["status"] == "ok"
+    minutes = float(stored["minutes"])
+    assert minutes > 30
+
+    member = MemberInput("a", "A", 2000, 30, STATION)
+    rent = RentSummary(
+        median=2000,
+        p25=1800,
+        p75=2200,
+        medianCi95Low=1940,
+        medianCi95High=2060,
+        count=400,
+        qualityStatus="USABLE",
+    )
+    ranking = rank_towns(
+        [member], [TOWN], {TOWN: rent}, {(STATION, TOWN): Commute("ok", minutes)}
+    )
+
+    assert ranking.ranked == []
+    [reason] = ranking.excluded[0].reasons
+    assert (reason.code, reason.memberId) == ("OVER_COMMUTE", "a")
+
+
+def test_a_credential_that_cannot_be_loaded_still_closes_the_pair(
+    table: Table, store: CommuteResults, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The real routing path, with an unreadable secret: #72's shape exactly.
+
+    No routing stub here, because the defect was that `resolve_token`'s own
+    error is not a `RoutingError`: it escaped `_process`, so the final receive
+    reported a batch item failure and left the pair pending with no
+    `retryAfter` for a DLQ consumer to interpret.
+    """
+
+    def unavailable() -> str:
+        raise OneMapUnavailable("The OneMap credential could not be loaded.")
+
+    monkeypatch.setattr(routing, "resolve_token", unavailable)
+    claim(table)
+
+    for receives in [1, 2]:
+        assert run(record(receives=receives)) == ["message-1"]
+        assert item(table)["status"] == "pending"
+
+    assert run(record(receives=3)) == []
+    stored = item(table)
+    assert stored["status"] == "unavailable"
+    assert stored["error"] == "CREDENTIAL_UNAVAILABLE"
+    assert stored["retryAfter"] == int(NOW.timestamp()) + 900
+    assert stored["attempts"] == 3
+    assert "minutes" not in stored
 
 
 def test_the_redrive_count_is_read_from_the_environment(

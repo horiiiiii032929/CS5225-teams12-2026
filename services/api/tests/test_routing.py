@@ -20,6 +20,7 @@ from typing import Any
 import pytest
 
 from flatsplit_api import routing
+from flatsplit_api.onemap import OneMapUnavailable
 from flatsplit_api.routing import (
     RoutingCredential,
     RoutingError,
@@ -143,6 +144,18 @@ def test_a_two_hundred_with_an_empty_plan_is_the_same_answer_as_a_404() -> None:
     for payload in [{"plan": {"itineraries": []}}, {"plan": {}}, {}]:
         with pytest.raises(RoutingUnroutable):
             routed(payload)
+
+
+def test_a_duration_just_over_a_whole_minute_keeps_its_precision() -> None:
+    """1,802 s is 30.03 minutes. Rounded to 30.0 it passes `maxCommute: 30`.
+
+    #18/#22 compare this value with each member's limit, so the rounding has
+    to happen where it is displayed, not where it is measured.
+    """
+    resolved, _ = routed(plan(leg(1802)))
+
+    assert resolved.minutes == pytest.approx(1802 / 60)
+    assert resolved.minutes > 30
 
 
 def test_an_itinerary_without_a_duration_is_retried_not_cached_as_zero() -> None:
@@ -338,6 +351,43 @@ def test_an_expired_token_fails_without_spending_quota(
     monkeypatch.setattr(urllib.request, "urlopen", capture)
     with pytest.raises(RoutingCredential, match="expired"):
         routing.http_get({"routeType": "pt"})
+    assert called == []
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [
+        "No OneMap credential is configured.",
+        "The OneMap secret is empty.",
+        "The OneMap credential could not be loaded.",
+    ],
+)
+def test_a_credential_that_cannot_be_loaded_stays_inside_this_hierarchy(
+    monkeypatch: pytest.MonkeyPatch, reason: str
+) -> None:
+    """`resolve_token` raises `/places`'s error, which is not a `RoutingError`.
+
+    Escaping this hierarchy would bypass the worker's terminal branch and
+    leave the pair pending without a `retryAfter`, even on the final receive.
+    """
+
+    def unavailable() -> str:
+        raise OneMapUnavailable(reason)
+
+    monkeypatch.setattr(routing, "resolve_token", unavailable)
+    called: list[Any] = []
+
+    def capture(request: Any, timeout: float | None = None) -> Response:
+        called.append(request)
+        return Response(b"{}")
+
+    monkeypatch.setattr(urllib.request, "urlopen", capture)
+    with pytest.raises(RoutingCredential) as raised:
+        routing.http_get({"routeType": "pt"})
+
+    assert isinstance(raised.value, RoutingError)
+    assert raised.value.code == "CREDENTIAL_UNAVAILABLE"
+    assert isinstance(raised.value.__cause__, OneMapUnavailable)
     assert called == []
 
 
