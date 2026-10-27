@@ -22,11 +22,19 @@ C7 says actual calls, and a 429 or a 500 has already reached OneMap.
 
 Refusal is a normal outcome, not an error: the worker returns its message to
 the queue, whose visibility timeout is the pacing, and a lookup gives up the
-way it does for any upstream failure. A counter that is unreachable for some
-other reason is treated differently by each caller, and deliberately: the
-worker fails closed, because the queue will bring the pair back, while a
-lookup proceeds, because the headroom above exists for it and a table hiccup
-must not take down a user-facing read.
+way it does for any upstream failure.
+
+A counter that cannot be written at all fails **both** callers closed, before
+any upstream request. Letting lookups through was the first attempt and it was
+wrong: the 50 reserved calls bound the worker, not the lookups, so repeated
+counter failures leave the budget unenforced entirely. The cost of failing
+closed is also smaller than it appears, because this counter is an item in the
+same table as the records each caller is about to write.
+
+**One honest limit.** The window is fixed, not rolling: a minute boundary
+permits up to two windows' worth of calls in quick succession - 250 at t=59
+and 250 at t=60. That is per-minute accounting as C7 specifies it, not a
+rolling-minute guarantee, and E4 has to say so when it reports the guard.
 """
 
 from __future__ import annotations

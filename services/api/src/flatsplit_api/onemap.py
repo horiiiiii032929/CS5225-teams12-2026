@@ -154,14 +154,21 @@ def _message_from(payload: Any, fallback: str) -> str:
 
 
 def _spend_budget() -> None:
-    """Count this lookup against C7's shared 250/min guard.
+    """Count this lookup against C7's shared 250/min guard, or refuse it.
 
     A lookup may spend the whole budget, including the share the worker is
     held back from, because the interactive caller is who that headroom is
     reserved for. A full window becomes the throttle `/places` already maps
-    to 429. An unreadable counter is logged and the lookup proceeds: this is
-    a user-facing read, and the reserved headroom is what makes failing open
-    acceptable here, where it would not be for a drain.
+    to 429.
+
+    An unreadable counter refuses the lookup **before** any upstream call.
+    Letting it through was wrong: the worker's reserved 50 calls bound the
+    worker, not these lookups, so repeated counter failures bypass both C7's
+    250 and OneMap's published 300 — @wkkuu reproduced 301 uncounted calls in
+    one minute by breaking only this write. It also costs less than it looks:
+    the counter is an item in the same table as the `PLACE#` and `STATION#`
+    records this lookup is about to write, so a counter that cannot be
+    written is not a table that would have served the rest of the request.
     """
     try:
         call_budget.spend(call_budget.TOTAL_CALLS)
@@ -169,9 +176,12 @@ def _spend_budget() -> None:
         raise OneMapRateLimited(str(exc)) from exc
     except ClientError as exc:
         logger.warning(
-            "The OneMap call budget is unreadable; lookup not counted",
+            "The OneMap call budget could not be reserved; refusing the lookup",
             extra={"reason": str(exc)},
         )
+        raise OneMapUnavailable(
+            "The OneMap call budget is unavailable, so the lookup was refused."
+        ) from exc
 
 
 def http_get(

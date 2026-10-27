@@ -88,8 +88,10 @@ general. C7's 250 calls/min is therefore enforced by a shared counter
 (`call_budget.py`), with 200 for the worker and 50 reserved for `/places`, and
 `maxConcurrency: 3` is kept as a resource bound. That guard is verified in
 `services/api/tests/test_call_budget.py`, including a backlog of instant replies
-that stops at 200 and leaves the headroom intact; re-running this harness against
-the guard is still to do.
+that stops at 200 and leaves the headroom intact, a counter failure refusing the
+call rather than passing it through, and the fixed window's boundary, which
+permits two windows' worth of calls in quick succession. Re-running this harness
+against the guard is still to do.
 
 ### Deduplication, exhaustion, and what reaches the DLQ
 

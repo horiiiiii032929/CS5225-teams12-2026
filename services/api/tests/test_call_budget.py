@@ -27,7 +27,7 @@ from flatsplit_api.call_budget import (
 )
 from flatsplit_api.commute_results import CommuteResults
 from flatsplit_api.handlers import commute_worker
-from flatsplit_api.onemap import OneMapRateLimited
+from flatsplit_api.onemap import OneMapRateLimited, OneMapUnavailable
 from flatsplit_api.routing import RoutingRetryable
 
 STATION = "KENT_RIDGE"
@@ -155,35 +155,53 @@ def test_a_full_window_throttles_a_lookup(
         onemap.http_get("/api/common/elastic/search", {"searchVal": "kent ridge"})
 
 
-def test_an_unreadable_counter_lets_a_lookup_through(
+def test_an_unreadable_counter_refuses_the_lookup(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The reserved headroom is what makes failing open acceptable here."""
+    """Letting lookups through left the budget unenforced.
+
+    The worker's reserved 50 calls bound the worker, not these lookups, so a
+    counter that keeps failing bypassed both the configured 250 and OneMap's
+    published 300. One failure is not the case that matters: the regression
+    is that *every* attempt stays refused and spends nothing upstream.
+    """
+    attempts: list[int] = []
 
     class Broken:
         def reserve(self, *, ceiling: int) -> int:
+            attempts.append(ceiling)
             raise ClientError({"Error": {"Code": "InternalServerError"}}, "UpdateItem")
 
-    class Response:
-        def __enter__(self) -> "Response":
-            return self
-
-        def __exit__(self, *exc: object) -> None:
-            return None
-
-        def read(self) -> bytes:
-            return json.dumps({"found": 0, "results": []}).encode()
-
+    called: list[Any] = []
     monkeypatch.setattr(call_budget, "from_environment", lambda: Broken())
     monkeypatch.setattr(onemap, "resolve_token", lambda: "token")
     monkeypatch.setattr(
-        urllib.request, "urlopen", lambda request, timeout=None: Response()
+        urllib.request, "urlopen", lambda request, timeout=None: called.append(request)
     )
 
-    assert onemap.http_get("/api/common/elastic/search", {"searchVal": "x"}) == {
-        "found": 0,
-        "results": [],
-    }
+    for _ in range(301):
+        with pytest.raises(OneMapUnavailable):
+            onemap.http_get("/api/common/elastic/search", {"searchVal": "x"})
+
+    assert len(attempts) == 301
+    assert called == []  # 301 requests used to reach OneMap uncounted.
+
+
+def test_the_window_boundary_permits_two_windows_in_quick_succession(
+    table: Table,
+) -> None:
+    """A fixed window is not a rolling minute, and E4 has to say so."""
+    end_of_window = NOW - (NOW % 60) + 59
+    before = budget(table, now=end_of_window)
+    after = budget(table, now=end_of_window + 1)
+    for _ in range(TOTAL_CALLS):
+        before.reserve(ceiling=TOTAL_CALLS)
+    with pytest.raises(BudgetExhausted):
+        before.reserve(ceiling=TOTAL_CALLS)
+
+    # One second later the next window is empty, so 500 calls can happen
+    # inside two seconds. That is per-minute accounting, not a rolling bound.
+    assert after.reserve(ceiling=TOTAL_CALLS) == 1
 
 
 def test_a_backlog_of_fast_responses_stops_at_the_worker_share(
