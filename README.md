@@ -124,6 +124,8 @@ Every `VITE_` variable is public in the browser bundle. Keep credentials on the 
 
 Group/search APIs require server-side `TABLE_NAME` and SDK region/credentials; use `DYNAMODB_ENDPOINT_URL` for a local compatible service. Cache-miss searches also require `COMMUTE_QUEUE_URL` (optional local `SQS_ENDPOINT_URL`). Local emulators may use dummy SDK credentials, never real secrets in browser configuration. Preference saves need persisted `PLACE#` records; searches need a validated `RENT/CURRENT` pointer and snapshot summaries. The API does not seed those records or fabricate results. CDK provides the queue/table configuration, but the #15 worker must still consume jobs; without it, queued pairs stay pending until their results are written. See the [producer/worker contract](docs/api-contract.md#16-producer-and-15-worker-handoff).
 
+Export these before `pnpm dev` or `pnpm dev:api`. Turborepo runs tasks in strict environment mode, so only the variables allowed in `services/api/turbo.json` (the ones above, `ONEMAP_TOKEN`/`ONEMAP_SECRET_NAME` and `AWS_*`) reach the API, and none of them reach the web dev server.
+
 ## Codex and Claude Code
 
 [AGENTS.md](AGENTS.md) contains shared repository instructions. [CLAUDE.md](CLAUDE.md) imports it. Each source workspace also has scoped instructions and a Claude import so guidance stays consistent across both tools.

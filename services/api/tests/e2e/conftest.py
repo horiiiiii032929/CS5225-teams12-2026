@@ -3,11 +3,16 @@
 The same journey runs two ways:
 
 - Default (`pnpm test`, CI): requests go through the Lambda `handler` as API
-  Gateway v2 events, with DynamoDB mocked by Moto and one place seeded.
+  Gateway v2 events, with DynamoDB mocked by Moto, one place and a synthetic
+  rent snapshot seeded, and commute jobs captured instead of sent. There is no
+  worker locally, so `LambdaApi.complete_routes` writes results the way #15's
+  worker will. Results from this mode are fixture-backed, never real data.
 - `FLATSPLIT_API_URL` set (e.g. `https://<site>/api` or `http://127.0.0.1:8000`):
   real HTTP to that API with no local state. Destinations come from
   `GET /places` (preference saves need #14's persisted places), or from
-  `FLATSPLIT_E2E_PLACE_ID` when a known place already exists.
+  `FLATSPLIT_E2E_PLACE_ID` when a known place already exists. Searches need
+  published rent (#10) and a running worker (#15); without them the search
+  steps skip with that reason.
 """
 
 import base64
@@ -16,7 +21,7 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -27,13 +32,18 @@ import pytest
 from moto import mock_aws
 
 import flatsplit_api.handlers.http as http
+from flatsplit_api.commute_jobs import CommuteJobs
 from flatsplit_api.groups import GroupStore
+from flatsplit_api.search_data import SearchDataReader
+from flatsplit_api.searches import SearchStore
 
 API_URL = os.environ.get("FLATSPLIT_API_URL", "").strip().rstrip("/")
 #: A place known to exist on the target API skips the OneMap lookup.
 PLACE_ID = os.environ.get("FLATSPLIT_E2E_PLACE_ID", "").strip()
 #: Destination looked up on a deployed API; any selectable candidate will do.
 PLACE_QUERY = os.environ.get("FLATSPLIT_E2E_PLACE_QUERY", "Kent Ridge MRT Station")
+#: How long a remote search may stay pending before the steps skip as "no worker".
+SEARCH_TIMEOUT_SECONDS = float(os.environ.get("FLATSPLIT_E2E_SEARCH_TIMEOUT", "120"))
 
 
 @dataclass(frozen=True)
@@ -72,6 +82,33 @@ class LambdaApi:
     """Invokes the deployed handler code in-process, as API Gateway would."""
 
     remote = False
+
+    def __init__(self, table: Any, jobs: list[dict[str, Any]]) -> None:
+        self.table = table
+        self.jobs = jobs
+
+    def complete_routes(self, minutes: Mapping[str, float], default: float) -> None:
+        """Finish every captured job as #15's worker will: a fenced update.
+
+        The condition matches the worker contract (same job, still pending), so
+        a test cannot overwrite a result the API itself already resolved.
+        """
+        for job in self.jobs:
+            self.table.update_item(
+                Key={
+                    "pk": f"COMMUTE#{job['stationKey']}",
+                    "sk": f"TOWN#{job['town']}",
+                },
+                UpdateExpression="SET #status = :ok, minutes = :minutes",
+                ConditionExpression="jobId = :job AND #status = :pending",
+                ExpressionAttributeNames={"#status": "status"},
+                ExpressionAttributeValues={
+                    ":ok": "ok",
+                    ":minutes": Decimal(str(minutes.get(job["town"], default))),
+                    ":job": job["jobId"],
+                    ":pending": "pending",
+                },
+            )
 
     def call(
         self, method: str, path: str, body: Any = None, token: str | None = None
@@ -159,6 +196,66 @@ class HttpApi:
 
 SEEDED_PLACE = "pl_e2e_kent_ridge"
 
+#: Synthetic whole-flat medians per town, chosen so the journey exercises each
+#: rule: a feasible town at the exact budget (QUEENSTOWN), one over budget
+#: (BISHAN) and, with `SEEDED_MINUTES`, one over the commute limit. Towns with
+#: no entry have no summary and are excluded as RENT_UNAVAILABLE. Not HDB data.
+SEEDED_RENT: dict[str, dict[str, int]] = {
+    "3-ROOM": {
+        "CLEMENTI": 2200,
+        "QUEENSTOWN": 2400,
+        "BUKIT MERAH": 2300,
+        "JURONG EAST": 2000,
+        "BISHAN": 2600,
+    },
+    "5-ROOM": {
+        "CLEMENTI": 5200,
+        "QUEENSTOWN": 6000,
+        "BUKIT MERAH": 5500,
+        "JURONG EAST": 4800,
+        "BISHAN": 6200,
+    },
+}
+#: Injected commute minutes; fractional and exactly-at-limit values on purpose.
+SEEDED_MINUTES = {
+    "CLEMENTI": 18,
+    "QUEENSTOWN": 25.5,
+    "BUKIT MERAH": 30,
+    "JURONG EAST": 35,
+}
+DEFAULT_MINUTES = 20.0
+
+
+def _seed_rent(table: Any) -> None:
+    snapshot = "e2e-synthetic"
+    table.put_item(
+        Item={
+            "pk": "RENT",
+            "sk": "CURRENT",
+            "schemaVersion": 1,
+            "snapshotId": snapshot,
+            "period": "2025-10/2026-09",
+        }
+    )
+    for flat_type, medians in SEEDED_RENT.items():
+        for town, median in medians.items():
+            table.put_item(
+                Item={
+                    "pk": f"RENT#{snapshot}",
+                    "sk": f"TOWN#{town}#{flat_type}",
+                    "schemaVersion": 1,
+                    "town": town,
+                    "flatType": flat_type,
+                    "median": median,
+                    "p25": median - 100,
+                    "p75": median + 100,
+                    "medianCi95Low": median - 50,
+                    "medianCi95High": median + 50,
+                    "count": 200,
+                    "qualityStatus": "USABLE",
+                }
+            )
+
 
 def _seed_place(table: Any) -> None:
     table.put_item(
@@ -200,9 +297,15 @@ def api(monkeypatch: pytest.MonkeyPatch) -> Iterator[Api]:
             BillingMode="PAY_PER_REQUEST",
         )
         _seed_place(table)
+        _seed_rent(table)
         store = GroupStore(table)
+        jobs: list[dict[str, Any]] = []
+        searches = SearchStore(
+            table, store, SearchDataReader(table), CommuteJobs(table, jobs.append)
+        )
         monkeypatch.setattr(http, "group_store", lambda: store)
-        yield LambdaApi()
+        monkeypatch.setattr(http, "search_store", lambda _groups: searches)
+        yield LambdaApi(table, jobs)
 
 
 @pytest.fixture

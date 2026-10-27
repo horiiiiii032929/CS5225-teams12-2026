@@ -15,8 +15,9 @@ documentation, because the two disagree in ways that change the code:
 - 403 is the WAF and also returns HTML.
 
 The reconciled #6 baseline uses canonical physical-station keys, explicit
-unsupported results and a 1,000 m selection bound. Persistent query/place
-caching and station-coordinate pinning remain #14 acceptance work.
+unsupported results and a 1,000 m selection bound. This module stays
+transport-only: persistence of the place record and the pinned station
+coordinate lives in `places.py`, which the HTTP layer applies to this result.
 """
 
 import hashlib
@@ -308,6 +309,11 @@ def find_places(query: str, transport: Transport | None = None) -> dict[str, Any
                 "placeId": candidate_id,
                 "label": str(result.get("SEARCHVAL", "")).strip(),
                 "address": _address_of(result),
+                # The contract response has no place coordinate, but #14 stores
+                # it and re-measures the snap against the pinned station
+                # coordinate. PlacesResponse ignores these two extra keys.
+                "lat": lat,
+                "lng": lon,
                 "station": station,
             }
         )

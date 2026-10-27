@@ -128,7 +128,17 @@ test('table access separates group/commute writes from place/rent reads', () => 
           'dynamodb:Query',
           'dynamodb:UpdateItem',
         ],
-        'PLACE#*': ['dynamodb:ConditionCheckItem', 'dynamodb:GetItem'],
+        'PLACE#*': [
+          'dynamodb:ConditionCheckItem',
+          'dynamodb:GetItem',
+          'dynamodb:PutItem',
+        ],
+        'PLACELOOKUP#*': ['dynamodb:GetItem', 'dynamodb:PutItem'],
+        'STATION#*': [
+          'dynamodb:GetItem',
+          'dynamodb:PutItem',
+          'dynamodb:UpdateItem',
+        ],
         'RENT,RENT#*': ['dynamodb:GetItem', 'dynamodb:Query'],
         'COMMUTE#*': [
           'dynamodb:DeleteItem',

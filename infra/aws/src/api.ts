@@ -100,8 +100,10 @@ export class Api extends Construct {
     onemapToken.grantRead(handler);
     this.commuteJobsQueue.grantSendMessages(handler);
 
-    // Transactions are authorised per item action. The API writes groups and
-    // commute claims, but can only read places and validated rent snapshots.
+    // Transactions are authorised per item action. The API writes groups,
+    // commute claims and the place and station records a lookup creates (#14),
+    // and can only read validated rent snapshots. A pinned station may gain
+    // line-code aliases but is never deleted through the API.
     handler.addToRolePolicy(
       new PolicyStatement({
         actions: [
@@ -121,10 +123,45 @@ export class Api extends Construct {
     );
     handler.addToRolePolicy(
       new PolicyStatement({
-        actions: ['dynamodb:GetItem', 'dynamodb:ConditionCheckItem'],
+        actions: [
+          'dynamodb:GetItem',
+          'dynamodb:PutItem',
+          'dynamodb:ConditionCheckItem',
+        ],
         resources: [props.table.tableArn],
         conditions: {
           'ForAllValues:StringLike': { 'dynamodb:LeadingKeys': ['PLACE#*'] },
+          Null: { 'dynamodb:LeadingKeys': 'false' },
+        },
+      }),
+    );
+    // The query cache needs its own statement: the prefix above is the literal
+    // `PLACE#`, so it does not match `PLACELOOKUP#`. Without this, `/places`
+    // would be denied on the GetItem it makes before reaching OneMap and every
+    // lookup would return 503. Read and write only — a cache entry is replaced
+    // by a whole new item and expires by ttl, never updated or deleted.
+    handler.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['dynamodb:GetItem', 'dynamodb:PutItem'],
+        resources: [props.table.tableArn],
+        conditions: {
+          'ForAllValues:StringLike': {
+            'dynamodb:LeadingKeys': ['PLACELOOKUP#*'],
+          },
+          Null: { 'dynamodb:LeadingKeys': 'false' },
+        },
+      }),
+    );
+    handler.addToRolePolicy(
+      new PolicyStatement({
+        actions: [
+          'dynamodb:GetItem',
+          'dynamodb:PutItem',
+          'dynamodb:UpdateItem',
+        ],
+        resources: [props.table.tableArn],
+        conditions: {
+          'ForAllValues:StringLike': { 'dynamodb:LeadingKeys': ['STATION#*'] },
           Null: { 'dynamodb:LeadingKeys': 'false' },
         },
       }),

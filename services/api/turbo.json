@@ -1,0 +1,17 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "dev": {
+      "passThroughEnv": [
+        "TABLE_NAME",
+        "DYNAMODB_ENDPOINT_URL",
+        "COMMUTE_QUEUE_URL",
+        "SQS_ENDPOINT_URL",
+        "ONEMAP_TOKEN",
+        "ONEMAP_SECRET_NAME",
+        "AWS_*"
+      ]
+    }
+  }
+}
