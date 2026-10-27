@@ -35,7 +35,9 @@ from datetime import date
 from typing import Any, Protocol
 
 from aws_lambda_powertools import Logger
+from botocore.exceptions import ClientError
 
+from flatsplit_api import call_budget
 from flatsplit_api.onemap import BASE_URL, OneMapUnavailable, resolve_token
 
 logger = Logger(child=True)
@@ -161,6 +163,24 @@ def _token() -> str:
     return token
 
 
+def _spend_budget() -> None:
+    """Count this call against C7's shared 250/min guard, below the worker's share.
+
+    The budget is spent before the request, because C7 counts actual calls and
+    a failed one has already reached OneMap. A full window is not an error
+    about the pair: the message goes back to the queue, whose visibility
+    timeout is the pacing this module deliberately does not implement itself.
+    An unreadable counter fails the same way - closed - because the queue will
+    bring the pair back, and spending unmetered quota is the worse outcome.
+    """
+    try:
+        call_budget.spend(call_budget.WORKER_CALLS)
+    except call_budget.BudgetExhausted as exc:
+        raise RoutingRetryable(str(exc)) from exc
+    except ClientError as exc:
+        raise RoutingRetryable(f"The OneMap call budget is unreadable: {exc}") from exc
+
+
 def _decode(raw: bytes) -> Any:
     """Parse JSON defensively: 429 and 403 bodies are sometimes HTML (#3)."""
     text = raw.decode("utf-8", "replace").lstrip()
@@ -194,6 +214,7 @@ def _classify(status: int, payload: Any, fallback: str) -> RoutingError:
 
 def http_get(params: dict[str, Any], *, timeout: float = TIMEOUT_SECONDS) -> Any:
     """One routing GET. Retries belong to the queue, so there are none here."""
+    _spend_budget()
     token = _token()
     url = f"{BASE_URL}{ROUTE_PATH}?{urllib.parse.urlencode(params)}"
     request = urllib.request.Request(

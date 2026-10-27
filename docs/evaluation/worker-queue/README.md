@@ -61,9 +61,10 @@ A representative stored record, which is what #16/#18 read:
 
 ### Why the concurrency is 3, measured rather than argued
 
-The handler has no rate limiter on purpose: concurrency is meant to be the only
-limit. That claim is testable — if the achieved rate did not track concurrency,
-it would be false. Draining the same 26-pair search at five concurrencies:
+The handler has no rate limiter of its own, and at the time of this run
+concurrency was meant to be the only limit. That claim is testable — if the
+achieved rate did not track concurrency, it would be false. Draining the same
+26-pair search at five concurrencies:
 
 | Concurrency | Achieved calls/min | Wall time | Per worker |
 | ----------- | ------------------ | --------- | ---------- |
@@ -73,12 +74,22 @@ it would be false. Draining the same 26-pair search at five concurrencies:
 | 4           | 245.5              | 10.88 s   | 61.4       |
 | 6           | **324.7**          | 9.44 s    | 54.1       |
 
-Per-worker throughput stays near 55–61 calls/min across the range, so the rate
-really is set by concurrency and nothing else. OneMap's published 300/min cap is
-reached at about **concurrency 4.9**, and the measured rate at 6 exceeds it.
-Three leaves roughly a 45% margin, which is why the event source is set there and
-why a second, token-bucket limiter would only have to be kept in step with this
-one.
+Per-worker throughput stays near 55–61 calls/min across the range, so within
+this run the rate tracked concurrency. OneMap's published 300/min cap is reached
+at about **concurrency 4.9**, and the measured rate at 6 exceeds it. Three leaves
+roughly a 45% margin, which is why the event source is set there.
+
+**What this run does not establish**, as @wkkuu's #74 review pointed out: these
+latencies are the uncached ones. Replaying the measured cached-route p50 of
+154 ms instead, three continuously busy workers imply roughly 1,100 calls/min,
+so concurrency cannot be the budget — a window of warm pairs is exactly where it
+fails. The 45% margin above holds for the latency replayed here and not in
+general. C7's 250 calls/min is therefore enforced by a shared counter
+(`call_budget.py`), with 200 for the worker and 50 reserved for `/places`, and
+`maxConcurrency: 3` is kept as a resource bound. That guard is verified in
+`services/api/tests/test_call_budget.py`, including a backlog of instant replies
+that stops at 200 and leaves the headroom intact; re-running this harness against
+the guard is still to do.
 
 ### Deduplication, exhaustion, and what reaches the DLQ
 

@@ -32,6 +32,9 @@ import urllib.request
 from typing import Any, Protocol
 
 from aws_lambda_powertools import Logger
+from botocore.exceptions import ClientError
+
+from flatsplit_api import call_budget
 
 logger = Logger(child=True)
 _secret_provider: Any = None
@@ -150,10 +153,32 @@ def _message_from(payload: Any, fallback: str) -> str:
     return fallback
 
 
+def _spend_budget() -> None:
+    """Count this lookup against C7's shared 250/min guard.
+
+    A lookup may spend the whole budget, including the share the worker is
+    held back from, because the interactive caller is who that headroom is
+    reserved for. A full window becomes the throttle `/places` already maps
+    to 429. An unreadable counter is logged and the lookup proceeds: this is
+    a user-facing read, and the reserved headroom is what makes failing open
+    acceptable here, where it would not be for a drain.
+    """
+    try:
+        call_budget.spend(call_budget.TOTAL_CALLS)
+    except call_budget.BudgetExhausted as exc:
+        raise OneMapRateLimited(str(exc)) from exc
+    except ClientError as exc:
+        logger.warning(
+            "The OneMap call budget is unreadable; lookup not counted",
+            extra={"reason": str(exc)},
+        )
+
+
 def http_get(
     path: str, params: dict[str, Any], *, timeout: float = TIMEOUT_SECONDS
 ) -> Any:
     """Single GET against OneMap. No retry: `/places` is a user-facing read."""
+    _spend_budget()
     started = time.monotonic()
     token = resolve_token()
     timeout -= time.monotonic() - started

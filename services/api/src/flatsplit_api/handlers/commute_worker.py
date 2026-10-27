@@ -8,12 +8,15 @@ write. Three things are deliberately absent:
   the schedule is the source queue's 180-second visibility and three receives.
   Sleeping inside the invocation would be billed, would hold one of only three
   concurrent slots, and would risk the visibility timeout.
-- **No rate limiter.** The routing rate is bounded by concurrency. Draining a
-  real queue at the event source's three concurrent invocations measured 165
-  calls/min against OneMap's 300/min cap, and per-worker throughput held near
-  55-61 calls/min from one slot to six, so concurrency alone sets the rate
-  (docs/evaluation/worker-queue/). A token bucket here would be a second
-  limiter to keep in step with the first.
+- **No rate limiter of its own.** C7's 250 calls/min is shared with
+  `/places`, so it cannot live in this handler: it is one counter per minute
+  in the table (`call_budget.py`), and a routing call reserves against it
+  first. A token bucket inside the invocation would bound one instance of
+  three and could not reserve the lookup headroom at all. `maxConcurrency: 3`
+  stays as a resource bound, not the rate: a drain off a real queue measured
+  165 calls/min at three in flight, with per-worker throughput near 55-61
+  from one slot to six (docs/evaluation/worker-queue/), which bounds in-flight
+  work but not a window of fast cached replies.
 - **No fan-in counter.** Search status is derived when it is read, so a worker
   never reports progress; it resolves its own pair and nothing else.
 

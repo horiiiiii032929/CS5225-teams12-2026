@@ -248,6 +248,24 @@ export class Api extends Construct {
       }),
     );
 
+    // C7's shared OneMap call budget: one counter item per minute, written by
+    // every caller that spends quota. ADD and the TTL are both UpdateItem, and
+    // neither role can read or delete another role's counters.
+    for (const role of [handler, commuteWorker]) {
+      role.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['dynamodb:UpdateItem'],
+          resources: [props.table.tableArn],
+          conditions: {
+            'ForAllValues:StringLike': {
+              'dynamodb:LeadingKeys': ['RATE#*'],
+            },
+            Null: { 'dynamodb:LeadingKeys': 'false' },
+          },
+        }),
+      );
+    }
+
     this.httpApi = new HttpApi(this, 'HttpApi', {
       description: `FlatSplit ${props.stage} API`,
       createDefaultStage: false,

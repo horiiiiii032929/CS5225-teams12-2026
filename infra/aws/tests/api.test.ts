@@ -146,10 +146,15 @@ test('table access separates group/commute writes from place/rent reads', () => 
           'dynamodb:PutItem',
           'dynamodb:Query',
         ],
+        // C7's shared OneMap call budget: both callers count their calls.
+        'RATE#*': ['dynamodb:UpdateItem'],
       },
       // The worker only ends claims: it cannot read a group, a place or a rent
       // snapshot, and cannot delete the pair it failed to route.
-      CommuteWorker: { 'COMMUTE#*': ['dynamodb:UpdateItem'] },
+      CommuteWorker: {
+        'COMMUTE#*': ['dynamodb:UpdateItem'],
+        'RATE#*': ['dynamodb:UpdateItem'],
+      },
     },
   );
 });
