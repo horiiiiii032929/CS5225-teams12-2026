@@ -319,6 +319,7 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Verification: six new tests, each confirmed to fail with the fix reverted and pass with it — the 1,802 s boundary at the routing level, the same boundary driven end to end from an OneMap payload through the worker's stored record into `rank_towns` (which excludes the town as `OVER_COMMUTE`), the three `OneMapUnavailable` reasons arriving as `RoutingCredential` with no HTTP call, and the final receive closing the pair with `CREDENTIAL_UNAVAILABLE`, `retryAfter` 900 s ahead, `attempts: 3` and no minutes on the record. Full suite 384 API tests, `ruff check`, `ruff format` and `mypy --strict` over 39 files pass.
 - Not addressed here: the P1 shared 250 calls/min guard. It needs a budget that holds across worker containers and the `/places` lookup path, not a change to this module, so it is a separate commit.
 - Limits: no AWS, OneMap or deployment call in this change; the credential test forbids HTTP and asserts none was attempted. The Node-based checks (CDK tests, synth, web) were not run locally — this machine has Node 20 against the repository's Node 24 — so CI covers the `api.test.ts` resolution.
+
 ## 27 October 2026 — issue 15 review fix: the shared OneMap call budget
 
 - Tool: Claude Code (Claude Opus 5), directed by Luke to address the P1 in @wkkuu's #74 consumer review: C7's 250 calls/min client guard did not exist, and `maxConcurrency: 3` does not provide it.
