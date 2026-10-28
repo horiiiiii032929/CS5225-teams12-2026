@@ -88,3 +88,21 @@ Checks after the deploy, against `https://d2g88qlwvm8dec.cloudfront.net`:
 - `GET /api/places` returns `503 UPSTREAM_UNAVAILABLE`. Lambda logs show `OneMap token warning` followed by `OneMap lookup failed`: the token value in the `OneMapTokenSecret` secret appears expired (OneMap tokens last about three days; search answers during its grace period but the follow-up call fails). No secret value was read or changed. Refreshing it is a credential operation for the token owner.
 
 What this means for acceptance: group create/join/read on the shared deployment is now evidenced for #12 and #7, but preference saves need #14 (PR #65) and a valid OneMap token, and searches need published rent (#10) and the commute worker (#15). The frontend acceptance in #7 still needs a real cross-browser create/copy/join/reload walk-through on this build.
+
+## Recording the deployed e2e verdict (#29)
+
+After every deploy, record the #29 journey's verdict for that build with the `Deployed e2e` workflow. It needs no AWS credentials, because it only calls the public API:
+
+```sh
+gh workflow run deployed-e2e.yml -f revision="$(git rev-parse --short HEAD)"
+# For final acceptance, also pass: -f require_complete=true
+gh run watch "$(gh run list --workflow deployed-e2e.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
+```
+
+It checks out the deployed revision's tests, runs the 2- and 5-member journeys against `api_url` (the shared URL by default), and records one of three verdicts:
+
+- **PASS:** every step ran and passed.
+- **INCOMPLETE:** nothing failed, but steps were skipped because the deployment lacks a dependency, such as unpublished rent (#10) or no worker (#15). This is readiness evidence, not acceptance, and it fails the run only with `require_complete`.
+- **FAIL:** a step failed.
+
+The job summary lists each test with its skip reason, the revision and the web asset being served. The JSON record and JUnit XML are kept as a 90-day artifact. Each run creates four short-lived test groups on the target stack.

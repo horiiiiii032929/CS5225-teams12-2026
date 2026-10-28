@@ -19,9 +19,10 @@
     "check": "pnpm format:check && pnpm lint && pnpm typecheck",
     "synth": "pnpm --filter @flatsplit/aws synth",
     "setup:python": "uv sync --locked --all-packages --group dev",
-    "test": "turbo run test && pnpm test:evidence",
+    "test": "turbo run test && pnpm test:evidence && pnpm test:e2e-report",
     "deploy:aws": "pnpm build && pnpm --filter @flatsplit/aws run deploy",
     "test:evidence": "uv run python -m unittest discover -s tools/evaluation/tests",
+    "test:e2e-report": "uv run python -m unittest discover -b -s tools/e2e/tests",
     "generate:api": "node tools/contracts/generate.mjs",
     "generate:api:check": "node tools/contracts/generate.mjs --check"
   },
