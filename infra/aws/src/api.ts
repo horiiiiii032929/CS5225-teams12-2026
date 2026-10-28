@@ -22,24 +22,65 @@ export class Api extends Construct {
   readonly httpApi: HttpApi;
   /** Hostname CloudFront uses as the /api/* origin. */
   readonly originDomain: string;
-  /** Rotate this by hand; see onemapToken below. */
+  /** Rotated automatically from `onemapCredentialsSecretName` (#72). */
   readonly onemapTokenSecretName: string;
+  /** OneMap account email/password, put in once by hand; never in the repo. */
+  readonly onemapCredentialsSecretName: string;
   /** Shared producer queue; #15 attaches its worker to this queue. */
   readonly commuteJobsQueue: Queue;
 
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
 
-    // The OneMap token is a three-day JWT with no automatic renewal (#3), so
-    // it cannot be generated here. CDK seeds a random placeholder and the real
-    // token is put in by hand until a refresh path exists (#27). Keeping it in
-    // Secrets Manager is what lets /places proxy OneMap server-side without
-    // the token ever reaching the browser (docs/backend-design.md).
+    // The OneMap token is a three-day JWT that OneMap only issues from the
+    // account's email and password (#3), with no refresh endpoint. Keeping it
+    // in Secrets Manager lets /places proxy OneMap server-side without the
+    // token ever reaching the browser (docs/backend-design.md). It was
+    // replaced by hand until #72 and lapsed for a week when nobody did, so a
+    // rotation Lambda now logs in with a separate credentials secret.
     const onemapToken = new Secret(this, 'OneMapToken', {
-      description: `OneMap API token for FlatSplit ${props.stage} — rotate manually every 3 days`,
+      description: `OneMap API token for FlatSplit ${props.stage}; rotated every 12 hours from the OneMap credentials secret`,
       removalPolicy: props.removalPolicy,
     });
     this.onemapTokenSecretName = onemapToken.secretName;
+
+    // CDK seeds a random placeholder, which the rotation rejects as not
+    // {"email", "password"} JSON until the account holder puts the real
+    // credentials in once (runbook in docs/aws-dev-handoff.md).
+    const onemapCredentials = new Secret(this, 'OneMapCredentials', {
+      description: `OneMap account login for FlatSplit ${props.stage} token rotation: {"email": ..., "password": ...}`,
+      removalPolicy: props.removalPolicy,
+    });
+    this.onemapCredentialsSecretName = onemapCredentials.secretName;
+
+    const onemapRotation = new Function(this, 'OneMapTokenRotation', {
+      runtime: Runtime.PYTHON_3_13,
+      architecture: Architecture.ARM_64,
+      code: pythonApiCode(),
+      handler: 'flatsplit_api.handlers.onemap_rotation.handler',
+      memorySize: 128,
+      timeout: Duration.seconds(30),
+      environment: {
+        POWERTOOLS_SERVICE_NAME: 'flatsplit-onemap-rotation',
+        POWERTOOLS_LOG_LEVEL: 'INFO',
+        ONEMAP_CREDENTIALS_SECRET_NAME: onemapCredentials.secretName,
+      },
+      logGroup: new LogGroup(this, 'OneMapTokenRotationLogs', {
+        retention: RetentionDays.ONE_MONTH,
+        removalPolicy: props.removalPolicy,
+      }),
+    });
+    // Only the rotation Lambda can read the account login. The schedule grants
+    // it the four rotation actions on the token secret alone.
+    onemapCredentials.grantRead(onemapRotation);
+    onemapToken.addRotationSchedule('Rotation', {
+      rotationLambda: onemapRotation,
+      // Tokens last three days; rotating every 12 hours leaves several retries
+      // before the current one expires if a login fails.
+      automaticallyAfter: Duration.hours(12),
+      // A deploy must not rotate before the credentials have been put in.
+      rotateImmediatelyOnUpdate: false,
+    });
 
     const commuteDlq = new Queue(this, 'CommuteDlq', {
       encryption: QueueEncryption.SQS_MANAGED,

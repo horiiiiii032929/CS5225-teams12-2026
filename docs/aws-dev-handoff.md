@@ -88,3 +88,29 @@ Checks after the deploy, against `https://d2g88qlwvm8dec.cloudfront.net`:
 - `GET /api/places` returns `503 UPSTREAM_UNAVAILABLE`. Lambda logs show `OneMap token warning` followed by `OneMap lookup failed`: the token value in the `OneMapTokenSecret` secret appears expired (OneMap tokens last about three days; search answers during its grace period but the follow-up call fails). No secret value was read or changed. Refreshing it is a credential operation for the token owner.
 
 What this means for acceptance: group create/join/read on the shared deployment is now evidenced for #12 and #7, but preference saves need #14 (PR #65) and a valid OneMap token, and searches need published rent (#10) and the commute worker (#15). The frontend acceptance in #7 still needs a real cross-browser create/copy/join/reload walk-through on this build.
+
+## OneMap token rotation runbook (#72)
+
+Since #72, the token in `OneMapTokenSecret` is renewed every 12 hours by the `OneMapTokenRotation` Lambda. It logs in with the account stored in `OneMapCredentialsSecret`. Deploys never trigger rotation. After the first deploy that adds it, or when the account changes, the account holder runs these steps once from the README credential subshell:
+
+```sh
+# 1. Store the account login (both prompts are hidden; Python builds the JSON).
+CREDS=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+  --query "Stacks[0].Outputs[?OutputKey=='OneMapCredentialsSecret'].OutputValue" --output text)
+printf 'OneMap email: '; read -r ONEMAP_EMAIL
+printf 'OneMap password: '; read -rs ONEMAP_PASSWORD; echo
+ONEMAP_EMAIL="$ONEMAP_EMAIL" ONEMAP_PASSWORD="$ONEMAP_PASSWORD" python3 -c \
+  'import json, os; print(json.dumps({"email": os.environ["ONEMAP_EMAIL"], "password": os.environ["ONEMAP_PASSWORD"]}))' \
+  | aws secretsmanager put-secret-value --secret-id "$CREDS" --secret-string file:///dev/stdin --query VersionId --output text
+unset ONEMAP_EMAIL ONEMAP_PASSWORD
+
+# 2. Rotate once now instead of waiting up to 12 hours.
+TOKEN=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+  --query "Stacks[0].Outputs[?OutputKey=='OneMapTokenSecret'].OutputValue" --output text)
+aws secretsmanager rotate-secret --secret-id "$TOKEN"
+
+# 3. Confirm: a recent LastRotatedDate, then /places within 15 minutes.
+aws secretsmanager describe-secret --secret-id "$TOKEN" --query '[RotationEnabled,LastRotatedDate]'
+```
+
+A failed rotation leaves the existing token current. The reason is in the rotation Lambda's log group: a malformed credentials secret, a refused login (HTTP status and OneMap's message, never the password), or a new token that OneMap rejects. Fix the cause and run step 2 again. Never put the login or a token in GitHub, chat or the repository.

@@ -320,3 +320,17 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Verification: the model reproduces US$1.13 / US$1.27 / US$2.49 payable, unchanged. The one figure that moves is the bursty **list** price, US$13.90 to US$13.92: the measured cold-lookup duration feeding Lambda compute rose from 600 ms to 772 ms, which adds GB-s the free tier still absorbs, so nothing payable changes. Every other CSV line is identical to `cost_model_20261026T042043Z.csv`. Evidence committed as `measured-operations-20261027.json` and `cost_model_20261027T013441Z.{md,json,csv}`.
 - Follow-up on @wkkuu's 27 October review: two stale strings in `measure_operations.py` that the earlier commit missed - the `ConditionCheck` docstring still said "25-action limit", and the caveat the script writes into its evidence still said no commute worker exists. Both are corrected, and the caveat in `measured-operations-20261027.json` is brought into step with the string the script now emits, verified by re-running it with `--seeded-place` and comparing. No measured count, timing or candidate figure was touched, and the 20 and 26 October evidence files keep their original caveats, because they record what was true when those runs happened.
 - Limits: unchanged. Moto gives request, item and action counts, not consumed capacity, so the RRU/WRU conversion stays assumed and sits with #34. Durations are laptop durations. No AWS deployment, billing query or measurement against a real bill; the token was used only for OneMap lookups from this machine and was never written to the repository.
+
+## 28 October 2026 — issue 72 OneMap token rotation
+
+- Tool: Claude Code (Claude Opus 5.5), directed by Shyam, who registered the OneMap account.
+- Contribution: `flatsplit_api/onemap_rotation.py` and `handlers/onemap_rotation.py` implement Secrets Manager's four rotation steps for `OneMapTokenSecret`:
+  - `createSecret` logs in through OneMap `getToken` using a new `OneMapCredentials` secret and stages `AWSPENDING`; a retry does not log in again;
+  - `setSecret` is a no-op;
+  - `testSecret` refuses a token that is not a JWT, expires within 24 hours, or is rejected on an authenticated nearest-station call;
+  - `finishSecret` moves `AWSCURRENT`.
+
+  CDK adds the credentials secret, a 128 MB arm64 rotation Lambda that is the only reader of that secret, and a `rate(12 hours)` rotation schedule that deploys do not trigger. It also adds a `OneMapCredentialsSecret` output. Backend design and the handoff runbook document setup, permissions, cost and evaluation.
+
+- Verification: 19 new Python tests run the steps against Moto Secrets Manager. They cover full promotion with the old version becoming `AWSPREVIOUS`, idempotent create, malformed credentials, failed login or check leaving the current token, preconditions, error messages that never echo the password, expiry and acceptance checks, and non-JWT tokens. Two new CDK tests assert the 12-hour schedule without rotate-on-deploy, that only the rotation Lambda reads the credentials, and that its only write is the rotation actions on the token secret. Moto's default `GetSecretValue` does not follow a moved `AWSCURRENT` label, so the tests read the stage explicitly; real Secrets Manager serves `AWSCURRENT`. `pnpm check`, `pnpm test` (316 API, 65 web, 10 CDK) and `pnpm synth` passed.
+- Not verified: no live `getToken` login (the account credentials were not shared with the assistant), no deployment and no rotation on AWS.

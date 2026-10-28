@@ -131,3 +131,63 @@ test('the search producer cannot receive or delete commute jobs', () => {
     RedrivePolicy: Match.objectLike({ maxReceiveCount: 3 }),
   });
 });
+
+test('the OneMap token rotates every 12 hours, not on deploy', () => {
+  const template = synthesize('dev');
+  template.resourceCountIs('AWS::SecretsManager::RotationSchedule', 1);
+  template.hasResourceProperties('AWS::SecretsManager::RotationSchedule', {
+    RotationRules: { ScheduleExpression: 'rate(12 hours)' },
+    RotateImmediatelyOnUpdate: false,
+  });
+  template.hasResourceProperties('AWS::Lambda::Function', {
+    Handler: 'flatsplit_api.handlers.onemap_rotation.handler',
+    Runtime: 'python3.13',
+    Architectures: ['arm64'],
+  });
+});
+
+interface Statement {
+  Action: string | string[];
+  Resource: unknown;
+}
+
+/** Each IAM statement with the role it is attached to. */
+function statements(template: Template): { role: string; s: Statement }[] {
+  return Object.values(template.findResources('AWS::IAM::Policy')).flatMap(
+    (policy) =>
+      (policy.Properties.PolicyDocument.Statement as Statement[]).map((s) => ({
+        role: JSON.stringify(policy.Properties.Roles),
+        s,
+      })),
+  );
+}
+
+test('only the rotation Lambda can read the OneMap account login', () => {
+  const template = synthesize('dev');
+  const ids = Object.keys(
+    template.findResources('AWS::SecretsManager::Secret'),
+  );
+  const credentials = ids.find((id) => id.includes('OneMapCredentials'));
+  const token = ids.find((id) => id.includes('OneMapToken'));
+  assert.ok(credentials && token);
+  const all = statements(template);
+
+  const readers = all.filter(({ s }) =>
+    JSON.stringify(s.Resource).includes(credentials),
+  );
+  assert.equal(readers.length, 1);
+  assert.match(readers[0].role, /OneMapTokenRotation/);
+  assert.deepEqual([readers[0].s.Action].flat().sort(), [
+    'secretsmanager:DescribeSecret',
+    'secretsmanager:GetSecretValue',
+  ]);
+
+  // Its only write access is the rotation actions on the token secret.
+  const writes = all.filter(
+    ({ role, s }) =>
+      role.includes('OneMapTokenRotation') &&
+      [s.Action].flat().some((action) => /Put|Update/.test(action)),
+  );
+  assert.equal(writes.length, 1);
+  assert.ok(JSON.stringify(writes[0].s.Resource).includes(token));
+});

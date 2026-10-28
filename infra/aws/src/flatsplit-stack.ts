@@ -53,5 +53,8 @@ export class FlatSplitStack extends Stack {
     new CfnOutput(this, 'OneMapTokenSecret', {
       value: api.onemapTokenSecretName,
     });
+    new CfnOutput(this, 'OneMapCredentialsSecret', {
+      value: api.onemapCredentialsSecretName,
+    });
   }
 }
