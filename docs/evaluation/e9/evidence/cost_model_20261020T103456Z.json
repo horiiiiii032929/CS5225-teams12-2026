@@ -1,0 +1,979 @@
+{
+  "generated_utc": "20261020T103456Z",
+  "issue": 45,
+  "experiment": "E9",
+  "scale": 1.0,
+  "status": "PARTIALLY MEASURED \u2014 every per-request DynamoDB, SQS and OneMap operation count was measured against the real Lambda resolver on 20 October 2026 (issue #45). Demand volumes, Lambda duration for non-lookup routes, cold-start share, log volume and the RRU/WRU conversions are still assumed and remain with #30 and #34.",
+  "price_source": "AWS Price List bulk API: https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/<serviceCode>/current/ap-southeast-1/index.json (publication date 2026-10-01). CloudFront values come from the global CloudFront offer file, usage-type prefix AP- (Asia Pacific price class, which serves Singapore).",
+  "scenarios": {
+    "quiet": {
+      "label": "Quiet (between semesters)",
+      "usage": {
+        "groups": 50.0,
+        "members": 150.0,
+        "searches": 100.0,
+        "result_polls": 2000.0,
+        "api_requests": 3450.0,
+        "burst_requests": 0.0,
+        "places_lookups": 600.0,
+        "places_lookups_cold": 480.0,
+        "places_lookups_warm": 120.0,
+        "commute_jobs": 1560.0,
+        "commute_pair_writes": 1620.0,
+        "onemap_routing_calls": 1560.0,
+        "onemap_lookup_calls": 2880.0,
+        "onemap_calls": 4440.0,
+        "lambda_invocations": 5011.0,
+        "lambda_gb_seconds": 510.23,
+        "ddb_read_requests": 19270.0,
+        "ddb_rru": 38540.0,
+        "ddb_writes": 9760.0,
+        "ddb_wru": 14640.0,
+        "cloudfront_requests": 8250.0,
+        "cloudfront_gb_out": 0.25,
+        "cloudfront_gb_to_origin": 0.026,
+        "sqs_requests": 654680.0,
+        "cold_starts": 250.55,
+        "cloudwatch_log_gb": 0.01
+      },
+      "nodes_for_onprem_and_vm": 2,
+      "peak_rps_assumed": 2,
+      "aws_serverless": {
+        "lines": [
+          {
+            "service": "Lambda requests",
+            "driver": "5,011 invocations",
+            "gross_usd": 0.001,
+            "free_tier_usd": 0.001,
+            "net_usd": 0.0,
+            "free_tier_kind": "always free"
+          },
+          {
+            "service": "Lambda compute (arm64)",
+            "driver": "510 GB-s @256 MB",
+            "gross_usd": 0.0068,
+            "free_tier_usd": 0.0068,
+            "net_usd": 0.0,
+            "free_tier_kind": "always free"
+          },
+          {
+            "service": "API Gateway HTTP API",
+            "driver": "3,450 requests",
+            "gross_usd": 0.0043,
+            "free_tier_usd": 0.0043,
+            "net_usd": 0.0,
+            "free_tier_kind": "12 months only"
+          },
+          {
+            "service": "DynamoDB reads",
+            "driver": "38,540 RRU",
+            "gross_usd": 0.0055,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0055,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "DynamoDB writes",
+            "driver": "14,640 WRU",
+            "gross_usd": 0.0104,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0104,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "DynamoDB storage",
+            "driver": "0.5 GB",
+            "gross_usd": 0.1425,
+            "free_tier_usd": 0.1425,
+            "net_usd": 0.0,
+            "free_tier_kind": "25 GB always free"
+          },
+          {
+            "service": "DynamoDB PITR",
+            "driver": "0.5 GB",
+            "gross_usd": 0.114,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.114,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "S3 storage (web build + raw rent files)",
+            "driver": "0.055 GB",
+            "gross_usd": 0.0014,
+            "free_tier_usd": 0.0014,
+            "net_usd": 0.0,
+            "free_tier_kind": "12 months only"
+          },
+          {
+            "service": "CloudFront data transfer out",
+            "driver": "0.25 GB",
+            "gross_usd": 0.03,
+            "free_tier_usd": 0.03,
+            "net_usd": 0.0,
+            "free_tier_kind": "1 TB always free"
+          },
+          {
+            "service": "CloudFront HTTPS requests",
+            "driver": "8,250 requests",
+            "gross_usd": 0.0099,
+            "free_tier_usd": 0.0099,
+            "net_usd": 0.0,
+            "free_tier_kind": "10M always free"
+          },
+          {
+            "service": "CloudFront -> origin transfer",
+            "driver": "0.03 GB",
+            "gross_usd": 0.0016,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0016,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "SQS requests (jobs + idle long polls)",
+            "driver": "654,680 requests",
+            "gross_usd": 0.2619,
+            "free_tier_usd": 0.2619,
+            "net_usd": 0.0,
+            "free_tier_kind": "1M always free"
+          },
+          {
+            "service": "Secrets Manager",
+            "driver": "1 secret + 251 API calls",
+            "gross_usd": 0.4013,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.4013,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "CloudWatch logs ingest",
+            "driver": "0.01 GB",
+            "gross_usd": 0.0067,
+            "free_tier_usd": 0.0067,
+            "net_usd": 0.0,
+            "free_tier_kind": "5 GB always free"
+          },
+          {
+            "service": "CloudWatch logs storage (1-week retention)",
+            "driver": "0.00 GB-month",
+            "gross_usd": 0.0001,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0001,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "CloudWatch custom metrics",
+            "driver": "12 metrics",
+            "gross_usd": 3.6,
+            "free_tier_usd": 3.0,
+            "net_usd": 0.6,
+            "free_tier_kind": "10 always free"
+          },
+          {
+            "service": "CloudWatch alarms",
+            "driver": "6 alarms",
+            "gross_usd": 0.6,
+            "free_tier_usd": 0.6,
+            "net_usd": 0.0,
+            "free_tier_kind": "10 always free"
+          },
+          {
+            "service": "CloudWatch dashboard",
+            "driver": "1 dashboard",
+            "gross_usd": 3.0,
+            "free_tier_usd": 3.0,
+            "net_usd": 0.0,
+            "free_tier_kind": "3 always free"
+          },
+          {
+            "service": "AWS Budgets",
+            "driver": "1 cost budget",
+            "gross_usd": 0.0,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0,
+            "free_tier_kind": ""
+          }
+        ],
+        "list_price_usd": 8.2,
+        "free_tier_usd": 7.06,
+        "payable_usd": 1.13,
+        "usd_per_1000_searches": 11.329
+      },
+      "aws_always_on_vm": {
+        "lines": [
+          {
+            "service": "EC2 t4g.small x2 (24x7)",
+            "driver": "1,460 instance-hours",
+            "gross_usd": 30.952,
+            "free_tier_usd": 0.0,
+            "net_usd": 30.952,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "EBS gp3",
+            "driver": "40 GB",
+            "gross_usd": 3.84,
+            "free_tier_usd": 0.0,
+            "net_usd": 3.84,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Internet data transfer out",
+            "driver": "0.25 GB (first 100 GB free)",
+            "gross_usd": 0.0,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "DynamoDB (same data layer)",
+            "driver": "38,540 RRU + 14,640 WRU",
+            "gross_usd": 0.2724,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.2724,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "S3 (backups + raw files)",
+            "driver": "0.10 GB",
+            "gross_usd": 0.0025,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0025,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "CloudWatch (agent logs, alarms, dashboard)",
+            "driver": "same observability set",
+            "gross_usd": 3.6067,
+            "free_tier_usd": 0.0,
+            "net_usd": 3.6067,
+            "free_tier_kind": ""
+          }
+        ],
+        "payable_usd": 38.67,
+        "usd_per_1000_searches": 386.736
+      },
+      "on_premise": {
+        "lines": [
+          {
+            "service": "Hardware depreciation (2 node(s) + UPS/switch/disks, 36 mo)",
+            "driver": "S$3,350 capex",
+            "gross_usd": 72.6997,
+            "free_tier_usd": 0.0,
+            "net_usd": 72.6997,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Electricity (incl. PUE)",
+            "driver": "42.7 kWh/month @ S$0.3191/kWh",
+            "gross_usd": 10.6462,
+            "free_tier_usd": 0.0,
+            "net_usd": 10.6462,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Room cooling share",
+            "driver": "assumption",
+            "gross_usd": 11.7188,
+            "free_tier_usd": 0.0,
+            "net_usd": 11.7188,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Business internet + static IP",
+            "driver": "assumption",
+            "gross_usd": 62.5,
+            "free_tier_usd": 0.0,
+            "net_usd": 62.5,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Offsite backup",
+            "driver": "nightly dumps to object storage",
+            "gross_usd": 6.25,
+            "free_tier_usd": 0.0,
+            "net_usd": 6.25,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Domain + TLS",
+            "driver": "Let's Encrypt = 0",
+            "gross_usd": 1.5625,
+            "free_tier_usd": 0.0,
+            "net_usd": 1.5625,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Operational effort",
+            "driver": "4 h/month @ S$25/h",
+            "gross_usd": 78.125,
+            "free_tier_usd": 0.0,
+            "net_usd": 78.125,
+            "free_tier_kind": ""
+          }
+        ],
+        "payable_usd": 243.5,
+        "usd_per_1000_searches": 2435.022
+      }
+    },
+    "typical": {
+      "label": "Typical (normal term month)",
+      "usage": {
+        "groups": 500.0,
+        "members": 1500.0,
+        "searches": 1000.0,
+        "result_polls": 20000.0,
+        "api_requests": 34500.0,
+        "burst_requests": 0.0,
+        "places_lookups": 6000.0,
+        "places_lookups_cold": 3600.0,
+        "places_lookups_warm": 2400.0,
+        "commute_jobs": 7800.0,
+        "commute_pair_writes": 8100.0,
+        "onemap_routing_calls": 7800.0,
+        "onemap_lookup_calls": 21600.0,
+        "onemap_calls": 29400.0,
+        "lambda_invocations": 42301.0,
+        "lambda_gb_seconds": 3160.85,
+        "ddb_read_requests": 193900.0,
+        "ddb_rru": 387800.0,
+        "ddb_writes": 68530.0,
+        "ddb_wru": 102795.0,
+        "cloudfront_requests": 82500.0,
+        "cloudfront_gb_out": 2.498,
+        "cloudfront_gb_to_origin": 0.263,
+        "sqs_requests": 673400.0,
+        "cold_starts": 2115.05,
+        "cloudwatch_log_gb": 0.081
+      },
+      "nodes_for_onprem_and_vm": 2,
+      "peak_rps_assumed": 2,
+      "aws_serverless": {
+        "lines": [
+          {
+            "service": "Lambda requests",
+            "driver": "42,301 invocations",
+            "gross_usd": 0.0085,
+            "free_tier_usd": 0.0085,
+            "net_usd": 0.0,
+            "free_tier_kind": "always free"
+          },
+          {
+            "service": "Lambda compute (arm64)",
+            "driver": "3,161 GB-s @256 MB",
+            "gross_usd": 0.0421,
+            "free_tier_usd": 0.0421,
+            "net_usd": 0.0,
+            "free_tier_kind": "always free"
+          },
+          {
+            "service": "API Gateway HTTP API",
+            "driver": "34,500 requests",
+            "gross_usd": 0.0431,
+            "free_tier_usd": 0.0431,
+            "net_usd": 0.0,
+            "free_tier_kind": "12 months only"
+          },
+          {
+            "service": "DynamoDB reads",
+            "driver": "387,800 RRU",
+            "gross_usd": 0.0553,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0553,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "DynamoDB writes",
+            "driver": "102,795 WRU",
+            "gross_usd": 0.073,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.073,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "DynamoDB storage",
+            "driver": "0.5 GB",
+            "gross_usd": 0.1425,
+            "free_tier_usd": 0.1425,
+            "net_usd": 0.0,
+            "free_tier_kind": "25 GB always free"
+          },
+          {
+            "service": "DynamoDB PITR",
+            "driver": "0.5 GB",
+            "gross_usd": 0.114,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.114,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "S3 storage (web build + raw rent files)",
+            "driver": "0.055 GB",
+            "gross_usd": 0.0014,
+            "free_tier_usd": 0.0014,
+            "net_usd": 0.0,
+            "free_tier_kind": "12 months only"
+          },
+          {
+            "service": "CloudFront data transfer out",
+            "driver": "2.50 GB",
+            "gross_usd": 0.2998,
+            "free_tier_usd": 0.2998,
+            "net_usd": 0.0,
+            "free_tier_kind": "1 TB always free"
+          },
+          {
+            "service": "CloudFront HTTPS requests",
+            "driver": "82,500 requests",
+            "gross_usd": 0.099,
+            "free_tier_usd": 0.099,
+            "net_usd": 0.0,
+            "free_tier_kind": "10M always free"
+          },
+          {
+            "service": "CloudFront -> origin transfer",
+            "driver": "0.26 GB",
+            "gross_usd": 0.0158,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0158,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "SQS requests (jobs + idle long polls)",
+            "driver": "673,400 requests",
+            "gross_usd": 0.2694,
+            "free_tier_usd": 0.2694,
+            "net_usd": 0.0,
+            "free_tier_kind": "1M always free"
+          },
+          {
+            "service": "Secrets Manager",
+            "driver": "1 secret + 2,115 API calls",
+            "gross_usd": 0.4106,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.4106,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "CloudWatch logs ingest",
+            "driver": "0.08 GB",
+            "gross_usd": 0.0565,
+            "free_tier_usd": 0.0565,
+            "net_usd": 0.0,
+            "free_tier_kind": "5 GB always free"
+          },
+          {
+            "service": "CloudWatch logs storage (1-week retention)",
+            "driver": "0.02 GB-month",
+            "gross_usd": 0.0006,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0006,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "CloudWatch custom metrics",
+            "driver": "12 metrics",
+            "gross_usd": 3.6,
+            "free_tier_usd": 3.0,
+            "net_usd": 0.6,
+            "free_tier_kind": "10 always free"
+          },
+          {
+            "service": "CloudWatch alarms",
+            "driver": "6 alarms",
+            "gross_usd": 0.6,
+            "free_tier_usd": 0.6,
+            "net_usd": 0.0,
+            "free_tier_kind": "10 always free"
+          },
+          {
+            "service": "CloudWatch dashboard",
+            "driver": "1 dashboard",
+            "gross_usd": 3.0,
+            "free_tier_usd": 3.0,
+            "net_usd": 0.0,
+            "free_tier_kind": "3 always free"
+          },
+          {
+            "service": "AWS Budgets",
+            "driver": "1 cost budget",
+            "gross_usd": 0.0,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0,
+            "free_tier_kind": ""
+          }
+        ],
+        "list_price_usd": 8.83,
+        "free_tier_usd": 7.56,
+        "payable_usd": 1.27,
+        "usd_per_1000_searches": 1.2693
+      },
+      "aws_always_on_vm": {
+        "lines": [
+          {
+            "service": "EC2 t4g.small x2 (24x7)",
+            "driver": "1,460 instance-hours",
+            "gross_usd": 30.952,
+            "free_tier_usd": 0.0,
+            "net_usd": 30.952,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "EBS gp3",
+            "driver": "40 GB",
+            "gross_usd": 3.84,
+            "free_tier_usd": 0.0,
+            "net_usd": 3.84,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Internet data transfer out",
+            "driver": "2.50 GB (first 100 GB free)",
+            "gross_usd": 0.0,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "DynamoDB (same data layer)",
+            "driver": "387,800 RRU + 102,795 WRU",
+            "gross_usd": 0.3847,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.3847,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "S3 (backups + raw files)",
+            "driver": "0.10 GB",
+            "gross_usd": 0.0025,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0025,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "CloudWatch (agent logs, alarms, dashboard)",
+            "driver": "same observability set",
+            "gross_usd": 3.6565,
+            "free_tier_usd": 0.0,
+            "net_usd": 3.6565,
+            "free_tier_kind": ""
+          }
+        ],
+        "payable_usd": 38.84,
+        "usd_per_1000_searches": 38.8357
+      },
+      "on_premise": {
+        "lines": [
+          {
+            "service": "Hardware depreciation (2 node(s) + UPS/switch/disks, 36 mo)",
+            "driver": "S$3,350 capex",
+            "gross_usd": 72.6997,
+            "free_tier_usd": 0.0,
+            "net_usd": 72.6997,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Electricity (incl. PUE)",
+            "driver": "42.7 kWh/month @ S$0.3191/kWh",
+            "gross_usd": 10.6462,
+            "free_tier_usd": 0.0,
+            "net_usd": 10.6462,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Room cooling share",
+            "driver": "assumption",
+            "gross_usd": 11.7188,
+            "free_tier_usd": 0.0,
+            "net_usd": 11.7188,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Business internet + static IP",
+            "driver": "assumption",
+            "gross_usd": 62.5,
+            "free_tier_usd": 0.0,
+            "net_usd": 62.5,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Offsite backup",
+            "driver": "nightly dumps to object storage",
+            "gross_usd": 6.25,
+            "free_tier_usd": 0.0,
+            "net_usd": 6.25,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Domain + TLS",
+            "driver": "Let's Encrypt = 0",
+            "gross_usd": 1.5625,
+            "free_tier_usd": 0.0,
+            "net_usd": 1.5625,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Operational effort",
+            "driver": "4 h/month @ S$25/h",
+            "gross_usd": 78.125,
+            "free_tier_usd": 0.0,
+            "net_usd": 78.125,
+            "free_tier_kind": ""
+          }
+        ],
+        "payable_usd": 243.5,
+        "usd_per_1000_searches": 243.5022
+      }
+    },
+    "bursty": {
+      "label": "Bursty (semester start, W2 peak + W3 cold cache)",
+      "usage": {
+        "groups": 3000.0,
+        "members": 9000.0,
+        "searches": 6000.0,
+        "result_polls": 120000.0,
+        "api_requests": 273000.0,
+        "burst_requests": 66000.0,
+        "places_lookups": 36000.0,
+        "places_lookups_cold": 18000.0,
+        "places_lookups_warm": 18000.0,
+        "commute_jobs": 187200.0,
+        "commute_pair_writes": 194400.0,
+        "onemap_routing_calls": 187200.0,
+        "onemap_lookup_calls": 108000.0,
+        "onemap_calls": 295200.0,
+        "lambda_invocations": 460201.0,
+        "lambda_gb_seconds": 52003.25,
+        "ddb_read_requests": 1167000.0,
+        "ddb_rru": 2334000.0,
+        "ddb_writes": 660730.0,
+        "ddb_wru": 991095.0,
+        "cloudfront_requests": 561000.0,
+        "cloudfront_gb_out": 15.494,
+        "cloudfront_gb_to_origin": 2.083,
+        "sqs_requests": 1211600.0,
+        "cold_starts": 23010.05,
+        "cloudwatch_log_gb": 0.878
+      },
+      "nodes_for_onprem_and_vm": 3,
+      "peak_rps_assumed": 50,
+      "aws_serverless": {
+        "lines": [
+          {
+            "service": "Lambda requests",
+            "driver": "460,201 invocations",
+            "gross_usd": 0.092,
+            "free_tier_usd": 0.092,
+            "net_usd": 0.0,
+            "free_tier_kind": "always free"
+          },
+          {
+            "service": "Lambda compute (arm64)",
+            "driver": "52,003 GB-s @256 MB",
+            "gross_usd": 0.6934,
+            "free_tier_usd": 0.6934,
+            "net_usd": 0.0,
+            "free_tier_kind": "always free"
+          },
+          {
+            "service": "API Gateway HTTP API",
+            "driver": "273,000 requests",
+            "gross_usd": 0.3413,
+            "free_tier_usd": 0.3413,
+            "net_usd": 0.0,
+            "free_tier_kind": "12 months only"
+          },
+          {
+            "service": "DynamoDB reads",
+            "driver": "2,334,000 RRU",
+            "gross_usd": 0.3326,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.3326,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "DynamoDB writes",
+            "driver": "991,095 WRU",
+            "gross_usd": 0.7037,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.7037,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "DynamoDB storage",
+            "driver": "0.5 GB",
+            "gross_usd": 0.1425,
+            "free_tier_usd": 0.1425,
+            "net_usd": 0.0,
+            "free_tier_kind": "25 GB always free"
+          },
+          {
+            "service": "DynamoDB PITR",
+            "driver": "0.5 GB",
+            "gross_usd": 0.114,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.114,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "S3 storage (web build + raw rent files)",
+            "driver": "0.055 GB",
+            "gross_usd": 0.0014,
+            "free_tier_usd": 0.0014,
+            "net_usd": 0.0,
+            "free_tier_kind": "12 months only"
+          },
+          {
+            "service": "CloudFront data transfer out",
+            "driver": "15.49 GB",
+            "gross_usd": 1.8593,
+            "free_tier_usd": 1.8593,
+            "net_usd": 0.0,
+            "free_tier_kind": "1 TB always free"
+          },
+          {
+            "service": "CloudFront HTTPS requests",
+            "driver": "561,000 requests",
+            "gross_usd": 0.6732,
+            "free_tier_usd": 0.6732,
+            "net_usd": 0.0,
+            "free_tier_kind": "10M always free"
+          },
+          {
+            "service": "CloudFront -> origin transfer",
+            "driver": "2.08 GB",
+            "gross_usd": 0.125,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.125,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "SQS requests (jobs + idle long polls)",
+            "driver": "1,211,600 requests",
+            "gross_usd": 0.4846,
+            "free_tier_usd": 0.4,
+            "net_usd": 0.0846,
+            "free_tier_kind": "1M always free"
+          },
+          {
+            "service": "Secrets Manager",
+            "driver": "1 secret + 23,010 API calls",
+            "gross_usd": 0.5151,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.5151,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "CloudWatch logs ingest",
+            "driver": "0.88 GB",
+            "gross_usd": 0.6144,
+            "free_tier_usd": 0.6144,
+            "net_usd": 0.0,
+            "free_tier_kind": "5 GB always free"
+          },
+          {
+            "service": "CloudWatch logs storage (1-week retention)",
+            "driver": "0.20 GB-month",
+            "gross_usd": 0.0061,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0061,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "CloudWatch custom metrics",
+            "driver": "12 metrics",
+            "gross_usd": 3.6,
+            "free_tier_usd": 3.0,
+            "net_usd": 0.6,
+            "free_tier_kind": "10 always free"
+          },
+          {
+            "service": "CloudWatch alarms",
+            "driver": "6 alarms",
+            "gross_usd": 0.6,
+            "free_tier_usd": 0.6,
+            "net_usd": 0.0,
+            "free_tier_kind": "10 always free"
+          },
+          {
+            "service": "CloudWatch dashboard",
+            "driver": "1 dashboard",
+            "gross_usd": 3.0,
+            "free_tier_usd": 3.0,
+            "net_usd": 0.0,
+            "free_tier_kind": "3 always free"
+          },
+          {
+            "service": "AWS Budgets",
+            "driver": "1 cost budget",
+            "gross_usd": 0.0,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0,
+            "free_tier_kind": ""
+          }
+        ],
+        "list_price_usd": 13.9,
+        "free_tier_usd": 11.42,
+        "payable_usd": 2.48,
+        "usd_per_1000_searches": 0.4135
+      },
+      "aws_always_on_vm": {
+        "lines": [
+          {
+            "service": "EC2 t4g.small x3 (24x7)",
+            "driver": "2,190 instance-hours",
+            "gross_usd": 46.428,
+            "free_tier_usd": 0.0,
+            "net_usd": 46.428,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "EBS gp3",
+            "driver": "60 GB",
+            "gross_usd": 5.76,
+            "free_tier_usd": 0.0,
+            "net_usd": 5.76,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Internet data transfer out",
+            "driver": "15.49 GB (first 100 GB free)",
+            "gross_usd": 0.0,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "DynamoDB (same data layer)",
+            "driver": "2,334,000 RRU + 991,095 WRU",
+            "gross_usd": 1.2928,
+            "free_tier_usd": 0.0,
+            "net_usd": 1.2928,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "S3 (backups + raw files)",
+            "driver": "0.10 GB",
+            "gross_usd": 0.0025,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0025,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "CloudWatch (agent logs, alarms, dashboard)",
+            "driver": "same observability set",
+            "gross_usd": 4.2144,
+            "free_tier_usd": 0.0,
+            "net_usd": 4.2144,
+            "free_tier_kind": ""
+          }
+        ],
+        "payable_usd": 57.7,
+        "usd_per_1000_searches": 9.6163
+      },
+      "on_premise": {
+        "lines": [
+          {
+            "service": "Hardware depreciation (3 node(s) + UPS/switch/disks, 36 mo)",
+            "driver": "S$4,550 capex",
+            "gross_usd": 98.7413,
+            "free_tier_usd": 0.0,
+            "net_usd": 98.7413,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Electricity (incl. PUE)",
+            "driver": "64.1 kWh/month @ S$0.3191/kWh",
+            "gross_usd": 15.9693,
+            "free_tier_usd": 0.0,
+            "net_usd": 15.9693,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Room cooling share",
+            "driver": "assumption",
+            "gross_usd": 11.7188,
+            "free_tier_usd": 0.0,
+            "net_usd": 11.7188,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Business internet + static IP",
+            "driver": "assumption",
+            "gross_usd": 62.5,
+            "free_tier_usd": 0.0,
+            "net_usd": 62.5,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Offsite backup",
+            "driver": "nightly dumps to object storage",
+            "gross_usd": 6.25,
+            "free_tier_usd": 0.0,
+            "net_usd": 6.25,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Domain + TLS",
+            "driver": "Let's Encrypt = 0",
+            "gross_usd": 1.5625,
+            "free_tier_usd": 0.0,
+            "net_usd": 1.5625,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Operational effort",
+            "driver": "4 h/month @ S$25/h",
+            "gross_usd": 78.125,
+            "free_tier_usd": 0.0,
+            "net_usd": 78.125,
+            "free_tier_kind": ""
+          }
+        ],
+        "payable_usd": 274.87,
+        "usd_per_1000_searches": 45.8111
+      }
+    }
+  },
+  "sensitivity": [
+    {
+      "scale": 0.0,
+      "aws_payable_usd": 1.11,
+      "aws_list_usd": 8.12,
+      "onprem_usd": 243.5,
+      "nodes": 2,
+      "searches": 0
+    },
+    {
+      "scale": 0.1,
+      "aws_payable_usd": 1.13,
+      "aws_list_usd": 8.19,
+      "onprem_usd": 243.5,
+      "nodes": 2,
+      "searches": 100
+    },
+    {
+      "scale": 1.0,
+      "aws_payable_usd": 1.27,
+      "aws_list_usd": 8.83,
+      "onprem_usd": 243.5,
+      "nodes": 2,
+      "searches": 1000
+    },
+    {
+      "scale": 10.0,
+      "aws_payable_usd": 2.66,
+      "aws_list_usd": 15.25,
+      "onprem_usd": 243.5,
+      "nodes": 2,
+      "searches": 10000
+    },
+    {
+      "scale": 100.0,
+      "aws_payable_usd": 23.27,
+      "aws_list_usd": 79.46,
+      "onprem_usd": 274.87,
+      "nodes": 3,
+      "searches": 100000
+    }
+  ]
+}

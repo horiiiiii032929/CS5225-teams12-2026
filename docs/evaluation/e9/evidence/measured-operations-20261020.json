@@ -1,0 +1,235 @@
+{
+  "caveats": "Request and item counts, not consumed capacity. Durations are laptop durations; only the OneMap-bound lookup paths feed the model. No commute worker exists (#15), so its result write and routing call remain assumed.",
+  "codeRevision": "760dd1f+dirty",
+  "experiment": "E9",
+  "generatedAtUtc": "2026-10-20T10:34:42Z",
+  "issue": 45,
+  "mode": "local-moto + live OneMap",
+  "requests": [
+    {
+      "ddbReadCalls": 3,
+      "ddbReadItems": 3,
+      "ddbWriteCalls": 9,
+      "ddbWriteItems": 9,
+      "label": "places cold (A)",
+      "method": "GET",
+      "ms": 584,
+      "onemapCalls": 6,
+      "ops": {
+        "dynamodb:GetItem": 3,
+        "dynamodb:PutItem": 9,
+        "onemap:http": 6
+      },
+      "path": "/api/places?q=kent+ridge",
+      "sqsCalls": 0,
+      "status": 200
+    },
+    {
+      "ddbReadCalls": 5,
+      "ddbReadItems": 5,
+      "ddbWriteCalls": 0,
+      "ddbWriteItems": 0,
+      "label": "places warm (A, cache hit)",
+      "method": "GET",
+      "ms": 18,
+      "onemapCalls": 0,
+      "ops": {
+        "dynamodb:GetItem": 5
+      },
+      "path": "/api/places?q=kent+ridge",
+      "sqsCalls": 0,
+      "status": 200
+    },
+    {
+      "ddbReadCalls": 5,
+      "ddbReadItems": 5,
+      "ddbWriteCalls": 11,
+      "ddbWriteItems": 11,
+      "label": "places cold (B)",
+      "method": "GET",
+      "ms": 561,
+      "onemapCalls": 6,
+      "ops": {
+        "dynamodb:GetItem": 5,
+        "dynamodb:PutItem": 11,
+        "onemap:http": 6
+      },
+      "path": "/api/places?q=raffles+place",
+      "sqsCalls": 0,
+      "status": 200
+    },
+    {
+      "ddbReadCalls": 1,
+      "ddbReadItems": 1,
+      "ddbWriteCalls": 1,
+      "ddbWriteItems": 3,
+      "label": "group create",
+      "method": "POST",
+      "ms": 36,
+      "onemapCalls": 0,
+      "ops": {
+        "dynamodb:Query": 1,
+        "dynamodb:TransactWriteItems": 1
+      },
+      "path": "/api/groups",
+      "sqsCalls": 0,
+      "status": 201
+    },
+    {
+      "ddbReadCalls": 2,
+      "ddbReadItems": 2,
+      "ddbWriteCalls": 1,
+      "ddbWriteItems": 3,
+      "label": "member join",
+      "method": "POST",
+      "ms": 18,
+      "onemapCalls": 0,
+      "ops": {
+        "dynamodb:Query": 2,
+        "dynamodb:TransactWriteItems": 1
+      },
+      "path": "/api/groups/rAsXQ_5nuPr3sNQnRmIN3g/members",
+      "sqsCalls": 0,
+      "status": 201
+    },
+    {
+      "ddbReadCalls": 4,
+      "ddbReadItems": 4,
+      "ddbWriteCalls": 1,
+      "ddbWriteItems": 3,
+      "label": "preference save (first)",
+      "method": "PUT",
+      "ms": 28,
+      "onemapCalls": 0,
+      "ops": {
+        "dynamodb:GetItem": 1,
+        "dynamodb:Query": 3,
+        "dynamodb:TransactWriteItems": 1
+      },
+      "path": "/api/groups/rAsXQ_5nuPr3sNQnRmIN3g/members/PJvw_rgX5X7QXrgrotXpLg",
+      "sqsCalls": 0,
+      "status": 200
+    },
+    {
+      "ddbReadCalls": 4,
+      "ddbReadItems": 4,
+      "ddbWriteCalls": 1,
+      "ddbWriteItems": 3,
+      "label": "preference save (second)",
+      "method": "PUT",
+      "ms": 27,
+      "onemapCalls": 0,
+      "ops": {
+        "dynamodb:GetItem": 1,
+        "dynamodb:Query": 3,
+        "dynamodb:TransactWriteItems": 1
+      },
+      "path": "/api/groups/rAsXQ_5nuPr3sNQnRmIN3g/members/8Qi19s4oH2Bfuy9IeycmDQ",
+      "sqsCalls": 0,
+      "status": 200
+    },
+    {
+      "ddbReadCalls": 2,
+      "ddbReadItems": 2,
+      "ddbWriteCalls": 0,
+      "ddbWriteItems": 0,
+      "label": "group read (shared link)",
+      "method": "GET",
+      "ms": 10,
+      "onemapCalls": 0,
+      "ops": {
+        "dynamodb:Query": 2
+      },
+      "path": "/api/groups/rAsXQ_5nuPr3sNQnRmIN3g",
+      "sqsCalls": 0,
+      "status": 200
+    },
+    {
+      "ddbReadCalls": 7,
+      "ddbReadItems": 7,
+      "ddbWriteCalls": 55,
+      "ddbWriteItems": 58,
+      "label": "search start (first)",
+      "method": "POST",
+      "ms": 283,
+      "onemapCalls": 0,
+      "ops": {
+        "dynamodb:GetItem": 4,
+        "dynamodb:PutItem": 54,
+        "dynamodb:Query": 3,
+        "dynamodb:TransactWriteItems": 1,
+        "sqs:SendMessage": 52
+      },
+      "path": "/api/groups/rAsXQ_5nuPr3sNQnRmIN3g/searches",
+      "sqsCalls": 52,
+      "status": 201
+    },
+    {
+      "ddbReadCalls": 8,
+      "ddbReadItems": 8,
+      "ddbWriteCalls": 0,
+      "ddbWriteItems": 0,
+      "label": "search start (repeat, idempotent)",
+      "method": "POST",
+      "ms": 94,
+      "onemapCalls": 0,
+      "ops": {
+        "dynamodb:GetItem": 5,
+        "dynamodb:Query": 3
+      },
+      "path": "/api/groups/rAsXQ_5nuPr3sNQnRmIN3g/searches",
+      "sqsCalls": 0,
+      "status": 201
+    },
+    {
+      "ddbReadCalls": 7,
+      "ddbReadItems": 7,
+      "ddbWriteCalls": 0,
+      "ddbWriteItems": 0,
+      "label": "search poll",
+      "method": "GET",
+      "ms": 93,
+      "onemapCalls": 0,
+      "ops": {
+        "dynamodb:GetItem": 4,
+        "dynamodb:Query": 3
+      },
+      "path": "/api/groups/rAsXQ_5nuPr3sNQnRmIN3g/searches/s_jYd7qvWISf6_G84Vv4EtMA",
+      "sqsCalls": 0,
+      "status": 200
+    },
+    {
+      "ddbReadCalls": 7,
+      "ddbReadItems": 7,
+      "ddbWriteCalls": 0,
+      "ddbWriteItems": 0,
+      "label": "search poll (again)",
+      "method": "GET",
+      "ms": 92,
+      "onemapCalls": 0,
+      "ops": {
+        "dynamodb:GetItem": 4,
+        "dynamodb:Query": 3
+      },
+      "path": "/api/groups/rAsXQ_5nuPr3sNQnRmIN3g/searches/s_jYd7qvWISf6_G84Vv4EtMA",
+      "sqsCalls": 0,
+      "status": 200
+    }
+  ],
+  "totalCalls": {
+    "dynamodb:GetItem": 32,
+    "dynamodb:PutItem": 74,
+    "dynamodb:Query": 23,
+    "dynamodb:TransactWriteItems": 5,
+    "onemap:http": 12,
+    "sqs:SendMessage": 52
+  },
+  "totalItems": {
+    "dynamodb:GetItem": 32,
+    "dynamodb:PutItem": 74,
+    "dynamodb:Query": 23,
+    "dynamodb:TransactWriteItems": 16,
+    "onemap:http": 12,
+    "sqs:SendMessage": 52
+  }
+}

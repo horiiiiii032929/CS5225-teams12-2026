@@ -34,12 +34,17 @@ def load(name: str) -> dict:
 # --------------------------------------------------------------------------
 # usage derivation: user-level assumptions -> billable units
 # --------------------------------------------------------------------------
-def derive_usage(scenario: dict, shared: dict, facts: dict, scale: float) -> dict:
+def derive_usage(
+    scenario: dict, shared: dict, facts: dict, measured: dict, scale: float
+) -> dict:
     groups = scenario["groups_per_month"] * scale
     members = groups * scenario["members_per_group"]
+    joins = members - groups  # the organiser is created with the group, not by joining
     searches = groups * scenario["searches_per_group"]
     polls = searches * scenario["result_polls_per_search"]
     places = members * scenario["places_lookups_per_member"]
+    places_warm = places * scenario["places_lookup_cache_hit_ratio"]
+    places_cold = places - places_warm
     prefs = members * scenario["preference_saves_per_member"]
     group_reads = members * 2  # opening the shared link
 
@@ -52,12 +57,20 @@ def derive_usage(scenario: dict, shared: dict, facts: dict, scale: float) -> dic
         )
 
     api_requests = (
-        groups + members + places + prefs + searches + polls + group_reads + burst_requests
+        groups + joins + places + prefs + searches + polls + group_reads + burst_requests
     )
 
-    # Commute jobs: one per uncached (member station, town) pair.
-    pairs_per_search = shared["distinct_member_stations_per_group"] * facts["towns"]
-    jobs = searches * pairs_per_search * (1 - scenario["commute_cache_hit_ratio"])
+    # Commute pairs. A pair whose COMMUTE# record is already usable costs one read
+    # inside the search's own request budget and nothing else: measured, the handler
+    # returns before writing or sending. A miss on a routable town writes one claim
+    # and sends exactly one message; a miss on the non-routable town (TENGAH) writes
+    # the unavailable record and sends nothing.
+    stations = shared["distinct_member_stations_per_group"]
+    miss = 1 - scenario["commute_cache_hit_ratio"]
+    jobs = searches * stations * facts["towns_routable"] * miss
+    non_routable_writes = (
+        searches * stations * facts["non_routable_pairs_per_member_station"] * miss
+    )
 
     lambda_api_invocations = api_requests
     lambda_worker_invocations = jobs
@@ -66,23 +79,49 @@ def derive_usage(scenario: dict, shared: dict, facts: dict, scale: float) -> dic
 
     mem_gb = shared["lambda_memory_mb"] / 1024
     gb_seconds = mem_gb * (
-        lambda_api_invocations * shared["lambda_api_duration_ms"] / 1000
+        (api_requests - places) * shared["lambda_api_duration_ms"] / 1000
+        + places_cold * shared["lambda_places_cold_duration_ms"] / 1000
+        + places_warm * shared["lambda_places_warm_duration_ms"] / 1000
         + lambda_worker_invocations * shared["lambda_worker_duration_ms"] / 1000
         + lambda_other * 5.0
     )
 
+    # Per-request DynamoDB counts are measured; see workloads.json measured_operations.
+    cold, warm = measured["places_lookup_cold"], measured["places_lookup_warm"]
+    start = measured["search_start"]
     ddb_read_requests = (
-        searches * facts["ddb_requests_first_search"]
-        + polls * facts["ddb_requests_repeat_read"]
-        + places
-        + group_reads
+        places_cold * cold["ddb_reads"]
+        + places_warm * warm["ddb_reads"]
+        + groups * measured["group_create"]["ddb_reads"]
+        + joins * measured["member_join"]["ddb_reads"]
+        + prefs * measured["preference_save"]["ddb_reads"]
+        + group_reads * measured["group_read"]["ddb_reads"]
+        + searches * start["ddb_reads"]
+        + polls * measured["search_poll"]["ddb_reads"]
     )
+
+    def billed_writes(op: dict, suffix: str = "") -> int:
+        """Mutations plus condition checks.
+
+        A transaction's `ConditionCheck` changes nothing, so it is counted apart
+        from the mutations, but AWS bills it as a transactional write and it
+        consumes one of the transaction's 100 action slots. Both therefore cost
+        write units.
+        """
+        return (
+            op[f"ddb_write_mutations{suffix}"] + op[f"ddb_condition_checks{suffix}"]
+        )
+
     ddb_writes = (
-        groups * 2            # group META + organiser (transaction)
-        + members * 2         # member item + name reservation (transaction)
-        + prefs
-        + searches
-        + jobs * 2            # pending lease claim + result write
+        places_cold * cold["ddb_writes"]
+        + groups * billed_writes(measured["group_create"])
+        + joins * billed_writes(measured["member_join"])
+        + prefs * billed_writes(measured["preference_save"])
+        + searches * billed_writes(start, "_fixed")
+        + (jobs + non_routable_writes) * start["ddb_writes_per_pair_record"]
+        # One result write per job, now the implemented #15 worker's behaviour
+        # rather than an assumption; the WRU conversion still is one (#34).
+        + jobs
         + shared["monthly_ingest_runs"] * shared["rent_snapshot_items"]
     )
 
@@ -100,6 +139,7 @@ def derive_usage(scenario: dict, shared: dict, facts: dict, scale: float) -> dic
     ]
     cold_starts = lambda_invocations * shared["cold_start_share"]
     log_gb = lambda_invocations * shared["log_bytes_per_invocation"] / GIB
+    onemap_lookup_calls = places_cold * cold["onemap_calls"]
 
     return {
         "groups": groups,
@@ -108,10 +148,16 @@ def derive_usage(scenario: dict, shared: dict, facts: dict, scale: float) -> dic
         "result_polls": polls,
         "api_requests": api_requests,
         "burst_requests": burst_requests,
+        "places_lookups": places,
+        "places_lookups_cold": places_cold,
+        "places_lookups_warm": places_warm,
         "commute_jobs": jobs,
-        # One routing call per job: numItineraries=3 is still a single call, and a
-        # job is re-delivered only on a transient failure (#15).
-        "onemap_calls": jobs * shared["onemap_calls_per_job"],
+        "commute_pair_writes": jobs + non_routable_writes,
+        # One routing call per job: numItineraries=3 is still a single call, and
+        # the implemented #15 worker re-delivers a job only on a transient failure.
+        "onemap_routing_calls": jobs,
+        "onemap_lookup_calls": onemap_lookup_calls,
+        "onemap_calls": jobs + onemap_lookup_calls,
         "lambda_invocations": lambda_invocations,
         "lambda_gb_seconds": gb_seconds,
         "ddb_read_requests": ddb_read_requests,
@@ -361,6 +407,7 @@ def main() -> None:
     wl = load("workloads.json")
     op = load("onprem.json")
     shared, facts = wl["shared_assumptions"], wl["meta"]["fixed_facts"]
+    measured = wl["measured_operations"]
 
     cap = op["capacity"]
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -369,22 +416,24 @@ def main() -> None:
         "issue": 45,
         "experiment": "E9",
         "scale": args.scale,
-        "status": "PROVISIONAL — assumption-driven, no measured usage yet",
+        "status": wl["meta"]["status"],
         "price_source": prices["meta"]["source"],
         "scenarios": {},
     }
     md = [
         f"# FlatSplit cost model output — {stamp}",
         "",
-        f"Demand scale factor: **x{args.scale}**. Status: **provisional** "
-        "(assumptions only; measured inputs from #30 and #34 are still outstanding).",
+        f"Demand scale factor: **x{args.scale}**. Status: **partially measured** "
+        "(per-request operation counts measured 20 and 27 October 2026; demand, Lambda "
+        "duration for non-lookup routes, cold-start share and log volume still "
+        "assumed, and still owned by #30 and #34).",
         "",
         f"Prices: {prices['meta']['source']}",
         "",
     ]
 
     for key, sc in wl["scenarios"].items():
-        u = derive_usage(sc, shared, facts, args.scale)
+        u = derive_usage(sc, shared, facts, measured, args.scale)
         peak = sc.get("burst_peak_rps", cap["target_peak_rps"]) if key == "bursty" else None
         peak_rps = cap["target_peak_rps"] if key == "bursty" else max(
             2, math.ceil(u["api_requests"] / (30 * 24 * 3600) * 20)
@@ -416,8 +465,13 @@ def main() -> None:
             "",
             f"Monthly usage: {u['groups']:,.0f} groups, {u['searches']:,.0f} searches, "
             f"{u['api_requests']:,.0f} API requests, {u['commute_jobs']:,.0f} commute jobs "
-            f"(= OneMap routing calls), {u['cloudwatch_log_gb']:.2f} GB of logs. "
-            f"Commute cache hit ratio assumed {sc['commute_cache_hit_ratio']:.0%}.",
+            f"and {u['cloudwatch_log_gb']:.2f} GB of logs. OneMap sees "
+            f"{u['onemap_calls']:,.0f} calls: {u['onemap_routing_calls']:,.0f} routing "
+            f"calls plus {u['onemap_lookup_calls']:,.0f} from destination lookups "
+            f"({u['places_lookups_cold']:,.0f} cold lookups x "
+            f"{measured['places_lookup_cold']['onemap_calls']} measured calls each). "
+            f"Commute cache hit ratio assumed {sc['commute_cache_hit_ratio']:.0%}, "
+            f"lookup cache {sc['places_lookup_cache_hit_ratio']:.0%}.",
             "",
             "### A. AWS serverless (deployed architecture)",
             "",
@@ -453,8 +507,14 @@ def main() -> None:
     sens = []
     for f in (0.0, 0.1, 1.0, 10.0, 100.0):
         sc = wl["scenarios"]["typical"]
-        u = derive_usage(sc, shared, facts, f) if f else derive_usage(
-            {**sc, "groups_per_month": 0, "web_page_loads_per_month": 0}, shared, facts, 1.0)
+        u = (
+            derive_usage(sc, shared, facts, measured, f)
+            if f
+            else derive_usage(
+                {**sc, "groups_per_month": 0, "web_page_loads_per_month": 0},
+                shared, facts, measured, 1.0,
+            )
+        )
         peak_rps = max(2, math.ceil(u["api_requests"] / (30 * 24 * 3600) * 20))
         nodes = math.ceil(peak_rps / cap["sustained_rps_per_node"]) + cap["redundancy_nodes"]
         a, c = aws_serverless(u, prices, shared), onprem(op, nodes)

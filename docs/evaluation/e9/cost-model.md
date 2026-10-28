@@ -1,10 +1,10 @@
 # FlatSplit hosting cost model: AWS versus on-premise
 
 **Issue:** [#45 — Compare AWS and on-premise hosting costs](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/45) · **Experiment:** E9 in [evaluation-plan.md](https://github.com/horiiiiii032929/CS5225-teams12-2026/blob/main/docs/evaluation-plan.md)
-**Draft:** 12 October 2026 · **Owner:** Ming (@lukerspace) · **Reviewer:** Mani (@saravanamani1999) · **Status:** Provisional runnable model; historical inputs/outputs require reconciliation before current-cost claims
+**Draft:** 12 October 2026 · **Updated:** 26 October 2026 · **Owner:** Ming (@lukerspace) · **Reviewer:** Mani (@saravanamani1999) · **Status:** Partially measured — per-request operation counts measured; demand volumes and AWS-side metrics still assumed
 **Repository path:** `docs/evaluation/e9/cost-model.md` (the original draft proposed `docs/evaluation/E9-cost/cost-model.md`; D-E5 now uses lowercase experiment IDs)
 
-Nothing in this document is a result. Every workload figure is an assumption until #30 and #34 supply measured usage. The on-premise figures are an estimate built on stated assumptions, **not a quote** (required wording, evaluation-plan limitations).
+The demand figures are assumptions. What each request _costs in AWS operations_ is no longer an assumption: on 20 October 2026 every DynamoDB, SQS and OneMap call was counted per request against the real Lambda resolver, and those counts replaced the design budgets the model used before (see [Measured per-request operations](#measured-per-request-operations-20-october-2026)). What remains assumed is how many people do these things, how long Lambda runs outside the lookup path, cold-start share, log volume, and the RRU/WRU conversion — all owned by #30 and #34. The on-premise figures are an estimate built on stated assumptions, **not a quote** (required wording, evaluation-plan limitations).
 
 ## Status reconciliation — 20 October 2026
 
@@ -12,11 +12,13 @@ The runnable model and dated 12/14 October outputs are preserved, including the 
 
 Before publishing a refreshed result, the model owner must reconcile these inputs:
 
-- **DynamoDB:** the old 7/8-request budget is superseded. The implemented complete status path uses eight calls for two distinct stations and 11 for five when partitions fit one page; claims, submission, pagination and retries add work. Measure the actual workload in #30 instead of treating the old fixed budget as a current fact.
-- **Routing:** main resolves non-routable TENGAH directly to `unavailable`; it does not enqueue that pair. There are 27 town records but 26 routable town pairs per distinct destination station. The JSON's statement that TENGAH is enqueued is historical and must be corrected with the next model revision. The historical 187,200-job table and 194,400-job prose use different town counts; neither is a measured monthly total.
-- **Destination lookup:** [Ming's 20 October evidence](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/45#issuecomment-6286439604) reports cold lookup cost of `1 + N` upstream calls and repeat-query cache hits of zero for open PR #65. Its Kent Ridge sample used six calls cold and zero warm, through a local handler with live OneMap and Moto. Candidate count and distinct-query/cache-hit rate must drive the lookup estimate; a fixed two-call assumption is superseded. Sample timings are not deployed p95/capacity evidence, and the query cache is not merged on main.
-- **Runtime/admission:** main's HTTP Lambda timeout is 30 seconds, not the draft's 10. CDK now defines 100 requests/s, burst 200 for `eval` only; other stages retain 20/40. Verify actual deployed configuration and authorisation before W2; configuration does not establish capacity or a 500 ms result.
-- **Resource scope:** the worker/event-source mapping, scheduled ingestion, custom metrics, dashboard and queue/DLQ alarms are not implemented on main. Their model costs remain planned assumptions; SQS idle-poll volume is not an observed charge. Budget alerts are conditional on `budgetEmail` configuration.
+Three of the five are now closed by [Measured per-request operations](#measured-per-request-operations-20-october-2026), which replaced the budgeted figures and reran the model; they are kept here with their outcome rather than deleted.
+
+- **DynamoDB — closed.** The old 7/8-request budget is superseded. The implemented complete status path uses eight calls for two distinct stations and 11 for five when partitions fit one page; claims, submission, pagination and retries add work. Measure the actual workload in #30 instead of treating the old fixed budget as a current fact.
+- **Routing — closed.** Main resolves non-routable TENGAH directly to `unavailable`; it does not enqueue that pair. There are 27 town records but 26 routable town pairs per distinct destination station. The JSON's statement that TENGAH is enqueued is historical and must be corrected with the next model revision. The historical 187,200-job table and 194,400-job prose use different town counts; neither is a measured monthly total.
+- **Destination lookup — closed.** [Ming's 20 October evidence](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/45#issuecomment-6286439604) reports cold lookup cost of `1 + N` upstream calls and repeat-query cache hits of zero for open PR #65. Its Kent Ridge sample used six calls cold and zero warm, through a local handler with live OneMap and Moto. Candidate count and distinct-query/cache-hit rate must drive the lookup estimate; a fixed two-call assumption is superseded. Sample timings are not deployed p95/capacity evidence, and the query cache is not merged on main.
+- **Runtime/admission — still open.** Main's HTTP Lambda timeout is 30 seconds, not the draft's 10. CDK now defines 100 requests/s, burst 200 for `eval` only; other stages retain 20/40. Verify actual deployed configuration and authorisation before W2; configuration does not establish capacity or a 500 ms result.
+- **Resource scope — still open.** The worker/event-source mapping, scheduled ingestion, custom metrics, dashboard and queue/DLQ alarms are not implemented on main. Their model costs remain planned assumptions; SQS idle-poll volume is not an observed charge. Budget alerts are conditional on `budgetEmail` configuration.
 
 Payer-side cost-tag status/history, account allowances, actual worker/usage measurements (#34), node throughput (#30) and final price refresh remain outstanding. The 14 October linked-account billing access denial remains the recorded limitation. See the [measurement requests](evidence/measurement-requests.md) and [deployment handoff](../../aws-dev-handoff.md); no billing or deployment change is claimed.
 
@@ -47,22 +49,57 @@ B is the honest middle column: it shows how much of the saving comes from AWS an
 
 Scenarios are defined in `model/workloads.json` and derive billable units from user-level assumptions, so one edit changes every table. Monthly figures, not peak figures, except where stated.
 
-|                                             |             Quiet |   Typical |                            Bursty |
-| ------------------------------------------- | ----------------: | --------: | --------------------------------: |
-| Maps to                                     | between semesters | W1 Steady |           W2 Burst + W3 Long tail |
-| Groups created / month                      |                50 |       500 |                             3,000 |
-| Members per group                           |                 3 |         3 |                                 3 |
-| Searches / month                            |               100 |     1,000 |                             6,000 |
-| Result polls per search                     |                20 |        20 |                                20 |
-| API requests / month                        |             3,500 |    35,000 |                           276,000 |
-| Commute cache hit ratio (assumed)           |               80% |       90% |                               60% |
-| Commute jobs = OneMap routing calls / month |             1,560 |     7,800 |                           187,200 |
-| Burst events / month                        |                 0 |         0 | 4 × (1→50 req/s ramp, 5 min hold) |
-| Peak admitted rate used for sizing          |                 — |         — |                   50 req/s (D-E1) |
+|                                              |             Quiet |    Typical |                            Bursty |
+| -------------------------------------------- | ----------------: | ---------: | --------------------------------: |
+| Maps to                                      | between semesters |  W1 Steady |           W2 Burst + W3 Long tail |
+| Groups created / month                       |                50 |        500 |                             3,000 |
+| Members per group                            |                 3 |          3 |                                 3 |
+| Searches / month                             |               100 |      1,000 |                             6,000 |
+| Result polls per search                      |                20 |         20 |                                20 |
+| API requests / month                         |             3,450 |     34,500 |                           273,000 |
+| Destination lookups / month                  |               600 |      6,000 |                            36,000 |
+| Lookup cache hit ratio (assumed)             |               20% |        40% |                               50% |
+| Commute cache hit ratio (assumed)            |               80% |        90% |                               60% |
+| Commute jobs / month                         |             1,560 |      7,800 |                           187,200 |
+| **OneMap calls / month** (routing + lookups) |         **4,440** | **29,400** |                       **295,200** |
+| Burst events / month                         |                 0 |          0 | 4 × (1→50 req/s ramp, 5 min hold) |
+| Peak admitted rate used for sizing           |                 — |          — |                   50 req/s (D-E1) |
 
-Fixed facts behind the derivation, taken from the team's merged documents rather than invented: 27 HDB towns each represented by one MRT station (26 of them routable) ([backend-design.md](https://github.com/horiiiiii032929/CS5225-teams12-2026/blob/main/docs/backend-design.md)); 3 distinct member stations × 27 towns = 81 commute pairs per search; a first search costs 8 single-partition DynamoDB requests and each later result read costs 7 ([api-contract.md](https://github.com/horiiiiii032929/CS5225-teams12-2026/blob/main/docs/api-contract.md), access patterns A1/A6/A7); Lambda is arm64 at 256 MB with a 10 s timeout ([infra/aws/src/api.ts](https://github.com/horiiiiii032929/CS5225-teams12-2026/blob/main/infra/aws/src/api.ts)); the HTTP API stage throttles at 20 req/s burst 40, so admitting W2's 50 req/s needs an explicit eval-stage limit (D-E1, D-E2).
+The OneMap row changed the most. The model used to equate OneMap calls with commute jobs; measurement shows a cold destination lookup costs **six** calls of its own (one search plus one nearest-station call per candidate), so at typical demand **lookups make up 21,600 of the 29,400 calls — nearly three times the routing traffic**. API requests fall slightly because the organiser is now counted as created with the group rather than joining it.
 
-**Assumptions that must be replaced by measurements**, each marked `_source: assumed` in `model/workloads.json`: Lambda duration (120 ms API, 900 ms worker), cold-start share (5%), log volume per invocation (2 KB), RRU per read request (2.0), WRU per write (1.5), commute cache hit ratios, and `sustained_rps_per_node` for options B and C. See `evidence/measurement-requests.md` (next to this file in the #45 deliverable) for exactly who owns each one.
+Fixed facts behind the derivation, taken from the team's merged documents rather than invented: 27 HDB towns each represented by one MRT station ([backend-design.md](https://github.com/horiiiiii032929/CS5225-teams12-2026/blob/main/docs/backend-design.md)); 3 distinct member stations × 27 towns = 81 commute pairs per search; Lambda is arm64 at 256 MB with a 10 s timeout ([infra/aws/src/api.ts](https://github.com/horiiiiii032929/CS5225-teams12-2026/blob/main/infra/aws/src/api.ts)); the HTTP API stage throttles at 20 req/s burst 40, so admitting W2's 50 req/s needs an explicit eval-stage limit (D-E1, D-E2).
+
+Two of those facts are now confirmed by the handler itself rather than by a document. A two-member search wrote 54 pair records (2 × 27) and sent exactly 52 SQS messages (2 × 26), reporting two pairs unavailable — one TENGAH pair per member station, which is the 27/26 routable split from the #2 data profile. And a first search reads 7 times, not the 8 budgeted in [api-contract.md](https://github.com/horiiiiii032929/CS5225-teams12-2026/blob/main/docs/api-contract.md) (A1/A6/A7), while each later result read costs exactly the 7 the contract predicted.
+
+**Assumptions that must still be replaced by measurements**, each marked `_source: assumed` in `model/workloads.json`: Lambda duration outside the lookup path (120 ms) and the worker (900 ms), cold-start share (5%), log volume per invocation (2 KB), RRU per read request (2.0), WRU per write (1.5), both cache hit ratios, the demand volumes themselves, and `sustained_rps_per_node` for options B and C. See `evidence/measurement-requests.md` (next to this file) for who owns each one.
+
+## Measured per-request operations (20 and 26 October 2026)
+
+`model/measure_operations.py` drives API Gateway v2 events through the real resolver in `flatsplit_api.handlers.http`, with Moto standing in for DynamoDB and SQS, and counts every botocore call, the items each one mutates, each transaction's `ConditionCheck` actions separately, and every OneMap round trip. Raw output: `evidence/measured-operations-20261027.json` is the current run — all nine rows, live OneMap, decoded queries, with [#65](https://github.com/horiiiiii032929/CS5225-teams12-2026/pull/65) merged. Kept for history: `evidence/measured-operations-20261020.json` (the first run, `/places` measured with #65 checked out at `c6f7e0c` and an un-decoded query) and `evidence/measured-operations-20261026.json` (the six rows that do not touch OneMap, with `--seeded-place`).
+
+| Request                     | DynamoDB reads | Write mutations | Condition checks | OneMap calls | SQS sends |   Duration |
+| --------------------------- | -------------: | --------------: | ---------------: | -----------: | --------: | ---------: |
+| `GET /places` (cold)        |            3-5 |            9-11 |                0 |            6 |         0 | 658-873 ms |
+| `GET /places` (cache hit)   |              5 |               0 |                0 |            0 |         0 |      17 ms |
+| `POST /groups`              |              1 |               3 |                0 |            0 |         0 |      36 ms |
+| `POST /groups/{id}/members` |              2 |               3 |                0 |            0 |         0 |      18 ms |
+| `PUT .../members/{id}`      |              4 |               2 |                1 |            0 |         0 |      28 ms |
+| `GET /groups/{id}`          |              2 |               0 |                0 |            0 |         0 |      10 ms |
+| `POST .../searches` (first) |              7 |              57 |                1 |            0 |        52 |     283 ms |
+| `POST .../searches` (again) |              8 |               0 |                0 |            0 |         0 |      94 ms |
+| `GET .../searches/{id}`     |              7 |               0 |                0 |            0 |         0 |      93 ms |
+
+Five corrections came out of this, and the first two are the reason the model's DynamoDB lines moved:
+
+1. **A search start writes one record per pair, not two per job.** The old model charged `jobs x 2`; measurement shows one `PutItem` for every pair that has no usable cached result - 54 of them for a two-member search - plus a four-action transaction. A pair with a usable `COMMUTE#` record at the same routing profile returns from the read before writing or sending anything, so the cache hit ratio removes the write and the message together.
+2. **A cold destination lookup writes 9-11 items** (one `PLACE#` per candidate, one `STATION#` per distinct station, one `PLACELOOKUP#`) and makes six OneMap calls. The old model charged it one read and nothing else.
+3. **The enqueue is not batched**: exactly one `SendMessage` per enqueued pair.
+4. **A cache hit is free of upstream cost**: five reads, no writes, no OneMap call, 15-18 ms against 557-697 ms. That is what makes the lookup cache hit ratio the lever on OneMap quota.
+5. **A transaction's mutations and its condition checks are different things.** The earlier table counted every `TransactWriteItems` action as a written item, which overstated the mutations: a preference save is two Updates plus one `ConditionCheck` on the destination's ttl, and a search start is three Puts plus one check. The 26 October run measures them apart. AWS still bills a `ConditionCheck` as a transactional write and it still consumes one of the transaction's 100 action slots ([the limit is 100 actions or 4 MB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html#transaction-apis-txwriteitems), not 25), so the model charges mutations plus checks - which raised the search start from 3 to 4 fixed write units and moved the bursty scenario by one cent, to US$2.49 payable. The accounting is now right; the conclusion was never sensitive to it.
+
+Durations here are laptop durations against Moto, so only the lookup paths feed the model: their cost is real upstream network time, which Lambda pays too. Everything else keeps the assumed 120 ms pending #30. Moto is not DynamoDB, so these are request, item and action counts, not consumed capacity; the RRU/WRU conversion stays with #34.
+
+**The `/places` rows are no longer provisional.** They carried their 20 October values until 27 October, because the measurement script built its query parameters without URL-decoding them: that run searched OneMap for the literal `kent+ridge` rather than the `kent ridge` an `encodeURIComponent` client produces. The script now decodes with `urllib.parse.parse_qsl`, and on 27 October both rows were re-measured against live OneMap with [#65](https://github.com/horiiiiii032929/CS5225-teams12-2026/pull/65) merged, so the warm row is a real cache hit rather than a second cold call. **The counts did not move.** A cold lookup still makes 6 OneMap calls and writes 9 to 11 items, and the decoded queries return the same candidates as the encoded ones: `kent ridge` 4 selectable plus 1 `STATION_TOO_FAR`, `raffles place` 5 selectable. Only the durations differ - 658-873 ms cold against 557-697 ms on 20 October, and 17 ms warm - which is laptop network variance, not a behaviour change. Measured twice in succession with byte-identical counts. Everything downstream of `/places` was re-measured on 26 October with a seeded destination record and is unaffected.
 
 ## AWS cost drivers and their on-premise counterparts
 
@@ -70,10 +107,10 @@ Fixed facts behind the derivation, taken from the team's merged documents rather
 | ------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Lambda requests + GB-seconds                | invocations × duration × memory                                                          | A share of the server's purchase price and its idle power                                                 |
 | API Gateway HTTP API requests               | every `/api/*` call                                                                      | The same server's web listener (no separate charge, no separate scaling either)                           |
-| DynamoDB RRU/WRU                            | the 7–8 requests per search read, job claims and result writes                           | PostgreSQL on the same box: no per-request charge, but disk, tuning, backups and a restore drill          |
+| DynamoDB RRU/WRU                            | measured: 7 reads per search read, 1 write per uncached pair, 9–11 per cold lookup       | PostgreSQL on the same box: no per-request charge, but disk, tuning, backups and a restore drill          |
 | DynamoDB storage + PITR                     | table size; PITR is charged per GB-month                                                 | RAID/mirrored disks plus a backup schedule somebody has to verify                                         |
 | S3 + CloudFront                             | web build size, page loads, data transfer out                                            | Bandwidth on the business line, plus no global edge at all                                                |
-| SQS requests                                | 3 requests per commute job **plus idle long polls from the Lambda event-source mapping** | A local queue (Redis/RabbitMQ) to install, monitor and restart                                            |
+| SQS requests                                | measured 1 send per enqueued pair, +2 assumed (receive/delete), **plus idle long polls** | A local queue (Redis/RabbitMQ) to install, monitor and restart                                            |
 | Secrets Manager                             | 1 secret per month, flat                                                                 | A file with 600 permissions and a rotation habit                                                          |
 | CloudWatch logs, metrics, alarms, dashboard | log GB ingested, custom metric count, alarm count                                        | Prometheus/Grafana or nothing; if nothing, the comparison is not like-for-like and the report must say so |
 | AWS Budgets                                 | free                                                                                     | No equivalent; cost is sunk at purchase                                                                   |
@@ -98,48 +135,50 @@ Full assumptions in `model/onprem.json`. Sizing follows D-E2: one node is a `t4g
 
 Named but excluded, so the reader can judge the bias: room rent and physical security (assumed free on campus), hardware failure beyond the spares buffer, DDoS protection (CloudFront includes Shield Standard), the one-off time to build a deployment pipeline, and the cost of downtime — the single-box model has no SLA.
 
-## Comparison (provisional model output, updated 14 October 2026)
+## Comparison (model output, updated 26 October 2026)
 
-Generated by `model/cost_model.py`; raw output in `evidence/cost_model_20261014T072020Z.{md,json,csv}`.
-The superseded 12 October run (`evidence/cost_model_20261012T062840Z.*`) is kept because its figures are the ones
-quoted in #45; it assumed 26 towns. The 27-town correction from the #2 data profile (PR #52) moves only the bursty
-column, by 2 cents on the payable serverless option.
+Generated by `model/cost_model.py`; raw output in `evidence/cost_model_20261027T013441Z.{md,json,csv}`.
+Earlier runs are kept: `evidence/cost_model_20261020T103456Z.*` is the run before transaction mutations and condition checks were counted apart, `evidence/cost_model_20261014T072020Z.*` is the assumption-only version these figures
+replace, and `evidence/cost_model_20261012T062840Z.*` is the one quoted in #45 (it assumed 26 towns).
 
 | Option                                            | Quiet US$/mo | Typical US$/mo | Bursty US$/mo | US$ per 1,000 searches (typical) |
 | ------------------------------------------------- | -----------: | -------------: | ------------: | -------------------------------: |
-| A. AWS serverless — **payable**                   |         1.13 |           1.21 |          2.19 |                             1.21 |
-| A. AWS serverless — list price, free tier removed |         8.19 |           8.77 |         13.63 |                             8.77 |
-| B. AWS always-on VM                               |        38.67 |          38.78 |         57.41 |                            38.78 |
+| A. AWS serverless — **payable**                   |         1.13 |           1.27 |          2.49 |                             1.27 |
+| A. AWS serverless — list price, free tier removed |         8.20 |           8.83 |         13.92 |                             8.83 |
+| B. AWS always-on VM                               |        38.67 |          38.84 |         57.70 |                            38.84 |
 | C. On-premise                                     |       243.50 |         243.50 |        274.87 |                           243.50 |
 
-Free-tier allowances are listed per line item in the generated tables, never netted silently. At typical demand the free tier covers US$7.56 of US$8.77, so **the cloud-versus-on-premise conclusion does not depend on the free tier**: even at list price, option A is roughly 28× cheaper than option C.
+Measuring the operation counts moved the serverless total by **+5% at typical demand and +13% in the burst**, all of it in DynamoDB: writes went from US$0.03 to US$0.07 typical and US$0.47 to US$0.71 bursty, reads from US$0.04 to US$0.06 and US$0.27 to US$0.33. Counting each transaction's condition check as the billed write it is added one more fixed write unit per search, which is the one cent between the 20 October bursty figure and this one. Nothing in the comparison's conclusion changes — the gap to option C is still roughly two orders of magnitude — which is itself the useful result: **the on-premise comparison was never sensitive to the per-request accounting**, so the remaining uncertainty that matters is `sustained_rps_per_node` on the on-premise side, not AWS usage.
+
+Free-tier allowances are listed per line item in the generated tables, never netted silently. At typical demand the free tier covers US$7.56 of US$8.83, so **the cloud-versus-on-premise conclusion does not depend on the free tier**: even at list price, option A is roughly 28× cheaper than option C.
 
 ### Main cost drivers
 
-| Option                         | Dominant driver                                                                               | Share               |
-| ------------------------------ | --------------------------------------------------------------------------------------------- | ------------------- |
-| A. AWS serverless (payable)    | CloudWatch custom metrics (12 metrics, 10 free) + Secrets Manager flat fee                    | 0.60 + 0.41 of 1.21 |
-| A. AWS serverless (list price) | CloudWatch dashboard (US$3.00) + custom metrics (US$3.60)                                     | ~75%                |
-| B. AWS always-on VM            | EC2 instance-hours, billed whether or not anyone searches                                     | ~80%                |
-| C. On-premise                  | Operational effort and the business internet line — **people and connectivity, not hardware** | ~58%                |
+| Option                               | Dominant driver                                                                               | Share                     |
+| ------------------------------------ | --------------------------------------------------------------------------------------------- | ------------------------- |
+| A. AWS serverless, typical (payable) | CloudWatch custom metrics (12 metrics, 10 free) + Secrets Manager flat fee                    | 0.60 + 0.41 of 1.27 (79%) |
+| A. AWS serverless, bursty (payable)  | **DynamoDB** reads + writes + PITR, now the largest payable group                             | 1.16 of 2.49 (47%)        |
+| A. AWS serverless (list price)       | CloudWatch dashboard (US$3.00) + custom metrics (US$3.60)                                     | ~75% typical              |
+| B. AWS always-on VM                  | EC2 instance-hours, billed whether or not anyone searches                                     | ~80%                      |
+| C. On-premise                        | Operational effort and the business internet line — **people and connectivity, not hardware** | ~58%                      |
 
-Compute is not the cost driver in any option at this scale. That is the finding worth putting in the report: for a bursty, low-average workload, hosting cost is dominated by _fixed_ commitments (a person, a line, a box, a dashboard), and the serverless model has the fewest of them.
+Compute is not the cost driver in any option at this scale. That is the finding worth putting in the report: for a bursty, low-average workload, hosting cost is dominated by _fixed_ commitments (a person, a line, a box, a dashboard), and the serverless model has the fewest of them. The one thing measurement changed here is that in the burst scenario DynamoDB overtakes the fixed CloudWatch and Secrets Manager lines, because per-pair writes scale with demand while a dashboard does not.
 
 ### Sensitivity to demand
 
 | Demand (typical scaled)           | A. serverless payable | A. list price | C. on-premise | On-prem nodes |
 | --------------------------------- | --------------------: | ------------: | ------------: | ------------: |
 | idle — nobody uses it for a month |                  1.11 |          8.12 |        243.50 |             2 |
-| ×0.1                              |                  1.12 |          8.18 |        243.50 |             2 |
-| ×1 (1,000 searches)               |                  1.21 |          8.77 |        243.50 |             2 |
-| ×10                               |                  2.09 |         14.65 |        243.50 |             2 |
-| ×100 (100,000 searches)           |                 17.62 |         73.44 |        274.87 |             3 |
+| ×0.1                              |                  1.13 |          8.19 |        243.50 |             2 |
+| ×1 (1,000 searches)               |                  1.27 |          8.83 |        243.50 |             2 |
+| ×10                               |                  2.66 |         15.26 |        243.50 |             2 |
+| ×100 (100,000 searches)           |                 23.27 |         79.49 |        274.87 |             3 |
 
-Option A tracks demand almost linearly and costs ~US$1.11/month when idle; option C is a step function that charges the same whether traffic is zero or 10× higher, then jumps when the peak needs another node. On this model the break-even is far beyond anything a student project reaches: serverless list price only approaches the on-premise total somewhere above ×300 of typical demand.
+Option A tracks demand almost linearly and costs ~US$1.11/month when idle; option C is a step function that charges the same whether traffic is zero or 10× higher, then jumps when the peak needs another node. Measured per-request costs steepen option A's slope — ×100 demand is now US$23.27 payable rather than US$17.62 — but the break-even is still far beyond anything a student project reaches: serverless list price only approaches the on-premise total somewhere above ×250 of typical demand.
 
-**The constraint that bites first is not cost.** In the bursty scenario the model implies 194,400 OneMap routing jobs per month (6,000 searches × 3 stations × 27 towns × 40% miss rate). This is a conservative per-search demand estimate: in-flight deduplication and cache reuse may lower actual jobs, while retries and destination lookups add calls.
+**The constraint that bites first is not cost.** The bursty scenario implies **295,200 OneMap calls per month**: 187,200 routing jobs (6,000 searches × 3 stations × 26 routable towns × 40% miss) plus 108,000 from destination lookups (18,000 cold lookups × 6 measured calls). Routing dominates the burst, but at typical demand the ratio inverts: 21,600 lookup calls against 7,800 routing calls, because the commute cache is assumed 90% warm while a 24-hour lookup cache is not. Published quota is 300 calls/min, and #3 did not establish a sustained safe rate; assess feasibility with the three-worker concurrency cap and measured drain/lookup latency, not a calls/min division. Two measured facts now bound this: a cold lookup costs exactly six calls and a cached one costs zero, so the lookup cache hit ratio — an assumption nobody has measured yet — is the single biggest lever on OneMap quota, and it belongs in #3/#27's follow-up rather than in the cost model.
 
-The call count per job is now fixed by the implemented worker (#15), not assumed: **one routing call per delivery**, and asking for three itineraries is still one call. A job is delivered again only on a transient failure, so the worst case is three calls for a job that keeps being throttled (`COMMUTE_MAX_RECEIVES`), while a terminal failure such as a 404 spends exactly one. Published quota is 300 calls/min, and #3 did not establish a sustained safe rate, so the bound in force is the event source's concurrency cap of three. [Draining a real queue at that concurrency](../worker-queue/) measured **165 calls/min**, below the 180 the 992 ms routing p50 alone implies because each invocation also writes its result; the cap would be reached at about concurrency five. Drain time, not a calls/min division, is what decides feasibility — at the measured rate 5,400 cold pairs take about 33 minutes. That harness emulates AWS and replays OneMap's latency, so E4 (#27) still has to confirm it on real infrastructure. The cache hit ratio and the queue — not the AWS bill — decide whether the burst scenario is feasible.
+The routing call count per job is no longer assumed: the implemented #15 worker makes **one routing call per delivery**, and asking for three itineraries is still one call. A job is delivered again only on a transient failure, so the worst case is three calls for a job that keeps being throttled (`COMMUTE_MAX_RECEIVES`), while a terminal failure such as a 404 spends exactly one. [Draining a real queue](../worker-queue/) at the event source's concurrency cap of three measured **165 calls/min** — below the 180 the 992 ms routing p50 alone implies, because each invocation also writes its result — and OneMap's published 300/min is reached at about concurrency five. Drain time, not a calls/min division, is what decides feasibility: at the measured rate one fully cold search's 78 pairs clear in about 28 seconds, and the bursty scenario's 187,200 routing jobs are about 19 hours of worker time spread over the month. Those two durations are this model's arithmetic over the measured rate, not separately measured drains. The harness emulates AWS and replays OneMap's latency, so E4 (#27) still has to confirm the rate on real infrastructure.
 
 ## Open questions for the team
 
@@ -163,6 +202,16 @@ The call count per job is now fixed by the implemented worker (#15), not assumed
 cd docs/evaluation/e9/model
 python3 cost_model.py            # writes ../evidence/cost_model_<utc>.{md,json,csv}
 python3 cost_model.py --scale 10 # demand sensitivity
+
+# re-measure the per-request operation counts after a handler change
+# (needs the dev dependency group for Moto)
+export ONEMAP_TOKEN=...   # the /places rows call live OneMap and spend quota
+uv run --package flatsplit-api python docs/evaluation/e9/model/measure_operations.py
+
+# without a token: the six rows that never touch OneMap, against a seeded
+# destination record. The three /places rows are skipped, not estimated.
+uv run --package flatsplit-api python \
+  docs/evaluation/e9/model/measure_operations.py --seeded-place
 ```
 
 Prices come from the AWS Price List bulk API for `ap-southeast-1` (publication date 1 October 2026), captured in `model/prices_ap_southeast_1.json` with the source URL; CloudFront values use the `AP-` usage-type prefix (Asia Pacific price class, which serves Singapore). Refresh before the final report and commit the new file so the figures in the report are reproducible.
