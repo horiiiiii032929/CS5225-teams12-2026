@@ -31,7 +31,7 @@ EventBridge Scheduler (monthly) → ingest-rental → S3 raw/ + DynamoDB snapsho
 Secrets Manager: OneMap account credentials; access token cached in Lambda memory
 ```
 
-The current HTTP Lambda uses Python 3.13 on arm64 with Powertools routing, validation and logging, 256 MB memory and a 30-second timeout. Metrics/tracing and the worker instrumentation below are evaluation requirements, not completed instrumentation. No VPC, so no NAT Gateway. CDK creates a Secrets Manager placeholder for a manually rotated OneMap access token; its current deployed value was not verified by this reconciliation. Account-credential storage and automatic token renewal in the target design are not implemented.
+The current HTTP Lambda uses Python 3.13 on arm64 with Powertools routing, validation and logging, 256 MB memory and a 30-second timeout. Metrics/tracing and the worker instrumentation below are evaluation requirements, not completed instrumentation. No VPC, so no NAT Gateway. CDK creates two Secrets Manager secrets: the OneMap access token that the API reads, and the OneMap account credentials (`{"email", "password"}`, put in once by hand). A scheduled Lambda (#72; Python 3.13, arm64, 128 MB, 30 s, EventBridge `rate(12 hours)`) renews the token. It logs in through `getToken`, refuses a token that is not a JWT, expires within 24 hours or that OneMap rejects on a nearest-station call, and only then writes it as the token secret's new current value. A failed refresh leaves the current token in place and raises `OneMapTokenRefreshFailing` on the #27 alert topic. Both OneMap calls refuse redirects, and failures are logged as fixed text and status codes, never provider text. It is not Secrets Manager rotation, because rotation runs a `testSecret` step during every deployment, which would fail on the placeholder before the credentials exist.
 
 ## API contract and data model
 
@@ -76,7 +76,7 @@ The Lambda is configured with 1024 MiB memory and a 10-minute timeout. The sourc
 
 - Tokens are 256-bit random values. Only SHA-256 hashes are stored. An invite token can only join; it cannot read or edit the group (D11). Invite tokens travel in the URL fragment, so they never reach server logs.
 - Each Lambda has its own role scoped to the table, queue, bucket or secret it actually uses. There are no wildcard resource grants.
-- OneMap credentials are kept in Secrets Manager and never sent to the browser. `/places` proxies the search.
+- OneMap credentials are kept in Secrets Manager and never sent to the browser. `/places` proxies the search. Only the refresh Lambda can read the account credentials; the API reads the token secret alone, and the refresh Lambda's only write is `PutSecretValue` on the token secret.
 - Logs never contain tokens or member preference values.
 - HTTP API stage throttling (20 requests/s, burst 40) limits abuse. Only the isolated `eval` stage uses 100 requests/s, burst 200 so E2 can admit its hypothesised 50 requests/s workload; account quotas and run authorization still require verification. Per-function reserved concurrency is added only once the account's Lambda concurrency quota is raised above the default for new accounts, because reserving below it fails.
 
@@ -93,6 +93,8 @@ The table below preserves the 14 October design estimates, not a measured bill o
 | SQS                       | < 10k messages                                     | Free tier                           |
 | Secrets Manager           | 1 secret                                           | US$0.40                             |
 | CloudWatch                | Logs (1-week retention), one dashboard, few alarms | ≈ US$3 (dashboard is the main cost) |
+
+Added since (28 October, #72): the OneMap credentials are a second secret (+US$0.40 a month at US$0.40 per secret), and the token refresh adds about 60 invocations a month of a 128 MB Lambda (well within the free tier) plus a few hundred Secrets Manager API calls (under US$0.01). Evaluate it by the refresh Lambda's success/failure in CloudWatch Logs and its alarm and by `/places` staying available across token expiry.
 
 An AWS Budget with alerts at US$20, 50 and 100 (report section 6.2) is defined in CDK and instantiated only when `budgetEmail` is supplied. Its definition is not evidence that billing alerts are active in the shared account.
 

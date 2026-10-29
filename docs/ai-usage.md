@@ -445,10 +445,19 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Not verified: no browser walk-through of the live lobby flow. The browser tool rejected local loopback addresses and the user could not open the local dev server either, because the dev server binds only to the VM's 127.0.0.1:5173; the branch is therefore opened as a draft PR with this limitation stated in its description. No form-level validation test yet. No deployment, no AWS changes.
 - Follow-up: browser-verify the form in a live lobby, add a form-level test, then mark the PR ready for review. The generated client omits the /places `q` parameter because the backend reads the raw query string, so `searchPlaces` passes `q` in the URL; declaring `q` in the generated OpenAPI would be the cleaner contract fix.
 
-## 28 October 2026 — PR #77 main refresh
+## 28 October 2026 — issue 72 OneMap token rotation
 
-- Tool: Codex, directed by Hikaru to execute the next repository integration steps. Merged main `b4a4434` into the recovery branch; the only conflict was the append-only AI log. Preserved both histories with main entries first; no application source changed during the refresh.
-- Verification: root check/test/build/synth and generated API drift check passed on Node 26.0.0; Turbo reused successful task cache entries. Test totals: 297 API, 72 web, eight CDK and three offline evidence tests. No visible code changed, so no new browser run was needed. No new deployment or integrated acceptance is claimed.
+- Tool: Claude Code (Claude Opus 5.5), directed by Shyam, who registered the OneMap account.
+- Contribution: `flatsplit_api/onemap_rotation.py` and `handlers/onemap_rotation.py` implement Secrets Manager's four rotation steps for `OneMapTokenSecret`:
+  - `createSecret` logs in through OneMap `getToken` using a new `OneMapCredentials` secret and stages `AWSPENDING`; a retry does not log in again;
+  - `setSecret` is a no-op;
+  - `testSecret` refuses a token that is not a JWT, expires within 24 hours, or is rejected on an authenticated nearest-station call;
+  - `finishSecret` moves `AWSCURRENT`.
+
+  CDK adds the credentials secret, a 128 MB arm64 rotation Lambda that is the only reader of that secret, and a `rate(12 hours)` rotation schedule that deploys do not trigger. It also adds a `OneMapCredentialsSecret` output. Backend design and the handoff runbook document setup, permissions, cost and evaluation.
+
+- Verification: 19 new Python tests run the steps against Moto Secrets Manager. They cover full promotion with the old version becoming `AWSPREVIOUS`, idempotent create, malformed credentials, failed login or check leaving the current token, preconditions, error messages that never echo the password, expiry and acceptance checks, and non-JWT tokens. Two new CDK tests assert the 12-hour schedule without rotate-on-deploy, that only the rotation Lambda reads the credentials, and that its only write is the rotation actions on the token secret. Moto's default `GetSecretValue` does not follow a moved `AWSCURRENT` label, so the tests read the stage explicitly; real Secrets Manager serves `AWSCURRENT`. `pnpm check`, `pnpm test` (316 API, 65 web, 10 CDK) and `pnpm synth` passed.
+- Not verified: no live `getToken` login (the account credentials were not shared with the assistant), no deployment and no rotation on AWS.
 
 ## 29 October 2026 — PR #78 integration refresh
 
@@ -480,12 +489,6 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Validation: 106 web, 297 API, eight CDK and four offline evidence tests passed (415), plus the two browser journeys. Root check/build, API drift and local CDK synthesis passed; added QA ESLint and Python Ruff checks passed. The initial PDF rendered as 12 pages, including its local redacted screenshot; inspected the architecture render. Browser file URLs are blocked in this managed environment, so PDF export uses a temporary loopback HTTP server exposing only the deck and its single image, without changing browser policy.
 - Remaining gates: reviewer approval/merge, authorised integrated deployment with representative records, deployed #25/#32 capture, #31 real participants, accepted #34–#36 measurements, all-six final slide review, rehearsal and actual submission by 13 November 2026 23:59 SGT. GitHub API identity access remains Forbidden; no credentials/account were switched and no public issue status comment was posted.
 
-## 29 October 2026 — PR #76 integration refresh
-
-- Tool: Codex, directed by Hikaru to review #85/#86, resolve frontend PR conflicts and run checks. Merged main `ef1bbf6` into the map branch. The only conflict was the contribution log; every entry from both parents was preserved and checked. No application source changed in this refresh.
-- Verification: root check/test/build/synth and generated API drift check passed on Node 26.0.0. Successful Turbo cache entries were reused; offline evaluation and acceptance suites executed. This refresh does not establish deployment or user acceptance.
-- Merge order: #76 map, #85 forms/results composed with the map, #77 recovery composed with both, then #86 QA/demo/slides. #78 is independent study preparation. No upstream merge or deployment was performed.
-
 ## 29 October 2026 — PR #85 review and map composition
 
 - Tool: Codex, directed by Hikaru to review Lucy's #85/#86, fix conflicts and establish merge order. Reviewed member-only preference writes, destination validation/cancellation, cache replacement, stale withholding, member-ID result joins, three-town comparisons and evidence limits. Merged main `ef1bbf6` and refreshed #76. Preserved both result surfaces, separated the different map/ranking fixture helpers and kept interactive details outside the completion live region. Every original contribution entry is retained.
@@ -507,3 +510,13 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Browser: Browser plugin unavailable; used the repository's Playwright workflow with installed Google Chrome against loopback Vite and the actual HTTP resolver with Moto. Both two-/five-member independent-browser journeys passed, including input focus/validation, save/reload/edit, three-town comparisons, map Space/Tab selection, keyboard table scrolling, and stale removal. Seventeen WCAG A/AA Axe checks had zero violations at 390x844 / 1280x900. Inspected the rendered mobile results; fresh masked screenshots and receipts remain outside tracked files.
 - Additional browser regression: the actual local preference PUT committed S$1,850, then the intercepted response returned 503. The UI displayed neutral confirmation guidance, retained edits and confirmed S$1,850 after reload. Page identity, nonblank rendering, no framework overlay, no overflow, zero runtime errors and zero unexpected console diagnostics passed; the intentionally injected 503 produced one expected resource diagnostic. Four unit cases for 500/502/503/504 failed before the copy fix and pass afterward.
 - Limits: synthetic place/rent records and conditional injected commute completions; no live OneMap/worker, AWS mutation/deployment, study session, upstream PR merge or issue closure. API freshness timestamps remain unavailable and are disclosed. Author-provided earlier screenshots/deck retain their original provenance. Final order places independent #78 first to avoid the shared contribution-log collision, followed by #76 -> #85 -> #77 -> #86; use merge commits to retain ancestry.
+
+## 29 October 2026 — issue 72 review fixes: scheduled refresh
+
+- Tool: Claude Code (Claude Opus 5.5), directed by Shyam, addressing @wkkuu's three findings on #82 (`63a9985`).
+- **P1, deploy-time test:** Secrets Manager rotation runs `testSecret` during every deployment even with `RotateImmediatelyOnUpdate: false`, so a deploy could fail on the placeholder or a token with under 24 hours left. Replaced rotation with an EventBridge `rate(12 hours)` rule invoking `OneMapTokenRefresh`, which reads the credentials, logs in, checks the token and writes it with `PutSecretValue`. A deploy never invokes it. Its only write is `PutSecretValue` on the token secret, which also removes rotation's `UpdateSecretVersionStage` and `GetRandomPassword` on `*`. Modules renamed `onemap_token_refresh`.
+- **P2, credential-safe errors:** messages are fixed text plus HTTP status codes, never provider response text. Parse errors are raised `from None`. The handler logs a `RefreshError` message or only the type of any other exception, and re-raises a sanitized `RuntimeError` without its chain.
+- **P2, redirects:** both OneMap calls use an opener that refuses redirects, so a 3xx is a failed call and the password or token never reaches another origin.
+- Also: `OneMapTokenRefreshFailing` (Lambda errors ≥ 1 per hour) on #79's alert topic. The token warning comment and description in `alarms.ts` were corrected: the log-based alarm only reports while there is traffic. New output `OneMapTokenRefreshFunctionName`; runbook and design updated.
+- Verification: 22 Python tests, including the three review reproductions as regressions: a 401 body echoing the password, a malformed `exp` carrying a sensitive value, and a real two-server loopback redirect asserting the second origin receives nothing. Three mutants (logging the raw exception, following redirects, chaining the parse error) each made the matching test fail; the files were restored. CDK: 17 tests, including the 12-hour rule targeting the function, no `RotationSchedule`, sole credentials reader, `PutSecretValue` as the only write with no `*` resource, and the failure alarm.
+- Not verified: a live `getToken` login with the account, a deploy and a scheduled run on AWS.

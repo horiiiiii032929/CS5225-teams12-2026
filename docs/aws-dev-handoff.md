@@ -113,3 +113,50 @@ Checks after the deploy, against `https://d2g88qlwvm8dec.cloudfront.net`:
 - The search journeys passed their group steps, then skipped at search start because no rent snapshot is published (#10). The 12 response-mutation cases are local-only by design; the 10 HTTP-client tests passed. The run created four short-lived test groups that expire with their TTL.
 
 Still outstanding for deployed results: validated rent publication (#10/#75), the commute worker (#15/#74), and a OneMap account holder with automated token rotation before the current token expires (#72).
+
+## OneMap token refresh runbook (#72)
+
+Since #72, the token in `OneMapTokenSecret` is renewed every 12 hours by the `OneMapTokenRefresh` Lambda, on an EventBridge schedule. It logs in with the account stored in `OneMapCredentialsSecret`. Deploys never invoke it. After the first deploy that adds it, or when the account or its password changes, the account holder runs these steps once from the README credential subshell:
+
+```sh
+# 1. Store the account login (both prompts are hidden; Python builds the JSON).
+CREDS=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+  --query "Stacks[0].Outputs[?OutputKey=='OneMapCredentialsSecret'].OutputValue" --output text)
+printf 'OneMap email: '; read -r ONEMAP_EMAIL
+printf 'OneMap password: '; read -rs ONEMAP_PASSWORD; echo
+ONEMAP_EMAIL="$ONEMAP_EMAIL" ONEMAP_PASSWORD="$ONEMAP_PASSWORD" python3 -c \
+  'import json, os; print(json.dumps({"email": os.environ["ONEMAP_EMAIL"], "password": os.environ["ONEMAP_PASSWORD"]}))' \
+  | aws secretsmanager put-secret-value --secret-id "$CREDS" --secret-string file:///dev/stdin --query VersionId --output text
+unset ONEMAP_EMAIL ONEMAP_PASSWORD
+
+# 2. Refresh once now instead of waiting up to 12 hours. The response holds
+#    only the new token's expiry, or a safe failure reason.
+FN=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+  --query "Stacks[0].Outputs[?OutputKey=='OneMapTokenRefreshFunctionName'].OutputValue" --output text)
+REFRESH_RESULT=$(mktemp)
+REFRESH_META=$(mktemp)
+aws lambda invoke --function-name "$FN" "$REFRESH_RESULT" > "$REFRESH_META"
+python3 - "$REFRESH_META" "$REFRESH_RESULT" <<'PY_REFRESH'
+import json, sys
+from datetime import datetime, timezone
+from pathlib import Path
+metadata = json.loads(Path(sys.argv[1]).read_text())
+result = json.loads(Path(sys.argv[2]).read_text())
+if metadata.get("FunctionError"):
+    raise SystemExit("Refresh failed; inspect the sanitized Lambda logs. Stop here.")
+expiry = datetime.fromisoformat(result["expiresAt"])
+if expiry.tzinfo is None or (expiry - datetime.now(timezone.utc)).total_seconds() < 86400:
+    raise SystemExit("Refresh did not confirm a token with 24 hours remaining. Stop here.")
+print("Refresh confirmed; token expires at", result["expiresAt"])
+PY_REFRESH
+rm -f "$REFRESH_RESULT" "$REFRESH_META"
+
+# 3. After a successful refresh receipt, check public lookup availability
+#    within 15 minutes (the API's secret cache). HTTP 200 alone does not
+#    establish token health: OneMap can return results with a token warning.
+curl -s -o /dev/null -w '%{http_code}\n' 'https://d2g88qlwvm8dec.cloudfront.net/api/places?q=kent%20ridge'
+```
+
+Stop if invocation or receipt validation fails; the AWS CLI can exit successfully while Lambda reports FunctionError. Check the OneMapTokenWarning metric/log events after the lookup rather than treating HTTP 200 as proof of valid credentials.
+
+A failed refresh leaves the existing token current and raises `OneMapTokenRefreshFailing` on the #27 alert topic. The reason is in the Lambda's log group as fixed text: a malformed credentials secret, a refused login (HTTP status only), a new token that expires too soon or that OneMap rejects, or an unexpected error by type. Fix the cause and run step 2 again. Never put the login or a token in GitHub, chat or the repository.
