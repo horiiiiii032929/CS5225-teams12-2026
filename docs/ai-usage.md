@@ -348,6 +348,13 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Merge: `b4a4434` merged in on 28 October, not rebased. Only `docs/ai-usage.md` conflicted, and both sides were additions at the end of the file: main's 26 October and 27 October issue 45 entries are kept ahead of this one, so the ledger stays in date order with main's entries first within a date. Main brought no code change since the `25de759` merge base — `git diff` over everything outside `docs/` is empty — so `alarms.ts`, `api.ts`, `flatsplit-stack.ts` and the CDK assertions are exactly as reviewed.
 - Not done: the redrive drill and a real alarm transition need the deployed stack, which is still waiting on #72. The worker's own error and throttle alarms attach to this topic when #74 merges, and #72's rotation-failure alarm goes next to the token one.
 
+## 27 October 2026 — #31/E10 user-testing preparation
+
+- Tool: Codex, directed by Hikaru to prepare user testing while #76/#77 await review. GitHub confirmed #77 commit 8bbaf4a CI run 40460540415 completed successfully before this preparation.
+- Contribution: a separate `docs/evaluation/e10` kit with readiness gates, recruitment draft (not sent), moderator script and unaided tasks, planned counterbalanced slots, scoring rules, and blank anonymous session/defect/retest/summary templates. Generated matched synthetic X/Y cards for averages-only and per-member/gap conditions through the existing production ranker, with fixture/ranker hashes and a moderator-only key. The common rent/average/rank fields are identical between conditions for each scenario. Static cards are distinguished from the integrated app and from a production study toggle; no application behaviour was changed.
+- Method limits retained explicitly: card A cannot identify an individual from an average, so accuracy is marked not observable rather than incorrectly scored as failure. Extra information enabling an answer is not causal evidence of better usability. Minimum three participants is separate from the 8–12 target; uneven three-person allocation, prior exposure, live-journey priming, assistance, missing outcomes and corrected-build retests must be disclosed. Full #31 acceptance requires actual unaided integrated input/comparison attempts and critical-blocker retests, not card-only trials.
+- Verification: `pnpm check`, the three existing offline evidence tests, generator Ruff lint/format and `prepare_e10.py --check` passed with Node 24.15.0. Local consistency checks resolved kit links, matched all five common columns across four cards, recomputed averages/gaps from the fixtures and verified twelve planned slots balance four sequences. Cards and key were read against the supplied fixtures and protocol. No application UI changed, so no new browser run, full API run, build or synthesis was needed for this preparation. No participant was recruited/contacted, no session/consent/result was fabricated, and no real-address, credential, OneMap, AWS deployment or shared-group operation was performed.
+
 ## 28 October 2026 — issue 44 acceptance gate, the two remaining review roots
 
 - Tool: Claude Code (Claude Opus 5), directed by Luke to close the two findings left open in @wkkuu's 27 October review of #67 (`1ed243e`).
@@ -390,3 +397,13 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Tool: Claude Code (Claude Opus 5.5), directed by Shyam.
 - Contribution: decoded and validated the new OneMap token locally (claims and expiry; live search, nearest-station and routing calls through the API's own `find_places`, without writing the token to any file). Ran the read-only `cdk diff` for main `b4a4434`, identified that it would undo Mani's unmerged #75 deployment (schedule and `ListBucket` permission), confirmed via read-only queries that no rent had been published, and posted the heads-up on #75. Shyam wrote the secret and ran the deploy; the assistant's own secret write was blocked by the permission classifier. After the deploy, ran read-only stack and endpoint checks and the #29 journey against the shared URL, and recorded the results in `docs/aws-dev-handoff.md`.
 - Not done: no rent publication, worker deployment or token rotation; those remain #10/#75, #15/#74 and #72.
+
+## 28 October 2026 — PR #78 main refresh
+
+- Tool: Codex, directed by Hikaru to execute the next repository integration steps. Merged main `b4a4434` into the E10 kit branch; the only conflict was the append-only AI log. Preserved both histories with main entries first; study materials and application source are unchanged.
+- Verification: root check/test/build/synth, generated API drift check and E10 generator --check passed on Node 26.0.0; Turbo reused successful task cache entries. Test totals: 297 API, 65 web, eight CDK and three offline evidence tests. No participant session, deployment or integrated acceptance is claimed.
+
+## 29 October 2026 — PR #78 integration refresh
+
+- Tool: Codex, directed by Hikaru during the #85/#86 integration review. Merged main `ef1bbf6` into the independent E10 preparation branch; kept every contribution entry from both parents. The user's separate uncommitted verification note remains untouched in the original checkout.
+- Verification: root check/test/build/synth, generated API drift check and E10 card generator `--check` passed on Node 26.0.0; successful Turbo task caches were reused. No study material changed, participant session ran, deployment occurred or issue acceptance was claimed.

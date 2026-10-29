@@ -30,3 +30,7 @@ Conventions:
 | Other experiments                                    | planned                      | Execution after implementation, 30 Oct–8 Nov baseline                    |
 
 Use lowercase experiment IDs going forward; the named feasibility archive and historical raw files remain. A renamed directory does not change its measurements.
+
+## 27 October — E10 preparation
+
+The [E10 / #31 user-testing kit](e10/README.md) now contains a moderator protocol, unaided participant tasks, matched synthetic averages-only/per-member cards, a reproducible ranker-backed card generator, and blank session/defect/retest/summary templates. These are preparation materials, not participant evidence or deployed acceptance. Recruitment, reviewer approval, the integrated #25/#26 entry gates and actual sessions remain outstanding; the historical evidence statuses above are unchanged.
