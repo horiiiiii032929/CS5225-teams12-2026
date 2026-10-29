@@ -160,3 +160,21 @@ curl -s -o /dev/null -w '%{http_code}\n' 'https://d2g88qlwvm8dec.cloudfront.net/
 Stop if invocation or receipt validation fails; the AWS CLI can exit successfully while Lambda reports FunctionError. Check the OneMapTokenWarning metric/log events after the lookup rather than treating HTTP 200 as proof of valid credentials.
 
 A failed refresh leaves the existing token current and raises `OneMapTokenRefreshFailing` on the #27 alert topic. The reason is in the Lambda's log group as fixed text: a malformed credentials secret, a refused login (HTTP status only), a new token that expires too soon or that OneMap rejects, or an unexpected error by type. Fix the cause and run step 2 again. Never put the login or a token in GitHub, chat or the repository.
+
+## Recording the deployed e2e verdict (#29)
+
+After every deploy, record the #29 journey's verdict for that build with the `Deployed e2e` workflow. It needs no AWS credentials, because it only calls the public API:
+
+```sh
+gh workflow run deployed-e2e.yml -f revision="$(git rev-parse HEAD)"
+# For final acceptance, also pass: -f require_complete=true
+gh run watch "$(gh run list --workflow deployed-e2e.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
+```
+
+It checks out the deployed revision's tests, runs the 2- and 5-member journeys against `api_url` (the shared URL by default), and records one of three verdicts:
+
+- **PASS:** every step ran and passed.
+- **INCOMPLETE:** nothing failed, but steps were skipped because the deployment lacks a dependency, such as unpublished rent (#10) or no worker (#15). This is readiness evidence, not acceptance, and it fails the run only with `require_complete`.
+- **FAIL:** a step failed.
+
+The job summary lists each test with its skip reason, the revision and the web asset being served. The redacted JSON record is kept as a 90-day artifact; the raw JUnit XML is not, because failure text can contain a test group's tokens. Each run creates four short-lived test groups on the target stack.

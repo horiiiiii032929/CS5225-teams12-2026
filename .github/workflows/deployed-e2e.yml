@@ -1,0 +1,104 @@
+name: Deployed e2e
+
+# Runs the #29 group-to-results journey against a deployed API and records
+# the verdict for that build: PASS, INCOMPLETE (steps skipped because the
+# deployment lacks a dependency) or FAIL. Start it by hand after each deploy.
+# Every run creates short-lived test groups on the target stack, so it has no
+# schedule or pull-request trigger.
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: API base URL of the deployed build
+        required: true
+        default: https://d2g88qlwvm8dec.cloudfront.net/api
+      revision:
+        description: Full 40-character commit that was deployed (git rev-parse HEAD)
+        required: true
+      require_complete:
+        description: Treat skipped steps as failure (final acceptance)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deployed-e2e
+  cancel-in-progress: false
+
+jobs:
+  journey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Inputs reach scripts only through the environment, never inline.
+      API_URL: ${{ inputs.api_url }}
+      REVISION: ${{ inputs.revision }}
+      REQUIRE_COMPLETE: ${{ inputs.require_complete }}
+    steps:
+      - name: Validate inputs
+        id: validate
+        run: |
+          [[ "$API_URL" =~ ^https://[A-Za-z0-9.-]+(/[A-Za-z0-9._/-]*)?$ ]] || { echo "api_url must be an https URL"; exit 1; }
+          # actions/checkout treats only a full SHA as a commit; anything shorter
+          # is looked up as a branch or tag, which could name another commit.
+          [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]] || { echo "revision must be the full 40-character commit SHA"; exit 1; }
+      # The summarizer comes from this workflow's commit; the tests come from
+      # the deployed revision, so they always match the build under test.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: tooling
+          sparse-checkout: tools/e2e
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.revision }}
+          path: build
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: '0.9.26'
+          enable-cache: true
+          cache-dependency-glob: build/uv.lock
+      - run: uv sync --locked --all-packages --group dev
+        working-directory: build
+      # Failure text can include a test group's tokens, so the log shows only
+      # skip reasons (--tb=no), and only the redacted record is kept below.
+      - name: Run the journey against the deployed API
+        id: journey
+        continue-on-error: true
+        working-directory: build/services/api
+        env:
+          FLATSPLIT_API_URL: ${{ inputs.api_url }}
+          # A deployed worker needs time to drain one search's 26 jobs.
+          FLATSPLIT_E2E_SEARCH_TIMEOUT: '300'
+        run: >-
+          uv run --package flatsplit-api pytest tests/e2e/test_group_journey.py
+          -k "not leaked_credentials" -rs --tb=no -p no:cacheprovider
+          --junitxml="$RUNNER_TEMP/e2e.xml"
+      - name: Note the web build being served
+        id: site
+        if: always() && steps.validate.outcome == 'success'
+        run: |
+          asset=$(curl -fsS --max-time 20 "${API_URL%/api}/" | grep -o 'assets/index-[^"]*\.js' | head -1 || true)
+          echo "asset=${asset:-unknown}" >> "$GITHUB_OUTPUT"
+      - name: Record the verdict
+        if: always() && steps.validate.outcome == 'success'
+        env:
+          WEB_ASSET: ${{ steps.site.outputs.asset }}
+        run: |
+          extra=()
+          [[ "$REQUIRE_COMPLETE" == "true" ]] && extra+=(--require-complete)
+          python3 tooling/tools/e2e/summarize.py "$RUNNER_TEMP/e2e.xml" \
+            --revision "$REVISION" --api-url "$API_URL" --web-asset "$WEB_ASSET" \
+            --json-out "$RUNNER_TEMP/deployed-e2e.json" \
+            --summary-out "$GITHUB_STEP_SUMMARY" "${extra[@]}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always() && steps.validate.outcome == 'success'
+        with:
+          name: deployed-e2e-${{ inputs.revision }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/deployed-e2e.json
+          retention-days: 90
+          if-no-files-found: warn
