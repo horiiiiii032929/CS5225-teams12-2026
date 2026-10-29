@@ -604,6 +604,11 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Corrections: worker warning marker feeds a second log-group filter on the existing shared metric/alarm; credential resolution/validation precedes reservation; HTTP-200 credential/upstream errors and malformed plans remain retryable/credential failures, while only explicit empty itineraries retain the no-route classification. Actual handler/Moto regressions verify early retry and final unavailable/no-minutes accounting with the 900-second retry window.
 - Integration preserved the scheduled refresh resources/IAM assertions, worker queue/fencing tests, frontend surfaces and all AI contribution records. No provider call, deployment, alarm drill or acceptance closure occurred. Focused routing/worker tests and final integrated checks are recorded with the final queue handoff.
 
+## 29 October 2026 — final #74 regression and integration verification
+
+- Tool: Codex, directed by Hikaru as queue reviewer. Eleven new/strengthened routing cases failed before the fix; the focused routing plus actual-handler/Moto suite now passes 100 tests. Final integrated root check/test/build/synth, API drift and E10 generation checks passed: 438 API, 110 web, 20 CDK, four evaluation, 32 acceptance and ten deployed-E2E summarizer tests (614 total). Successful unchanged Turbo tasks reused caches; changed API/CDK checks executed.
+- The CDK regression confirms distinct API/worker log groups publish the same warning metric and existing alarm. Both worker fencing/queue-role assertions and the scheduled-refresh IAM/schedule assertions remain present. Handler regressions verify HTTP-200 errors retry before final 900-second unavailable accounting, with no fabricated minutes. No live upstream call, shared AWS operation, runtime alarm transition or deployment is claimed.
+
 ## 29 October 2026 — issue 33 data refresh and failure recovery runbook
 
 - Tool: Claude Code (Claude Opus 5), directed by Luke to write the #33 runbook now that #27 is merged as #79.
