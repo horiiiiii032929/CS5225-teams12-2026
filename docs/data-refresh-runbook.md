@@ -137,8 +137,9 @@ Then wait out the 900-second cache and verify with a real lookup — not
 ```bash
 API=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
   --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)
+set -o pipefail
 curl --fail-with-body --silent --show-error "$API/places?q=kent%20ridge" \
-  | python3 -c 'import json,sys; body=json.load(sys.stdin); assert not body.get("error"), "Public lookup reported an error"; print("Selectable candidates:", len(body.get("places", [])))'
+  | python3 -c 'import json,sys; body=json.load(sys.stdin); assert isinstance(body, dict) and "error" not in body and isinstance(body.get("places"), list), "Lookup error or malformed response"; print("Selectable candidates:", len(body["places"]))'
 ```
 
 Record only status, counts and observation time. Neither health nor public
