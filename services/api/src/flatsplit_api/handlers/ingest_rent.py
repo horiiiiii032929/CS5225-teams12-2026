@@ -8,6 +8,7 @@ from aws_lambda_powertools import Logger
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from botocore.config import Config
 
+from flatsplit_api.rent_publication import RentSummaryPublisher
 from flatsplit_api.rental_ingestion import (
     DataGovClient,
     S3SnapshotWriter,
@@ -22,8 +23,9 @@ def handler(event: dict[str, Any], context: LambdaContext) -> dict[str, Any]:
     """Ingest one export; exceptions intentionally mark the invocation failed."""
     del event, context
     bucket = os.environ.get("RENT_RAW_BUCKET", "").strip()
-    if not bucket:
-        raise RuntimeError("RENT_RAW_BUCKET is not configured.")
+    table_name = os.environ.get("RENT_TABLE_NAME", "").strip()
+    if not bucket or not table_name:
+        raise RuntimeError("RENT_RAW_BUCKET and RENT_TABLE_NAME are required.")
     s3 = boto3.client(
         "s3",
         config=Config(
@@ -32,8 +34,14 @@ def handler(event: dict[str, Any], context: LambdaContext) -> dict[str, Any]:
             retries={"total_max_attempts": 3, "mode": "standard"},
         ),
     )
+    table = boto3.resource("dynamodb").Table(table_name)
+    publisher = RentSummaryPublisher(table)
     try:
-        pointer = run_ingestion(DataGovClient(), S3SnapshotWriter(s3, bucket))
+        pointer = run_ingestion(
+            DataGovClient(),
+            S3SnapshotWriter(s3, bucket),
+            publish=publisher.publish,
+        )
     except Exception:
         logger.exception("HDB rental ingestion failed")
         raise

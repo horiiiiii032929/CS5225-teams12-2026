@@ -372,7 +372,17 @@ def onprem(o: dict, nodes: int) -> list[dict]:
 
 
 def total(rows: list[dict], key: str = "net_usd") -> float:
-    return sum(r[key] for r in rows)
+    # math.fsum, not sum: a line-item total feeds a figure rounded to four
+    # decimals, and the bursty VM total lands exactly on a rounding boundary
+    # (57.7041 / 6,000 searches x 1,000 = 9.61735). CPython 3.12 gave sum()
+    # compensated summation, so sum() returns 57.7041 there and
+    # 57.70409999999999 on 3.11, the model's documented minimum -- the same
+    # model would publish 9.6174 or 9.6173 depending on who ran it. fsum
+    # avoids that sum() version difference; it agrees on 9.6174 on CPython
+    # 3.9, 3.11, 3.12 and 3.13, the versions this was verified against.
+    # Python documents fsum's accuracy as platform-dependent, so this is the
+    # demonstrated claim, not universal decimal arithmetic.
+    return math.fsum(r[key] for r in rows)
 
 
 def md_table(rows: list[dict], show_free: bool = True) -> str:

@@ -12,3 +12,6 @@ apps/web/src/routeTree.gen.ts
 # Machine-generated evaluation evidence must not be reformatted
 docs/evaluation/**/*.json
 docs/evaluation/**/*.jsonl
+
+# Machine-generated acceptance evidence must not be reformatted
+tools/acceptance/evidence/

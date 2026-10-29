@@ -1,5 +1,6 @@
 import { CfnOutput, RemovalPolicy, Stack, type StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import { CommuteAlarms } from './alarms.js';
 import { Api } from './api.js';
 import { Data } from './data.js';
 import { Ops } from './ops.js';
@@ -22,6 +23,7 @@ export class FlatSplitStack extends Stack {
     const data = new Data(this, 'Data', { removalPolicy });
     const rentIngestion = new RentIngestion(this, 'RentIngestion', {
       removalPolicy,
+      table: data.table,
     });
     const api = new Api(this, 'Api', {
       stage: props.stage,
@@ -31,6 +33,16 @@ export class FlatSplitStack extends Stack {
     const web = new Web(this, 'Web', {
       apiOriginDomain: api.originDomain,
       removalPolicy,
+    });
+    // Alarms exist in every stage; only the account-wide budget is deployed
+    // from one. The email is optional: an alarm with no subscriber still
+    // shows in the console and still carries its state history.
+    new CommuteAlarms(this, 'CommuteAlarms', {
+      stage: props.stage,
+      jobsQueue: api.commuteJobsQueue,
+      deadLetterQueue: api.commuteDeadLetterQueue,
+      apiLogGroup: api.httpHandlerLogGroup,
+      alertEmail: props.budgetEmail,
     });
     if (props.budgetEmail) {
       new Ops(this, 'Ops', { budgetEmail: props.budgetEmail });

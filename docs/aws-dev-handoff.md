@@ -89,6 +89,31 @@ Checks after the deploy, against `https://d2g88qlwvm8dec.cloudfront.net`:
 
 What this means for acceptance: group create/join/read on the shared deployment is now evidenced for #12 and #7, but preference saves need #14 (PR #65) and a valid OneMap token, and searches need published rent (#10) and the commute worker (#15). The frontend acceptance in #7 still needs a real cross-browser create/copy/join/reload walk-through on this build.
 
+## Acceptance run after a deployment — 20 October 2026
+
+`tools/acceptance/acceptance.py` runs the #44 acceptance gate against a deployed API in one command and writes a JSON evidence file that records the mode and the revision under test:
+
+```bash
+python3 tools/acceptance/acceptance.py \
+    --base-url https://<host>/api --mode deployed --revision "$(git rev-parse --short HEAD)"
+```
+
+It uses only the Python standard library, so it needs no repository setup on the machine that runs it, and it exits non-zero when a check fails. The live destination lookup still requires the OneMap token in the stage secret; without it `/places` returns 503 and the journey stops at stage 1. `tools/acceptance/README.md` records what each stage checks, and why an absent #15 worker is recorded as a measured gap instead of a failure.
+
+## Deployment — 28 October 2026 (main `b4a4434`)
+
+Shyam deployed `FlatSplit-dev` from repository main `b4a4434` (which includes #65's place persistence and #68), after refreshing the NUS SSO credentials and confirming account `553455762180` in the README subshell. The stack reached `UPDATE_COMPLETE` at 14:54 UTC. Beforehand, Shyam replaced the expired OneMap token in `OneMapTokenSecret` (changed 22:53 SGT) with a token that was validated locally against live OneMap search, nearest-station and public-transport routing calls. That token expires on 29 October at 23:05 SGT. No token value is recorded here.
+
+The reviewed `cdk diff` added scoped DynamoDB statements for the API Lambda (`PLACE#*` GetItem/PutItem/ConditionCheckItem, `PLACELOOKUP#*` GetItem/PutItem, `STATION#*` GetItem/PutItem/UpdateItem), with new API code. It also showed that Mani's 26 October deployment of the unmerged #75 branch had added a rent-ingestion monthly schedule and an S3 `ListBucket` permission that are not on main. Deploying main removed both and returned the ingestion Lambda to main's version. Mani was told on #75 beforehand. No `RENT/CURRENT` pointer had been published and the schedule was not due until 3 November. Deploying main after #75 merges restores it.
+
+Checks after the deploy, against `https://d2g88qlwvm8dec.cloudfront.net`:
+
+- `/api/health` returns 200. `GET /api/places?q=kent%20ridge` returns 200 with real OneMap candidates (it returned 503 from 21 October while the token was expired); an identical repeat returned in 0.13 s from the query cache.
+- The #29 journey with `FLATSPLIT_API_URL` and **no seeded place** passed for 2- and 5-member groups: live lookup, create, invite-link restrictions, joining to capacity, `GROUP_FULL`, invalid-preference rejection, every member saving preferences until all ready, a rename, and reload consistency. These were the first deployed preference saves.
+- The search journeys passed their group steps, then skipped at search start because no rent snapshot is published (#10). The 12 response-mutation cases are local-only by design; the 10 HTTP-client tests passed. The run created four short-lived test groups that expire with their TTL.
+
+Still outstanding for deployed results: validated rent publication (#10/#75), the commute worker (#15/#74), and a OneMap account holder with automated token rotation before the current token expires (#72).
+
 ## Recording the deployed e2e verdict (#29)
 
 After every deploy, record the #29 journey's verdict for that build with the `Deployed e2e` workflow. It needs no AWS credentials, because it only calls the public API:
