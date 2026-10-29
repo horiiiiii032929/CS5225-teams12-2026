@@ -4,10 +4,9 @@ Who to call, what a failure looks like from outside, and the exact commands to
 inspect and recover one. Written for a teammate who did not build the pipeline.
 
 **Scope and honesty.** Every record shape, threshold and key below is read from
-the code on `main` at the revision this file was committed against, not from a
-design document. Where a step needs something that is not on `main` yet, the
-step says which PR it needs and stops there rather than describing a system we
-do not have. Nothing here is a deployment receipt: running these commands is
+the reviewed integration source, including #74/#75/#82, rather than an assumed
+live inventory. Merged code and deployed resources are separate: discover the
+actual stack outputs and record its deployed revision before using a procedure. Nothing here is a deployment receipt: running these commands is
 how you find out what the deployed stack is actually doing.
 
 Shared deployment, from `docs/aws-dev-handoff.md`: account `553455762180`,
@@ -44,6 +43,8 @@ QUEUE=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
   --query "Stacks[0].Outputs[?OutputKey=='CommuteQueueUrl'].OutputValue" --output text)
 BUCKET=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
   --query "Stacks[0].Outputs[?OutputKey=='RentRawBucketName'].OutputValue" --output text)
+SINCE=$(python3 -c 'from datetime import datetime,timedelta,timezone; print((datetime.now(timezone.utc)-timedelta(hours=1)).isoformat())')
+UNTIL=$(python3 -c 'from datetime import datetime,timezone; print(datetime.now(timezone.utc).isoformat())')
 ```
 
 ---
@@ -77,7 +78,9 @@ Check the warning (section 2).
 
 ## 2. The OneMap token
 
-A three-day JWT with no automatic renewal. Resolution order, from
+A three-day JWT. The reviewed #82 implementation refreshes it every 12 hours
+using an EventBridge-triggered Lambda; confirm that function and credentials
+setup are actually deployed. Resolution order, from
 `onemap.py::resolve_token`:
 
 1. `ONEMAP_TOKEN` in the environment — local development only.
@@ -93,18 +96,19 @@ outside; the log tells them apart.
 ### Is the token healthy?
 
 ```bash
-# The metric filter #79 installed. 0 means no warning in the window.
+# Traffic-driven warning metric. Missing data is not proof of token health.
 aws cloudwatch get-metric-statistics \
   --namespace FlatSplit/dev --metric-name OneMapTokenWarning \
-  --start-time "$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)" \
-  --end-time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --start-time "$SINCE" \
+  --end-time "$UNTIL" \
   --period 300 --statistics Sum
 ```
 
-The filter is `$.onemapTokenWarning = true` over the HTTP handler's log group,
-published as `FlatSplit/dev` / `OneMapTokenWarning` with `defaultValue: 0` — so
-the metric exists even when nobody emits it, which is the point: a token can
-expire with no traffic at all, and a metric nobody publishes cannot alarm.
+API and worker log-group filters match `$.onemapTokenWarning = true` and
+publish `FlatSplit/dev` / `OneMapTokenWarning`. They require log traffic: no
+datapoint during an idle period is not evidence of a valid credential. The
+scheduled refresh and its `OneMapTokenRefreshFailing` alarm cover refresh
+failures during idle periods. Confirm both filters exist in the deployed stack.
 
 The alarm (construct `OneMapTokenExpiring`) sums that metric over 5 minutes
 and fires at 1, on one evaluation period, with missing data not breaching.
@@ -124,7 +128,7 @@ Only someone holding the OneMap account can mint one; that is Shyam as of
 SECRET=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
   --query "Stacks[0].Outputs[?OutputKey=='OneMapTokenSecret'].OutputValue" --output text)
 aws secretsmanager put-secret-value --secret-id "$SECRET" \
-  --secret-string "$(cat ~/onemap-token.txt)"   # a file, not shell history
+  --secret-string "file://$HOME/onemap-token.txt"   # do not expand the token into argv
 ```
 
 Then wait out the 900-second cache and verify with a real lookup — not
@@ -133,16 +137,22 @@ Then wait out the 900-second cache and verify with a real lookup — not
 ```bash
 API=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
   --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)
-curl -s "$API/places?q=kent%20ridge" | head -c 400
+curl --fail-with-body --silent --show-error "$API/places?q=kent%20ridge" \
+  | python3 -c 'import json,sys; body=json.load(sys.stdin); assert not body.get("error"), "Public lookup reported an error"; print("Selectable candidates:", len(body.get("places", [])))'
 ```
 
-Record only the before/after status and the observation time. A 200 on
-`/api/health` is **not** lookup acceptance.
+Record only status, counts and observation time. Neither health nor public
+lookup HTTP 200 proves credential health: the public API can omit OneMap's
+original `error` field while the backend logs `onemapTokenWarning`. Inspect
+warning events/metrics covering the lookup. Use the [first-refresh receipt
+procedure](aws-dev-handoff.md#onemap-token-refresh-runbook-72), which rejects
+Lambda `FunctionError` and requires a checked future expiry before claiming
+refresh success. Never record the token or credentials.
 
-> **Pending:** automatic rotation every 12 hours from a separate
-> `OneMapCredentials` secret is **PR #82**, unmerged, with two security findings
-> from WK outstanding. Until it merges and deploys, rotation is the manual
-> procedure above and someone has to remember within three days.
+#82's reviewed scheduled refresh replaces Secrets Manager rotation; it avoids
+the old deployment-time `testSecret` and AWSPENDING problems. Verify deployment,
+credential setup and a first success receipt. If those resources are absent,
+manual replacement remains the operator's stopgap, not automatic renewal.
 
 ---
 
@@ -191,11 +201,11 @@ cache-warming step.
 
 ```bash
 aws dynamodb get-item --table-name "$TABLE" \
-  --key '{"pk":{"S":"STATION#kent-ridge"},"sk":{"S":"META"}}'
+  --key '{"pk":{"S":"STATION#KENT_RIDGE"},"sk":{"S":"META"}}'
 
 aws dynamodb query --table-name "$TABLE" \
   --key-condition-expression 'pk = :p AND begins_with(sk, :s)' \
-  --expression-attribute-values '{":p":{"S":"COMMUTE#kent-ridge"},":s":{"S":"TOWN#"}}' \
+  --expression-attribute-values '{":p":{"S":"COMMUTE#KENT_RIDGE"},":s":{"S":"TOWN#"}}' \
   --query 'Items[].{town:sk.S,status:status.S,minutes:minutes.N,profile:routingProfileVersion.S}' \
   --output table
 ```
@@ -209,10 +219,9 @@ visibility timeout**, **four-day retention**, and **three receives** before a
 message is dead-lettered to `CommuteDlq`, which retains for **14 days**
 (`infra/aws/src/api.ts`).
 
-> **Pending:** `main` has the queue and the DLQ but **no consumer**. The commute
-> worker is **PR #74**. Until it merges and deploys, messages accumulate and
-> nothing dead-letters, because nothing receives. The inspection commands below
-> work today; the re-drive decision only becomes real with #74 deployed.
+> **Deployment gate:** #74 defines the consumer. Confirm its deployed revision
+> and event-source mapping before expecting the queue to drain. If it is absent,
+> messages accumulate without receives; an empty DLQ then does not prove success.
 
 Two alarms, both from #79, both treating missing data as not breaching so an
 idle stage is quiet, and both notifying the `Alerts` SNS topic — which has an
@@ -238,19 +247,29 @@ DLQ=$(aws sqs get-queue-attributes --queue-url "$QUEUE" \
   --attribute-names RedrivePolicy \
   --query 'Attributes.RedrivePolicy' --output text \
   | python3 -c 'import json,sys;print(json.load(sys.stdin)["deadLetterTargetArn"])')
-DLQ_URL=$(aws sqs get-queue-url --queue-arn "$DLQ" --query QueueUrl --output text 2>/dev/null \
-  || aws sqs list-queues --queue-name-prefix FlatSplit --query 'QueueUrls[]' --output text)
+DLQ_NAME=${DLQ##*:}
+DLQ_ACCOUNT=$(python3 -c 'import sys; print(sys.argv[1].split(":")[4])' "$DLQ")
+DLQ_URL=$(aws sqs get-queue-url --queue-name "$DLQ_NAME" \
+  --queue-owner-aws-account-id "$DLQ_ACCOUNT" --query QueueUrl --output text)
 
 aws sqs get-queue-attributes --queue-url "$DLQ_URL" \
-  --attribute-names ApproximateNumberOfMessages ApproximateAgeOfOldestMessage
+  --attribute-names ApproximateNumberOfMessages ApproximateNumberOfMessagesNotVisible
+
+# Age is a CloudWatch metric, not an SQS GetQueueAttributes attribute.
+aws cloudwatch get-metric-statistics --namespace AWS/SQS \
+  --metric-name ApproximateAgeOfOldestMessage \
+  --dimensions Name=QueueName,Value="$DLQ_NAME" \
+  --start-time "$SINCE" --end-time "$UNTIL" --period 300 --statistics Maximum
 ```
 
 Read one message **without consuming it permanently** — receive it, read it,
-and let the visibility timeout return it:
+and let a 60-second inspection lease return it. This increments its receive
+count; do not run a competing consumer/redrive during inspection. Do not delete
+it, and wait for visibility to return before a redrive:
 
 ```bash
 aws sqs receive-message --queue-url "$DLQ_URL" --max-number-of-messages 1 \
-  --visibility-timeout 0 --query 'Messages[0].Body' --output text | python3 -m json.tool
+  --visibility-timeout 60 --query 'Messages[0].Body' --output text | python3 -m json.tool
 ```
 
 A job message looks like this (`commute_jobs.py`):
@@ -259,7 +278,7 @@ A job message looks like this (`commute_jobs.py`):
 {
   "schemaVersion": 1,
   "jobId": "f1f0c4e2-…",
-  "stationKey": "kent-ridge",
+  "stationKey": "KENT_RIDGE",
   "town": "BEDOK",
   "origin": { "lat": 1.3236, "lng": 103.9273 },
   "destination": { "lat": 1.2935, "lng": 103.7846 },
@@ -277,7 +296,7 @@ Compare the message against the record:
 
 ```bash
 aws dynamodb get-item --table-name "$TABLE" --consistent-read \
-  --key '{"pk":{"S":"COMMUTE#kent-ridge"},"sk":{"S":"TOWN#BEDOK"}}' \
+  --key '{"pk":{"S":"COMMUTE#KENT_RIDGE"},"sk":{"S":"TOWN#BEDOK"}}' \
   --query 'Item.{status:status.S,jobId:jobId.S,profile:routingProfileVersion.S,lease:leaseExpiresAt.N,attempts:attempts.N,error:error.S}'
 ```
 
@@ -311,7 +330,7 @@ completes.
 town.
 
 ```bash
-curl -s "$API/searches/<searchId>" \
+curl -s "$API/groups/<groupId>/searches/<searchId>" \
   -H "Authorization: Bearer <memberToken>" | python3 -m json.tool
 ```
 
@@ -328,13 +347,13 @@ aws dynamodb get-item --table-name "$TABLE" --consistent-read \
 Read `status`, `jobId`, `attempts`, `routingProfileVersion`, and
 `leaseExpiresAt` or `error`/`retryAfter`.
 
-**3. Which log line.** The handler's log group is `HttpHandlerLogs`, retained
-one week:
+**3. Which log line.** The worker's log group is `CommuteWorkerLogs`, retained
+one week. Discover its exact physical name from this stack:
 
 ```bash
-LOGS=$(aws logs describe-log-groups --log-group-name-prefix /aws/lambda/FlatSplit-dev \
-  --query 'logGroups[].logGroupName' --output text)
-aws logs filter-log-events --log-group-name <one of those> \
+LOGS=$(aws cloudformation describe-stack-resources --stack-name FlatSplit-dev \
+  --query "StackResources[?ResourceType=='AWS::Logs::LogGroup' && contains(LogicalResourceId, 'CommuteWorkerLogs')].PhysicalResourceId | [0]" --output text)
+aws logs filter-log-events --log-group-name "$LOGS" \
   --start-time "$(( ($(date +%s) - 3600) * 1000 ))" \
   --filter-pattern '{ $.jobId = "<jobId>" }'
 ```
@@ -348,9 +367,9 @@ ago cannot be diagnosed from logs, only from the record.
 and let the search explain it. Both are legitimate. Writing a number you did
 not measure is not.
 
-> With #74 unmerged, step 4 finds an empty DLQ and step 2 finds a `pending`
-> record whose lease keeps expiring, because no consumer exists. That is the
-> expected state today, not a fault to chase.
+> If the deployed revision lacks #74, an empty DLQ with expiring pending
+> leases reflects the missing consumer. Check deployment before treating this
+> as a worker-runtime failure.
 
 ---
 
@@ -432,11 +451,25 @@ Two protections worth knowing when a refresh behaves oddly:
   month first, then parses `retrievedAt` into datetimes — not string
   comparison, so variable-precision timestamps order correctly here.
 
-> **Pending:** publishing validated summaries into `RENT#<snapshotId>` records,
-> and the monthly schedule for it, are **PR #75** — approved, not yet merged.
-> On `main`, ingestion writes raw snapshots and the pointer; it does not
-> populate the rent records results read. Searches therefore withhold rent
-> fields rather than invent them.
+**#75 is merged.** The ingestion pipeline publishes validated, versioned
+`RENT#<snapshotId>` town summaries before advancing `RENT/CURRENT`. Its monthly
+rule is 19:00 UTC on day 2, which is 03:00 SGT on day 3. Publication is fenced
+by source month and fixed-width UTC retrieval time; failed/rejected or older
+publications do not replace the last valid rent pointer. Historical snapshot
+records remain readable by searches that pinned them.
+
+Confirm the deployed code and actual producer records; a merge or another
+reviewer's deployment statement does not establish the inventory inspected here:
+
+```bash
+aws dynamodb get-item --table-name "$TABLE" --consistent-read \
+  --key '{"pk":{"S":"RENT"},"sk":{"S":"CURRENT"}}' \
+  --query 'Item.{snapshot:snapshotId.S,period:period.S,validatedAt:validatedAt.S,rawRetrievedAt:rawRetrievedAt.S}'
+```
+
+Retain this pointer and representative summary/rejection receipts for #10/#28
+acceptance. Missing or low-confidence summaries stay excluded from rankings;
+they are not a reason to invent a rent value.
 
 ---
 
