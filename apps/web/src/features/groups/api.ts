@@ -3,6 +3,7 @@ import {
   zGroupResponse,
   zMembershipResponse,
   zSearchView,
+  zPlacesResponse,
 } from '@flatsplit/contracts/api';
 import { queryOptions } from '@tanstack/react-query';
 import { client } from '@/api/generated/client.gen';
@@ -73,7 +74,7 @@ function unwrap<T>(result: {
     CONFLICT: 'The group changed at the same time. Refresh it and try again.',
     RATE_LIMITED: 'Too many requests. Wait a moment, then try again.',
     SERVICE_UNAVAILABLE:
-      'The service or rental data is temporarily unavailable. Your saved group inputs are unchanged.',
+      'The service or rental data is temporarily unavailable. Refresh your group to confirm its saved inputs before retrying.',
   };
   throw new ApiError(
     result.response?.status ?? 0,
@@ -86,6 +87,44 @@ const auth = (membership: Membership) => ({
   Authorization: `Bearer ${membership.memberToken}`,
 });
 
+export async function searchPlaces(query: string, signal?: AbortSignal) {
+  // q is read from the raw query string by the resolver and is absent from
+  // OpenAPI; the client query serializer still encodes it normally.
+  return zPlacesResponse.parse(
+    unwrap(
+      await client.get({
+        url: '/places',
+        query: { q: query },
+        signal: signal
+          ? AbortSignal.any([signal, AbortSignal.timeout(35000)])
+          : AbortSignal.timeout(35000),
+      }),
+    ),
+  );
+}
+export async function savePreferences(
+  membership: Membership,
+  body: {
+    name: string;
+    placeId: string;
+    budget: number;
+    maxCommute: number;
+  },
+) {
+  return zGroupResponse.parse(
+    unwrap(
+      await sdk.savePreferences({
+        path: {
+          group_id: membership.groupId,
+          member_id: membership.memberId,
+        },
+        body,
+        headers: auth(membership),
+        signal: AbortSignal.timeout(35000),
+      }),
+    ),
+  ).group;
+}
 export async function createGroup(body: {
   groupName: string;
   name: string;

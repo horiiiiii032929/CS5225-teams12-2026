@@ -9,14 +9,14 @@ import {
 import { afterEach, describe, expect, it } from 'vitest';
 import { TownMapResults } from './TownMapResults';
 import { mapMarkers } from './town-map';
-import { groupFixture, rankedSearchFixture } from './test-fixtures';
+import { groupFixture, mapSearchFixture } from './test-fixtures';
 import referencePoints from './town-reference-points.json';
 
 afterEach(cleanup);
 describe('ranked town map and equivalent detail selection', () => {
   it('selects the same detail from a numbered map pin and the ordinary town list', () => {
     render(
-      <TownMapResults search={rankedSearchFixture()} group={groupFixture()} />,
+      <TownMapResults search={mapSearchFixture()} group={groupFixture()} />,
     );
     expect(screen.getByRole('heading', { name: 'Queenstown' })).toBeTruthy();
     fireEvent.click(
@@ -42,7 +42,7 @@ describe('ranked town map and equivalent detail selection', () => {
     expect(screen.getByText(/Route calculation date unavailable/)).toBeTruthy();
   });
   it('drops removed towns and uses new response data without retaining an old result snapshot', () => {
-    const search = rankedSearchFixture();
+    const search = mapSearchFixture();
     const view = render(
       <TownMapResults search={search} group={groupFixture()} />,
     );
@@ -57,7 +57,7 @@ describe('ranked town map and equivalent detail selection', () => {
   it.each(['pending', 'stale'] as const)('withholds %s results', (status) => {
     render(
       <TownMapResults
-        search={{ ...rankedSearchFixture(), status }}
+        search={{ ...mapSearchFixture(), status }}
         group={groupFixture()}
       />,
     );
@@ -66,7 +66,7 @@ describe('ranked town map and equivalent detail selection', () => {
     ).toBeNull();
   });
   it('withholds a completed result after a revision edit or loss of readiness', () => {
-    const search = rankedSearchFixture();
+    const search = mapSearchFixture();
     const group = groupFixture();
     const view = render(
       <TownMapResults
@@ -81,7 +81,7 @@ describe('ranked town map and equivalent detail selection', () => {
     expect(screen.queryByRole('heading')).toBeNull();
   });
   it('keeps an unmapped town accessible without inventing coordinates or zero rent', () => {
-    const search = rankedSearchFixture();
+    const search = mapSearchFixture();
     search.ranked = [
       {
         ...search.ranked[0]!,
@@ -99,14 +99,14 @@ describe('ranked town map and equivalent detail selection', () => {
     expect(screen.queryByText('S$0')).toBeNull();
   });
   it('rounds displayed commutes up without modifying feasibility inputs', () => {
-    const search = rankedSearchFixture();
+    const search = mapSearchFixture();
     const before = structuredClone(search);
     render(<TownMapResults search={search} group={groupFixture()} />);
     expect(within(screen.getByRole('table')).getByText('31 min')).toBeTruthy();
     expect(search).toEqual(before);
   });
   it('separates all mapped-town touch targets while preserving the geographic anchors', () => {
-    const template = rankedSearchFixture().ranked[0]!;
+    const template = mapSearchFixture().ranked[0]!;
     const all = Object.keys(referencePoints).map((town, index) => ({
       ...template,
       town,

@@ -14,6 +14,7 @@ import {
   startSearch,
 } from './api';
 import type { Membership } from './membership';
+import { RankedResults } from './RankedResults';
 import { TownMapResults } from './TownMapResults';
 
 export function SearchProgress({
@@ -195,14 +196,14 @@ export function SearchProgress({
               anyone’s preferences.
             </p>
           )}
+          <RankedResults
+            key={`${search.searchId}:${search.groupRevision}`}
+            search={search}
+            group={group}
+            checkedAt={status.dataUpdatedAt}
+          />
           {search.ranked.length > 0 && (
             <TownMapResults search={search} group={group} />
-          )}
-          {!search.ranked.length && (
-            <p className="live-caption live-rent-note">
-              Equal split of a whole flat, excluding bills. Rent period:{' '}
-              {search.data.rentPeriod}. {search.data.commuteBasis}.
-            </p>
           )}
           {search.progress.unavailable > 0 && (
             <Alert>

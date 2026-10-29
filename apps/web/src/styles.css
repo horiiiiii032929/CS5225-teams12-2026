@@ -2104,3 +2104,45 @@
     font-size: 12px;
   }
 }
+
+.live-ranked-results {
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+}
+.live-ranked-list {
+  display: grid;
+  gap: 16px;
+  padding: 0;
+  list-style: none;
+}
+.live-ranked-results .result-top {
+  flex-wrap: wrap;
+}
+.live-ranked-results h4 {
+  font-size: 18px;
+  font-weight: 650;
+}
+.live-ranked-results summary {
+  cursor: pointer;
+  padding-block: 12px;
+}
+.live-outcomes {
+  display: grid;
+  gap: 12px;
+  margin-block: 12px;
+}
+.live-ranked-results .comparison-scroll {
+  max-width: 100%;
+}
+.live-ranked-results .comparison-scroll th,
+.live-ranked-results .comparison-scroll td {
+  min-width: 150px;
+  vertical-align: top;
+}
+.live-ranked-results {
+  grid-template-columns: minmax(0, 1fr);
+}
+.live-ranked-results > * {
+  min-width: 0;
+}
