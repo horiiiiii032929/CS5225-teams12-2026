@@ -11,7 +11,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { client } from '@/api/generated/client.gen';
 import { SearchProgress } from './SearchProgress';
 import { searchKey } from './api';
-import { groupFixture, membership, searchFixture } from './test-fixtures';
+import {
+  groupFixture,
+  membership,
+  searchFixture,
+  mapSearchFixture,
+} from './test-fixtures';
 
 const transport = vi.fn<typeof fetch>();
 let cache: QueryClient;
@@ -44,6 +49,129 @@ function mount(group = groupFixture()) {
   );
 }
 describe('real search lifecycle UI', () => {
+  it('shows empty-result recovery only for a current completed search', async () => {
+    const complete = searchFixture('complete');
+    complete.progress = { total: 52, resolved: 52, unavailable: 0 };
+    transport.mockImplementation(async () => json(complete));
+    const group = {
+      ...groupFixture(),
+      latestSearch: {
+        searchId: complete.searchId,
+        status: 'complete' as const,
+        createdAt: groupFixture().createdAt,
+      },
+    };
+    const ui = mount(group);
+    await screen.findByRole('heading', { name: 'What you can do next' });
+    expect(screen.getByText(/No exclusion details were provided/)).toBeTruthy();
+    ui.rerender(
+      <QueryClientProvider client={cache}>
+        <SearchProgress
+          group={{ ...group, revision: group.revision + 1 }}
+          membership={membership}
+          groupUpdatedAt={200}
+        />
+      </QueryClientProvider>,
+    );
+    expect(
+      screen.queryByRole('heading', { name: 'What you can do next' }),
+    ).toBeNull();
+    expect(screen.getByText('Your group has changed')).toBeTruthy();
+  });
+  it('recovers a timed-out progress request with GET only and leaves saved inputs intact', async () => {
+    const pending = searchFixture();
+    transport
+      .mockRejectedValueOnce(
+        new DOMException('private transport text', 'TimeoutError'),
+      )
+      .mockImplementation(async () => json(pending));
+    const group = {
+      ...groupFixture(),
+      latestSearch: {
+        searchId: pending.searchId,
+        status: 'pending' as const,
+        createdAt: groupFixture().createdAt,
+      },
+    };
+    const before = structuredClone(group);
+    mount(group);
+    await screen.findByText(
+      'The request took too long. We could not confirm the result. Refresh your group before retrying.',
+    );
+    expect(screen.queryByText('private transport text')).toBeNull();
+    expect(
+      screen.queryByRole('heading', { name: 'What you can do next' }),
+    ).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Check progress again' }),
+    );
+    await screen.findByText('Your route checks are queued.');
+    expect(
+      transport.mock.calls.every(
+        ([request]) => (request as Request).method === 'GET',
+      ),
+    ).toBe(true);
+    expect(group).toEqual(before);
+  });
+  it('allows a timed-out submission to be retried without sending preference edits', async () => {
+    transport
+      .mockRejectedValueOnce(new DOMException('timeout', 'TimeoutError'))
+      .mockImplementation(async () => json(searchFixture()));
+    const group = groupFixture();
+    const before = structuredClone(group);
+    mount(group);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Find our neighbourhoods' }),
+    );
+    await screen.findByText(
+      'The request took too long. We could not confirm the result. Refresh your group before retrying.',
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Find our neighbourhoods' }),
+    );
+    await screen.findByText('Your route checks are queued.');
+    const posts = transport.mock.calls
+      .map(([request]) => request as Request)
+      .filter((request) => request.method === 'POST');
+    expect(posts).toHaveLength(2);
+    for (const request of posts) expect(await request.text()).toBe('');
+    expect(
+      transport.mock.calls.some(
+        ([request]) => (request as Request).method === 'PUT',
+      ),
+    ).toBe(false);
+    expect(group).toEqual(before);
+  });
+
+  it('shows the completed map, then removes it when the group revision changes', async () => {
+    const complete = mapSearchFixture();
+    transport.mockImplementation(async () => json(complete));
+    const group = {
+      ...groupFixture(),
+      latestSearch: {
+        searchId: complete.searchId,
+        status: 'complete' as const,
+        createdAt: groupFixture().createdAt,
+      },
+    };
+    const ui = mount(group);
+    await screen.findByRole('button', {
+      name: 'Show Queenstown on map, rank 1',
+    });
+    ui.rerender(
+      <QueryClientProvider client={cache}>
+        <SearchProgress
+          group={{ ...group, revision: group.revision + 1 }}
+          membership={membership}
+          groupUpdatedAt={101}
+        />
+      </QueryClientProvider>,
+    );
+    await screen.findByText('Your group has changed');
+    expect(
+      screen.queryByRole('region', { name: 'Singapore town reference map' }),
+    ).toBeNull();
+  });
   it('withholds submission until the group is ready', () => {
     const group = { ...groupFixture(), allReady: false, readyCount: 1 };
     mount(group);
@@ -110,7 +238,7 @@ describe('real search lifecycle UI', () => {
       screen.getByRole('button', { name: 'Find our neighbourhoods' }),
     );
     await screen.findByText('Could not start the search');
-    expect(screen.getByText(/saved group inputs are unchanged/)).toBeTruthy();
+    expect(screen.getByText(/Refresh your group to confirm/)).toBeTruthy();
     expect(transport).toHaveBeenCalledTimes(1);
     fireEvent.click(
       screen.getByRole('button', { name: 'Find our neighbourhoods' }),
@@ -138,8 +266,8 @@ describe('real search lifecycle UI', () => {
     };
     transport.mockImplementation(async () => json(complete));
     fireEvent.click(screen.getByRole('button', { name: 'Check progress now' }));
-    await screen.findByText('No neighbourhood meets all your current limits.');
-    expect(screen.getByText('Ready')).toBeTruthy();
+    await screen.findByText('No neighbourhoods to compare.');
+    expect(screen.getByText('No matches')).toBeTruthy();
     expect(screen.getByText('Some routes were unavailable')).toBeTruthy();
   });
   it('distinguishes total route failure and retries the same calculation without changing group inputs', async () => {
@@ -162,9 +290,7 @@ describe('real search lifecycle UI', () => {
     await screen.findByText('We couldn’t calculate your group’s routes.');
     expect(screen.getByText('Routes unavailable')).toBeTruthy();
     expect(screen.queryByText('Ready')).toBeNull();
-    expect(
-      screen.queryByText('No neighbourhood meets all your current limits.'),
-    ).toBeNull();
+    expect(screen.queryByText('No neighbourhoods to compare.')).toBeNull();
     fireEvent.click(
       screen.getByRole('button', { name: 'Retry route calculations' }),
     );
@@ -249,7 +375,7 @@ describe('real search lifecycle UI', () => {
       },
     };
     const ui = mount(group);
-    await screen.findByText('No neighbourhood meets all your current limits.');
+    await screen.findByText('No neighbourhoods to compare.');
     ui.rerender(
       <QueryClientProvider client={cache}>
         <SearchProgress
@@ -260,9 +386,7 @@ describe('real search lifecycle UI', () => {
       </QueryClientProvider>,
     );
     expect(screen.getByText('Your group has changed')).toBeTruthy();
-    expect(
-      screen.queryByText('No neighbourhood meets all your current limits.'),
-    ).toBeNull();
+    expect(screen.queryByText('No neighbourhoods to compare.')).toBeNull();
   });
   it('recovers a status outage without issuing another POST', async () => {
     const pending = searchFixture();
@@ -348,7 +472,7 @@ describe('real search lifecycle UI', () => {
         createdAt: groupFixture().createdAt,
       },
     });
-    await screen.findByText('No neighbourhood meets all your current limits.');
+    await screen.findByText('No neighbourhoods to compare.');
     vi.useFakeTimers();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(4500);

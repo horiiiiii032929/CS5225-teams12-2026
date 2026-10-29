@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { App, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
+import { Code, Function, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup } from 'aws-cdk-lib/aws-logs';
 import { Queue } from 'aws-cdk-lib/aws-sqs';
 import { CommuteAlarms } from '../src/alarms.js';
@@ -19,6 +20,11 @@ function synthesize(alertEmail?: string): Template {
     deadLetterQueue: dlq,
     apiLogGroup: new LogGroup(stack, 'Logs', {
       removalPolicy: RemovalPolicy.DESTROY,
+    }),
+    tokenRefresh: new Function(stack, 'Refresh', {
+      runtime: Runtime.PYTHON_3_13,
+      handler: 'index.handler',
+      code: Code.fromInline('def handler(event, context): return {}'),
     }),
     alertEmail,
   });
@@ -85,7 +91,7 @@ test('every alarm notifies the one topic', () => {
   const [topicId] = Object.keys(topics);
 
   const all = Object.values(template.findResources('AWS::CloudWatch::Alarm'));
-  assert.equal(all.length, 3);
+  assert.equal(all.length, 4);
   for (const alarm of all) {
     assert.deepEqual(alarm.Properties.AlarmActions, [{ Ref: topicId }]);
     assert.ok(
@@ -110,6 +116,23 @@ test('the email is subscribed when given and the alarms exist without it', () =>
   );
   assert.equal(
     Object.keys(without.findResources('AWS::CloudWatch::Alarm')).length,
-    3,
+    4,
   );
+});
+
+test('any failed OneMap token refresh raises an alarm', () => {
+  const template = synthesize();
+  const found = Object.values(
+    template.findResources('AWS::CloudWatch::Alarm'),
+  ).filter((alarm) => alarm.Properties.MetricName === 'Errors');
+  assert.equal(found.length, 1);
+  const properties = found[0].Properties;
+  assert.equal(properties.Namespace, 'AWS/Lambda');
+  assert.equal(properties.Threshold, 1);
+  assert.equal(properties.Statistic, 'Sum');
+  assert.equal(properties.Period, 3600);
+  assert.equal(properties.ComparisonOperator, 'GreaterThanOrEqualToThreshold');
+  // A 12-hourly job leaves most periods without data; that is healthy.
+  assert.equal(properties.TreatMissingData, 'notBreaching');
+  assert.match(properties.AlarmDescription, /OneMapTokenRefresh/);
 });

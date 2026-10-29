@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { GroupShell } from './GroupShell';
+import { MemberPreferencesForm } from './MemberPreferencesForm';
 import { SearchProgress } from './SearchProgress';
 import { errorMessage, groupOptions } from './api';
 import {
@@ -45,6 +46,7 @@ export function LiveGroupPage({ groupId }: { groupId: string }) {
 function MemberGroup({ membership }: { membership: Membership }) {
   const group = useQuery(groupOptions(membership));
   const [copyStatus, setCopyStatus] = useState('');
+  const [editingPreferences, setEditingPreferences] = useState(false);
   const link = inviteLink(membership);
   const data = group.data;
   const ownMember = data?.members.find(
@@ -191,11 +193,23 @@ function MemberGroup({ membership }: { membership: Membership }) {
                   ),
                 )}
               </ul>
-              {!ownMember?.ready && (
-                <p className="live-preference-note">
-                  Your preferences are still needed. Preference entry is not
-                  available in this build yet.
-                </p>
+              {ownMember && !editingPreferences && (
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingPreferences(true)}
+                >
+                  {ownMember.ready
+                    ? 'Edit your preferences'
+                    : 'Add your preferences'}
+                </Button>
+              )}
+              {ownMember && editingPreferences && (
+                <MemberPreferencesForm
+                  membership={membership}
+                  member={ownMember}
+                  onSaved={() => setEditingPreferences(false)}
+                  onCancel={() => setEditingPreferences(false)}
+                />
               )}
               <div className="live-members-footer">
                 <span className="live-caption">Updates automatically</span>

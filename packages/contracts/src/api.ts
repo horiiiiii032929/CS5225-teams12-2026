@@ -6,6 +6,7 @@ export {
   zMembershipResponse,
   zJoinGroupBody,
   zSearchView,
+  zPlacesResponse,
 } from './generated/zod.gen.js';
 export type {
   AreaResult,

@@ -25,6 +25,25 @@ spec.loader.exec_module(builder)
 
 
 class ReferencePointTests(unittest.TestCase):
+    def test_frontend_map_uses_the_same_verified_reference_coordinates(self):
+        source = json.loads(
+            (ROOT / "services/api/src/flatsplit_api/towns.json").read_text()
+        )
+        public = json.loads(
+            (
+                ROOT / "apps/web/src/features/groups/town-reference-points.json"
+            ).read_text()
+        )
+        self.assertEqual(
+            public,
+            {
+                town: {key: point[key] for key in ("stationName", "lat", "lon")}
+                for town, point in source.items()
+                if point["routable"]
+            },
+        )
+        self.assertNotIn("TENGAH", public)
+
     def test_reference_keys_cover_the_reviewed_rental_source(self):
         with (ROOT / "docs/evaluation/e8/rent-audit-2026-q2.csv").open() as source:
             rental_towns = {row["town"] for row in csv.DictReader(source)}

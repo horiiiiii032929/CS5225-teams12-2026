@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FlatSplit — initial presentation draft</title>
+    <style>
+      :root {
+        --ink: #16382e;
+        --green: #176a57;
+        --paper: #f4f6f1;
+        --line: #bccdc4;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #dfe7df;
+        color: var(--ink);
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .slide {
+        width: min(100vw, 1440px);
+        aspect-ratio: 16/9;
+        margin: 24px auto;
+        background: var(--paper);
+        padding: 4.8%;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        scroll-margin-top: 20px;
+      }
+      .dark {
+        background: var(--ink);
+        color: var(--paper);
+      }
+      .eyebrow {
+        font-size: 15px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+      h1 {
+        font-size: clamp(38px, 6vw, 84px);
+        line-height: 1.03;
+        letter-spacing: -3px;
+        margin: 28px 0;
+      }
+      h2 {
+        font-size: clamp(28px, 4vw, 54px);
+        line-height: 1.1;
+        letter-spacing: -1.5px;
+        max-width: 1000px;
+        margin: 20px 0 30px;
+      }
+      p,
+      li {
+        font-size: clamp(14px, 1.7vw, 24px);
+        line-height: 1.45;
+      }
+      .lead {
+        max-width: 880px;
+        font-size: clamp(18px, 2.4vw, 32px);
+      }
+      ul {
+        padding-left: 1.1em;
+        margin: 0;
+      }
+      li + li {
+        margin-top: 16px;
+      }
+      .columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 48px;
+        align-items: center;
+      }
+      .three {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 22px;
+      }
+      .card {
+        border-top: 2px solid var(--green);
+        padding: 18px 0;
+      }
+      .card strong {
+        font-size: 26px;
+      }
+      .small,
+      .source {
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .muted {
+        opacity: 0.82;
+      }
+      footer {
+        position: absolute;
+        bottom: 24px;
+        left: 5%;
+        right: 5%;
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+      }
+      .pill {
+        border: 1px solid currentColor;
+        border-radius: 20px;
+        padding: 6px 12px;
+        font-size: 12px;
+        display: inline-block;
+        align-self: flex-start;
+      }
+      a {
+        color: inherit;
+      }
+      .figure {
+        height: 390px;
+        width: 100%;
+        object-fit: contain;
+        background: white;
+        border: 1px solid var(--line);
+      }
+      svg {
+        width: 100%;
+        height: auto;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 17px;
+        line-height: 1.4;
+      }
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        padding: 12px 8px;
+        vertical-align: top;
+      }
+      .source {
+        margin-top: 20px;
+      }
+      @media (max-width: 700px) {
+        .slide {
+          aspect-ratio: auto;
+          min-height: 100vh;
+          padding: 8%;
+          overflow: visible;
+          margin: 0 0 10px;
+        }
+        .columns,
+        .three {
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
+        .figure {
+          height: 260px;
+        }
+        footer {
+          position: static;
+          margin-top: 28px;
+        }
+        table {
+          font-size: 13px;
+        }
+        h1 {
+          letter-spacing: -1px;
+        }
+      }
+      @page {
+        size: 13.333in 7.5in;
+        margin: 0;
+      }
+      @media print {
+        body {
+          background: white;
+        }
+        .slide {
+          width: 13.333in;
+          height: 7.5in;
+          aspect-ratio: auto;
+          margin: 0;
+          padding: 0.65in;
+          break-after: page;
+          overflow: hidden;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .slide:last-child {
+          break-after: auto;
+        }
+        h1 {
+          font-size: 70px;
+        }
+        h2 {
+          font-size: 43px;
+        }
+        p,
+        li {
+          font-size: 21px;
+        }
+        .lead {
+          font-size: 29px;
+        }
+        .figure {
+          height: 360px;
+        }
+        .source {
+          font-size: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="slide dark">
+      <span class="pill">INITIAL DRAFT · 29 OCTOBER 2026 SGT</span>
+      <h1>Different routines.<br />One common ground.</h1>
+      <p class="lead">
+        FlatSplit helps 2–5 flatmates compare Singapore towns without hiding one
+        person behind the group average.
+      </p>
+      <p class="small">
+        CS5224 project · All six authors review before submission · This is not
+        a final deployed-build attestation.
+      </p>
+      <footer>
+        <span>FlatSplit / Problem → evidence → limits</span><span>01</span>
+      </footer>
+    </section>
+    <section class="slide">
+      <span class="eyebrow">The problem</span>
+      <h2>An affordable average can still mean an unfair journey.</h2>
+      <div class="three">
+        <div class="card">
+          <strong>Budget</strong>
+          <p>Each flatmate has a personal rent limit.</p>
+        </div>
+        <div class="card">
+          <strong>Commute</strong>
+          <p>Different destinations produce different journeys.</p>
+        </div>
+        <div class="card">
+          <strong>Visibility</strong>
+          <p>Show individual outcomes before the group chooses.</p>
+        </div>
+      </div>
+      <p class="source">
+        Scope: town-level estimates, equal whole-flat rent split, public
+        transport. No listings, availability guarantee, booking or payments.
+        Source: user-journey.md and API contract.
+      </p>
+      <footer>
+        <span>Speaker handoff proposal: Raccoon33 → Hikaru</span><span>02</span>
+      </footer>
+    </section>
+    <section class="slide">
+      <span class="eyebrow">Working journey</span>
+      <h2>Share. Save. Search. Compare.</h2>
+      <div class="three">
+        <div class="card">
+          <strong>1 / Shared inputs</strong>
+          <p>
+            Create a group, privately share an invite, then each member saves
+            their own destination and limits.
+          </p>
+        </div>
+        <div class="card">
+          <strong>2 / Async search</strong>
+          <p>
+            Read actual progress. Preserve inputs during errors. Hide results
+            after preferences change.
+          </p>
+        </div>
+        <div class="card">
+          <strong>3 / Explain trade-offs</strong>
+          <p>
+            Compare three towns, every member’s commute, rent/person and the
+            longest-to-shortest gap.
+          </p>
+        </div>
+      </div>
+      <p class="source">
+        Implementation artifacts: #84 / #85 and the local integration
+        preparation of #76 / #77. Code and fixture QA are separate from deployed
+        acceptance.
+      </p>
+      <footer>
+        <span>Demo procedure: docs/demo/README.md</span><span>03</span>
+      </footer>
+    </section>
+    <section class="slide">
+      <span class="eyebrow">Local UI evidence — synthetic data</span>
+      <h2>The comparison stays usable on a phone.</h2>
+      <div class="columns">
+        <img
+          class="figure"
+          src="../demo/evidence/local-synthetic/results-mobile.png"
+          alt="Redacted 390px local synthetic group results showing comparison and reference map"
+        />
+        <div>
+          <ul>
+            <li>390px group input, results and map.</li>
+            <li>Keyboard selection and a scrollable three-town table.</li>
+            <li>Per-member editing survives independent browser reloads.</li>
+          </ul>
+          <p class="small">
+            Moto + real local HTTP resolver. Synthetic places/rent and injected
+            conditional route completions. Replace this image with evidence from
+            the final deployed SHA before submission.
+          </p>
+        </div>
+      </div>
+      <footer>
+        <span>No live OneMap or user-study acceptance is represented here</span
+        ><span>04</span>
+      </footer>
+    </section>
+    <section class="slide">
+      <span class="eyebrow">Source-defined AWS architecture</span>
+      <h2>One request path; routing is asynchronous.</h2>
+      <svg
+        viewBox="0 0 1050 300"
+        role="img"
+        aria-label="Browser via CloudFront to private S3 for the web app and HTTP API Lambda with DynamoDB and SQS. Worker and provider integration require reviewed deployment."
+      >
+        <defs>
+          <marker
+            id="arrow"
+            markerWidth="8"
+            markerHeight="8"
+            refX="7"
+            refY="3"
+            orient="auto"
+          >
+            <path d="M0,0 L0,6 L8,3z" fill="#176a57" />
+          </marker>
+        </defs>
+        <g fill="#fff" stroke="#176a57" stroke-width="2">
+          <rect x="5" y="110" width="140" height="70" rx="10" />
+          <rect x="195" y="110" width="160" height="70" rx="10" />
+          <rect x="425" y="20" width="170" height="65" rx="10" />
+          <rect x="425" y="130" width="170" height="65" rx="10" />
+          <rect x="660" y="130" width="165" height="65" rx="10" />
+          <rect x="660" y="225" width="165" height="65" rx="10" />
+          <rect
+            x="875"
+            y="225"
+            width="165"
+            height="65"
+            rx="10"
+            stroke-dasharray="7 5"
+          />
+        </g>
+        <g
+          stroke="#176a57"
+          stroke-width="2"
+          fill="none"
+          marker-end="url(#arrow)"
+        >
+          <path d="M145 145H195" />
+          <path d="M355 135L425 52" />
+          <path d="M355 155H425" />
+          <path d="M595 160H660" />
+          <path d="M595 175L660 255" />
+          <path d="M825 255H875" />
+        </g>
+        <g
+          fill="#16382e"
+          font-family="Arial"
+          font-size="19"
+          text-anchor="middle"
+        >
+          <text x="75" y="152">Browser</text>
+          <text x="275" y="152">CloudFront</text>
+          <text x="510" y="60">Private S3 / UI</text>
+          <text x="510" y="157">HTTP API</text>
+          <text x="510" y="181">Lambda resolver</text>
+          <text x="742" y="169">DynamoDB</text>
+          <text x="742" y="263">SQS + DLQ</text>
+          <text x="957" y="253">Worker / OneMap</text>
+          <text x="957" y="277" font-size="12">integration gate</text>
+        </g>
+      </svg>
+      <p class="source">
+        Solid boxes: code-defined topology at main b4a4434; not a current
+        runtime inventory. #74 worker and #79 alarms are reviewed PR work, not
+        silently included in that main. Secrets remain server-side. Source:
+        infra/aws/src/{web,api,data}.ts and #39 backend packet.
+      </p>
+      <footer>
+        <span>Proposed backend topology handoff: WK → Shyam</span
+        ><span>05</span>
+      </footer>
+    </section>
+    <section class="slide">
+      <span class="eyebrow">Correctness before recommendations</span>
+      <h2>Retries and edits must not make old data look current.</h2>
+      <ul>
+        <li>
+          Invite capability joins; member capability reads and edits its own
+          preferences.
+        </li>
+        <li>
+          Searches pin the group revision and data inputs; changed preferences
+          withhold old results.
+        </li>
+        <li>
+          Unknown route times are unavailable, never zero. A timeout cannot
+          prove a preference write did not commit.
+        </li>
+      </ul>
+      <p class="source">
+        #67 privacy corrections independently verified at 92a480c: 32 focused
+        tests + 11 local scenarios / 175 calls, as reported in the dated review.
+        This supersedes the earlier “privacy finding open” packet; it is
+        controlled local proof, not deployed/browser acceptance.
+      </p>
+      <footer>
+        <span
+          >Source: API contract, #67 review handback, #39 correction
+          ledger</span
+        ><span>06</span>
+      </footer>
+    </section>
+    <section class="slide">
+      <span class="eyebrow">Data and fairness</span>
+      <h2>Be explicit about the estimate.</h2>
+      <div class="three">
+        <div class="card">
+          <strong>Rent</strong>
+          <p>
+            Historical whole-flat summaries, equal split, uncertainty and
+            coverage shown. Not an available listing.
+          </p>
+        </div>
+        <div class="card">
+          <strong>Commute</strong>
+          <p>
+            Station-to-station estimate for a specified travel basis. Snapping
+            and provider availability limit precision.
+          </p>
+        </div>
+        <div class="card">
+          <strong>Ranking</strong>
+          <p>
+            Filter every member’s hard limits, then show rent, average commute
+            and commute-gap trade-offs.
+          </p>
+        </div>
+      </div>
+      <p class="source">
+        Current SearchView lacks rent-publication and per-route update
+        timestamps. “Last response checked” is not data freshness. #75’s latest
+        timestamp correction still needs formal acceptance; no accepted real
+        publication is established by this deck.
+      </p>
+      <footer>
+        <span>Proposed handoff: Mani / Ming → frontend interpretation</span
+        ><span>07</span>
+      </footer>
+    </section>
+    <section class="slide">
+      <span class="eyebrow"
+        >Evaluation: three different kinds of statement</span
+      >
+      <h2>Targets are not measurements.</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Statement</th>
+            <th>What we can say now</th>
+            <th>What it does not prove</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Local correctness</th>
+            <td>
+              Versioned tests and synthetic HTTP/browser QA; see source ledger.
+            </td>
+            <td>Real provider, cloud release or participant acceptance.</td>
+          </tr>
+          <tr>
+            <th>Warm result latency</th>
+            <td>p95 ≤ 500 ms is the agreed target.</td>
+            <td>No accepted measured p95 or maximum throughput is claimed.</td>
+          </tr>
+          <tr>
+            <th>AWS cost</th>
+            <td>Scenario models and operation-count assumptions exist.</td>
+            <td>A model is not an AWS bill or measured consumed capacity.</td>
+          </tr>
+          <tr>
+            <th>User study</th>
+            <td>
+              #78 protocol/cards prepared; minimum three eligible participants,
+              target 8–12.
+            </td>
+            <td>No participant session or usability gain is claimed.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="source">
+        #80 interpreter reproducibility is a numerical correction, not a new
+        cost measurement. Drain arithmetic such as 78 pairs/~28s is
+        extrapolation, never measured throughput.
+      </p>
+      <footer>
+        <span>Pending measurements: #30 / #34 / #35 / #36 and #31</span
+        ><span>08</span>
+      </footer>
+    </section>
+    <section class="slide">
+      <span class="eyebrow">Demo and recovery</span>
+      <h2>Show what happens when plans change.</h2>
+      <ol>
+        <li>Create/share with two independent member contexts.</li>
+        <li>
+          Save explicit destinations; show pending and compare three actual
+          returned towns.
+        </li>
+        <li>
+          Edit a budget, reload the other member, then show stale-result
+          withholding.
+        </li>
+        <li>
+          Explain missing rent/routes and safe retry without inventing a
+          completed recommendation.
+        </li>
+      </ol>
+      <p class="source">
+        Use docs/demo/README.md. Local synthetic mode is reproducible now; final
+        demonstration needs the reviewed deployed SHA, known sample inputs, real
+        data/provenance and redacted screenshots from that same build. Never
+        disrupt the shared deployment for a failure demo.
+      </p>
+      <footer>
+        <span>Proposed demonstration: Raccoon33 + Hikaru</span><span>09</span>
+      </footer>
+    </section>
+    <section class="slide">
+      <span class="eyebrow">Team roles — established task ownership</span>
+      <h2>Six contributions; one reviewed story.</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Implementation/evidence contribution</th>
+            <th>Proposed presentation handoff</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Raccoon33 / BBQQ</td>
+            <td>Forms, comparisons, mobile pass, demo, slide coordination</td>
+            <td>Problem → live journey → final limitations</td>
+          </tr>
+          <tr>
+            <td>Hikaru</td>
+            <td>Journey, sharing, status, map, recovery, study</td>
+            <td>UX choices and user-study limits</td>
+          </tr>
+          <tr>
+            <td>Mani</td>
+            <td>Rental pipeline, quality and report coordination</td>
+            <td>Data lineage and uncertainty</td>
+          </tr>
+          <tr>
+            <td>Ming</td>
+            <td>Lookup/worker, operational recovery and cost model</td>
+            <td>Async routing and modeled costs</td>
+          </tr>
+          <tr>
+            <td>WK</td>
+            <td>
+              Persistence/search, correctness, performance/security evidence
+            </td>
+            <td>Backend invariants and measured-evidence gaps</td>
+          </tr>
+          <tr>
+            <td>Shyam</td>
+            <td>
+              Infrastructure, API contracts, filtering/ranking, evaluation
+              synthesis
+            </td>
+            <td>AWS design and evaluation interpretation</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="small">
+        Speaking order/durations are proposals awaiting all six members’
+        agreement, not assigned or completed rehearsal.
+      </p>
+      <footer>
+        <span>Source: ownership tables in #41 / #44</span><span>10</span>
+      </footer>
+    </section>
+    <section class="slide dark">
+      <span class="eyebrow">Conclusion and remaining gates</span>
+      <h2>
+        A shortlist is useful only when every flatmate’s outcome is visible.
+      </h2>
+      <ul>
+        <li>
+          Local preparation now connects member edits, comparisons, map and
+          recovery.
+        </li>
+        <li>
+          Final claims need reviewed deployment, real rent/route evidence and
+          participant observations.
+        </li>
+        <li>All-six-member review and a timed rehearsal precede submission.</li>
+      </ul>
+      <p class="lead">
+        Final report and slides:<br />13 November 2026, 23:59 Singapore time.
+      </p>
+      <footer>
+        <span>Initial draft; no submission receipt exists</span><span>11</span>
+      </footer>
+    </section>
+    <section class="slide">
+      <span class="eyebrow">Citation ledger and final checks</span>
+      <h2>Carry the limits with each claim.</h2>
+      <ul>
+        <li>
+          <a href="../api-contract.md">API contract</a> /
+          <a href="../backend-design.md">backend design</a> /
+          <a href="../evaluation-plan.md">evaluation plan</a>.
+        </li>
+        <li>
+          <a
+            href="https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/39"
+            >#39 source packet and later corrections</a
+          >; #67 92a480c supersedes earlier privacy warnings; #74/#79 clean
+          heads are not obsolete conflicts.
+        </li>
+        <li>
+          <a href="../demo/README.md">Demo procedure</a>,
+          <a href="../qa/mobile-accessibility.md">mobile/accessibility pass</a>
+          and <a href="../remaining-work.md">remaining-work matrix</a>.
+        </li>
+        <li>
+          Before finalisation: replace synthetic screenshots, reconcile every
+          slide with the report/deployed SHA, add actual measurements, record
+          all six approvals, timed rehearsal and submission receipt.
+        </li>
+      </ul>
+      <p class="small">
+        Use the detailed speaker notes and citation ledger in
+        docs/presentation/README.md. This deck does not imply all-six review, a
+        live study, successful deployment or completed submission.
+      </p>
+      <footer>
+        <span
+          >Draft navigation: Left / Right / PageUp / PageDown; print for
+          PDF</span
+        ><span>12</span>
+      </footer>
+    </section>
+    <script>
+      document.addEventListener('keydown', (event) => {
+        if (
+          !['ArrowRight', 'ArrowLeft', 'PageDown', 'PageUp'].includes(event.key)
+        )
+          return;
+        const slides = [...document.querySelectorAll('.slide')];
+        const index = slides.reduce(
+          (best, slide, i) =>
+            Math.abs(slide.getBoundingClientRect().top) <
+            Math.abs(slides[best].getBoundingClientRect().top)
+              ? i
+              : best,
+          0,
+        );
+        const step = ['ArrowRight', 'PageDown'].includes(event.key) ? 1 : -1;
+        event.preventDefault();
+        slides[
+          Math.max(0, Math.min(slides.length - 1, index + step))
+        ].scrollIntoView({ behavior: 'smooth' });
+      });
+    </script>
+  </body>
+</html>

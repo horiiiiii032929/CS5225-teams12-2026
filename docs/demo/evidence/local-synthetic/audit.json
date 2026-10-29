@@ -1,0 +1,164 @@
+{
+  "generatedAt": "2026-10-28T18:11:00.977Z",
+  "mode": "local_synthetic",
+  "limitations": [
+    "Moto persistence, synthetic place/rent and injected conditional route completions",
+    "No live OneMap/worker/deployed acceptance or participant study",
+    "Axe plus keyboard checks are not a full screen-reader audit"
+  ],
+  "checks": [
+    {
+      "scenario": "2-member sharing, editing, results and mobile accessibility",
+      "state": "create",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "violations": []
+    },
+    {
+      "scenario": "2-member sharing, editing, results and mobile accessibility",
+      "state": "member-input",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "violations": []
+    },
+    {
+      "scenario": "2-member sharing, editing, results and mobile accessibility",
+      "state": "member-input",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "violations": []
+    },
+    {
+      "scenario": "2-member sharing, editing, results and mobile accessibility",
+      "state": "ready-group",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "violations": []
+    },
+    {
+      "scenario": "2-member sharing, editing, results and mobile accessibility",
+      "state": "results-map-mobile",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "violations": []
+    },
+    {
+      "scenario": "2-member sharing, editing, results and mobile accessibility",
+      "state": "results-map-desktop",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "violations": []
+    },
+    {
+      "scenario": "2-member sharing, editing, results and mobile accessibility",
+      "state": "stale-group",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "violations": []
+    },
+    {
+      "scenario": "5-member sharing, editing, results and mobile accessibility",
+      "state": "create",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "violations": []
+    },
+    {
+      "scenario": "5-member sharing, editing, results and mobile accessibility",
+      "state": "member-input",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "violations": []
+    },
+    {
+      "scenario": "5-member sharing, editing, results and mobile accessibility",
+      "state": "member-input",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "violations": []
+    },
+    {
+      "scenario": "5-member sharing, editing, results and mobile accessibility",
+      "state": "member-input",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "violations": []
+    },
+    {
+      "scenario": "5-member sharing, editing, results and mobile accessibility",
+      "state": "member-input",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "violations": []
+    },
+    {
+      "scenario": "5-member sharing, editing, results and mobile accessibility",
+      "state": "member-input",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "violations": []
+    },
+    {
+      "scenario": "5-member sharing, editing, results and mobile accessibility",
+      "state": "ready-group",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "violations": []
+    },
+    {
+      "scenario": "5-member sharing, editing, results and mobile accessibility",
+      "state": "results-map-mobile",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "violations": []
+    },
+    {
+      "scenario": "5-member sharing, editing, results and mobile accessibility",
+      "state": "results-map-desktop",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "violations": []
+    },
+    {
+      "scenario": "5-member sharing, editing, results and mobile accessibility",
+      "state": "stale-group",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "violations": []
+    }
+  ]
+}
