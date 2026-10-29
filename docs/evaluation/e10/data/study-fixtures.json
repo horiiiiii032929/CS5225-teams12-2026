@@ -1,0 +1,85 @@
+{
+  "synthetic": true,
+  "description": "Controlled E10 study stimuli only. Not HDB rent, OneMap routes, or deployed acceptance.",
+  "members": [
+    "Alex",
+    "Jamie",
+    "Sam"
+  ],
+  "scenarios": [
+    {
+      "id": "X",
+      "names": [
+        "Alex",
+        "Jamie",
+        "Sam"
+      ],
+      "towns": [
+        {
+          "town": "AMBER",
+          "rentPerPerson": 1000,
+          "minutes": [
+            20,
+            30,
+            40
+          ]
+        },
+        {
+          "town": "BIRCH",
+          "rentPerPerson": 1400,
+          "minutes": [
+            29,
+            30,
+            31
+          ]
+        },
+        {
+          "town": "CEDAR",
+          "rentPerPerson": 1350,
+          "minutes": [
+            26,
+            30,
+            34
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Y",
+      "names": [
+        "Dee",
+        "Eli",
+        "Fin"
+      ],
+      "towns": [
+        {
+          "town": "AMBER",
+          "rentPerPerson": 1100,
+          "minutes": [
+            42,
+            22,
+            32
+          ]
+        },
+        {
+          "town": "BIRCH",
+          "rentPerPerson": 1500,
+          "minutes": [
+            32,
+            33,
+            31
+          ]
+        },
+        {
+          "town": "CEDAR",
+          "rentPerPerson": 1450,
+          "minutes": [
+            28,
+            32,
+            36
+          ]
+        }
+      ]
+    }
+  ]
+}

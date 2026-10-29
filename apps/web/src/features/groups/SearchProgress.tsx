@@ -14,6 +14,9 @@ import {
   startSearch,
 } from './api';
 import type { Membership } from './membership';
+import { RankedResults } from './RankedResults';
+import { TownMapResults } from './TownMapResults';
+import { SearchExclusions } from './SearchExclusions';
 
 export function SearchProgress({
   group,
@@ -95,7 +98,9 @@ export function SearchProgress({
               : routesFailed
                 ? 'Routes unavailable'
                 : complete
-                  ? 'Ready'
+                  ? search.ranked.length
+                    ? 'Ready'
+                    : 'No matches'
                   : pending
                     ? search.progress.resolved > search.progress.unavailable
                       ? 'Checking routes'
@@ -180,13 +185,13 @@ export function SearchProgress({
         </div>
       )}
       {complete && (
-        <div className="live-complete-state" role="status">
-          <h3>
+        <div className="live-complete-state">
+          <h3 role="status">
             {routesFailed
               ? 'We couldn’t calculate your group’s routes.'
               : search.ranked.length
                 ? `${search.ranked.length} neighbourhoods meet everyone’s limits.`
-                : 'No neighbourhood meets all your current limits.'}
+                : 'No neighbourhoods to compare.'}
           </h3>
           {routesFailed && (
             <p className="live-caption">
@@ -194,30 +199,15 @@ export function SearchProgress({
               anyone’s preferences.
             </p>
           )}
+          <RankedResults
+            key={`${search.searchId}:${search.groupRevision}`}
+            search={search}
+            group={group}
+            checkedAt={status.dataUpdatedAt}
+          />
           {search.ranked.length > 0 && (
-            <div>
-              <div className="live-town-heading">
-                <span>Neighbourhood</span>
-                <span>Monthly rent / person</span>
-              </div>
-              <ul className="live-town-list">
-                {search.ranked.map((area) => (
-                  <li key={area.town}>
-                    <strong>{area.displayName}</strong>
-                    <span>
-                      {area.rentPerPerson === null
-                        ? 'Rent unavailable'
-                        : `S$${area.rentPerPerson.toLocaleString('en-SG')} per person/month`}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <TownMapResults search={search} group={group} />
           )}
-          <p className="live-caption live-rent-note">
-            Equal split of a whole flat, excluding bills. Rent period:{' '}
-            {search.data.rentPeriod}. {search.data.commuteBasis}.
-          </p>
           {search.progress.unavailable > 0 && (
             <Alert>
               <AlertTitle>
@@ -236,12 +226,8 @@ export function SearchProgress({
               </AlertDescription>
             </Alert>
           )}
-          {!search.ranked.length && !routesFailed && (
-            <p>
-              Review the group’s budgets and commute limits together before
-              changing any preference. Missing or low-confidence rent and
-              unavailable routes also exclude towns.
-            </p>
+          {!search.ranked.length && (
+            <SearchExclusions search={search} group={group} />
           )}
         </div>
       )}

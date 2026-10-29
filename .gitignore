@@ -22,3 +22,4 @@ cdk.out/
 apps/web/src/routeTree.gen.ts
 .tanstack/
 tools/acceptance/evidence/
+.qa-artifacts/
