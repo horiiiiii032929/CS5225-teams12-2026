@@ -132,17 +132,25 @@ test('the search producer cannot receive or delete commute jobs', () => {
   });
 });
 
-test('the OneMap token rotates every 12 hours, not on deploy', () => {
+test('the OneMap token is refreshed every 12 hours by a schedule, not rotation', () => {
   const template = synthesize('dev');
-  template.resourceCountIs('AWS::SecretsManager::RotationSchedule', 1);
-  template.hasResourceProperties('AWS::SecretsManager::RotationSchedule', {
-    RotationRules: { ScheduleExpression: 'rate(12 hours)' },
-    RotateImmediatelyOnUpdate: false,
+  // Secrets Manager rotation would run testSecret during every deploy.
+  template.resourceCountIs('AWS::SecretsManager::RotationSchedule', 0);
+  const functions = template.findResources('AWS::Lambda::Function', {
+    Properties: {
+      Handler: 'flatsplit_api.handlers.onemap_token_refresh.handler',
+    },
   });
+  const [refreshId] = Object.keys(functions);
+  assert.ok(refreshId);
   template.hasResourceProperties('AWS::Lambda::Function', {
-    Handler: 'flatsplit_api.handlers.onemap_rotation.handler',
+    Handler: 'flatsplit_api.handlers.onemap_token_refresh.handler',
     Runtime: 'python3.13',
     Architectures: ['arm64'],
+  });
+  template.hasResourceProperties('AWS::Events::Rule', {
+    ScheduleExpression: 'rate(12 hours)',
+    Targets: [Match.objectLike({ Arn: { 'Fn::GetAtt': [refreshId, 'Arn'] } })],
   });
 });
 
@@ -162,7 +170,7 @@ function statements(template: Template): { role: string; s: Statement }[] {
   );
 }
 
-test('only the rotation Lambda can read the OneMap account login', () => {
+test('only the refresh Lambda can read the OneMap account login', () => {
   const template = synthesize('dev');
   const ids = Object.keys(
     template.findResources('AWS::SecretsManager::Secret'),
@@ -176,18 +184,22 @@ test('only the rotation Lambda can read the OneMap account login', () => {
     JSON.stringify(s.Resource).includes(credentials),
   );
   assert.equal(readers.length, 1);
-  assert.match(readers[0].role, /OneMapTokenRotation/);
+  assert.match(readers[0].role, /OneMapTokenRefresh/);
   assert.deepEqual([readers[0].s.Action].flat().sort(), [
     'secretsmanager:DescribeSecret',
     'secretsmanager:GetSecretValue',
   ]);
 
-  // Its only write access is the rotation actions on the token secret.
-  const writes = all.filter(
-    ({ role, s }) =>
-      role.includes('OneMapTokenRotation') &&
-      [s.Action].flat().some((action) => /Put|Update/.test(action)),
+  // Its only write is a new token value: no UpdateSecret, no stage moves and
+  // none of rotation's account-wide GetRandomPassword.
+  const refresh = all.filter(({ role }) => role.includes('OneMapTokenRefresh'));
+  const writes = refresh.filter(({ s }) =>
+    [s.Action].flat().some((action) => !/Get|Describe|logs:/.test(action)),
   );
   assert.equal(writes.length, 1);
+  assert.deepEqual([writes[0].s.Action].flat(), [
+    'secretsmanager:PutSecretValue',
+  ]);
   assert.ok(JSON.stringify(writes[0].s.Resource).includes(token));
+  assert.ok(!refresh.some(({ s }) => JSON.stringify(s.Resource) === '"*"'));
 });

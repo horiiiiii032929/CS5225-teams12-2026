@@ -2,6 +2,8 @@ import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import { HttpApi, HttpStage } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import type { ITable } from 'aws-cdk-lib/aws-dynamodb';
+import { Rule, Schedule } from 'aws-cdk-lib/aws-events';
+import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, Function, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
@@ -22,10 +24,12 @@ export class Api extends Construct {
   readonly httpApi: HttpApi;
   /** Hostname CloudFront uses as the /api/* origin. */
   readonly originDomain: string;
-  /** Rotated automatically from `onemapCredentialsSecretName` (#72). */
+  /** Refreshed every 12 hours from `onemapCredentialsSecretName` (#72). */
   readonly onemapTokenSecretName: string;
   /** OneMap account email/password, put in once by hand; never in the repo. */
   readonly onemapCredentialsSecretName: string;
+  /** Scheduled token refresh; #27's topic alarms on its errors. */
+  readonly onemapTokenRefresh: Function;
   /** Shared producer queue; #15 attaches its worker to this queue. */
   readonly commuteJobsQueue: Queue;
   /** Holds only what the worker could not account for; #27 alarms on it. */
@@ -40,50 +44,58 @@ export class Api extends Construct {
     // account's email and password (#3), with no refresh endpoint. Keeping it
     // in Secrets Manager lets /places proxy OneMap server-side without the
     // token ever reaching the browser (docs/backend-design.md). It was
-    // replaced by hand until #72 and lapsed for a week when nobody did, so a
-    // rotation Lambda now logs in with a separate credentials secret.
+    // replaced by hand until #72 and lapsed for days when nobody did, so a
+    // scheduled Lambda now logs in with a separate credentials secret.
     const onemapToken = new Secret(this, 'OneMapToken', {
-      description: `OneMap API token for FlatSplit ${props.stage}; rotated every 12 hours from the OneMap credentials secret`,
+      description: `OneMap API token for FlatSplit ${props.stage}; refreshed every 12 hours from the OneMap credentials secret`,
       removalPolicy: props.removalPolicy,
     });
     this.onemapTokenSecretName = onemapToken.secretName;
 
-    // CDK seeds a random placeholder, which the rotation rejects as not
+    // CDK seeds a random placeholder, which the refresh rejects as not
     // {"email", "password"} JSON until the account holder puts the real
     // credentials in once (runbook in docs/aws-dev-handoff.md).
     const onemapCredentials = new Secret(this, 'OneMapCredentials', {
-      description: `OneMap account login for FlatSplit ${props.stage} token rotation: {"email": ..., "password": ...}`,
+      description: `OneMap account login for FlatSplit ${props.stage} token refresh: {"email": ..., "password": ...}`,
       removalPolicy: props.removalPolicy,
     });
     this.onemapCredentialsSecretName = onemapCredentials.secretName;
 
-    const onemapRotation = new Function(this, 'OneMapTokenRotation', {
+    // A schedule, not Secrets Manager rotation: rotation runs its testSecret
+    // step during every deployment, so a deploy could fail on a placeholder
+    // before the credentials exist. A deploy never invokes this function.
+    this.onemapTokenRefresh = new Function(this, 'OneMapTokenRefresh', {
       runtime: Runtime.PYTHON_3_13,
       architecture: Architecture.ARM_64,
       code: pythonApiCode(),
-      handler: 'flatsplit_api.handlers.onemap_rotation.handler',
+      handler: 'flatsplit_api.handlers.onemap_token_refresh.handler',
       memorySize: 128,
       timeout: Duration.seconds(30),
       environment: {
-        POWERTOOLS_SERVICE_NAME: 'flatsplit-onemap-rotation',
+        POWERTOOLS_SERVICE_NAME: 'flatsplit-onemap-token-refresh',
         POWERTOOLS_LOG_LEVEL: 'INFO',
+        ONEMAP_SECRET_NAME: onemapToken.secretName,
         ONEMAP_CREDENTIALS_SECRET_NAME: onemapCredentials.secretName,
       },
-      logGroup: new LogGroup(this, 'OneMapTokenRotationLogs', {
+      logGroup: new LogGroup(this, 'OneMapTokenRefreshLogs', {
         retention: RetentionDays.ONE_MONTH,
         removalPolicy: props.removalPolicy,
       }),
     });
-    // Only the rotation Lambda can read the account login. The schedule grants
-    // it the four rotation actions on the token secret alone.
-    onemapCredentials.grantRead(onemapRotation);
-    onemapToken.addRotationSchedule('Rotation', {
-      rotationLambda: onemapRotation,
-      // Tokens last three days; rotating every 12 hours leaves several retries
-      // before the current one expires if a login fails.
-      automaticallyAfter: Duration.hours(12),
-      // A deploy must not rotate before the credentials have been put in.
-      rotateImmediatelyOnUpdate: false,
+    // Only this function can read the account login, and its only write is a
+    // new value for the token secret (no UpdateSecret, no version staging).
+    onemapCredentials.grantRead(this.onemapTokenRefresh);
+    this.onemapTokenRefresh.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['secretsmanager:PutSecretValue'],
+        resources: [onemapToken.secretArn],
+      }),
+    );
+    // Tokens last three days; every 12 hours leaves several retries (plus
+    // EventBridge's own two async retries) before the current one expires.
+    new Rule(this, 'OneMapTokenRefreshSchedule', {
+      schedule: Schedule.rate(Duration.hours(12)),
+      targets: [new LambdaFunction(this.onemapTokenRefresh)],
     });
 
     const commuteDlq = new Queue(this, 'CommuteDlq', {

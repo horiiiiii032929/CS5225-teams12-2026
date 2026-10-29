@@ -100,9 +100,9 @@ python3 tools/acceptance/acceptance.py \
 
 It uses only the Python standard library, so it needs no repository setup on the machine that runs it, and it exits non-zero when a check fails. The live destination lookup still requires the OneMap token in the stage secret; without it `/places` returns 503 and the journey stops at stage 1. `tools/acceptance/README.md` records what each stage checks, and why an absent #15 worker is recorded as a measured gap instead of a failure.
 
-## OneMap token rotation runbook (#72)
+## OneMap token refresh runbook (#72)
 
-Since #72, the token in `OneMapTokenSecret` is renewed every 12 hours by the `OneMapTokenRotation` Lambda. It logs in with the account stored in `OneMapCredentialsSecret`. Deploys never trigger rotation. After the first deploy that adds it, or when the account changes, the account holder runs these steps once from the README credential subshell:
+Since #72, the token in `OneMapTokenSecret` is renewed every 12 hours by the `OneMapTokenRefresh` Lambda, on an EventBridge schedule. It logs in with the account stored in `OneMapCredentialsSecret`. Deploys never invoke it. After the first deploy that adds it, or when the account or its password changes, the account holder runs these steps once from the README credential subshell:
 
 ```sh
 # 1. Store the account login (both prompts are hidden; Python builds the JSON).
@@ -115,13 +115,14 @@ ONEMAP_EMAIL="$ONEMAP_EMAIL" ONEMAP_PASSWORD="$ONEMAP_PASSWORD" python3 -c \
   | aws secretsmanager put-secret-value --secret-id "$CREDS" --secret-string file:///dev/stdin --query VersionId --output text
 unset ONEMAP_EMAIL ONEMAP_PASSWORD
 
-# 2. Rotate once now instead of waiting up to 12 hours.
-TOKEN=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
-  --query "Stacks[0].Outputs[?OutputKey=='OneMapTokenSecret'].OutputValue" --output text)
-aws secretsmanager rotate-secret --secret-id "$TOKEN"
+# 2. Refresh once now instead of waiting up to 12 hours. The response holds
+#    only the new token's expiry, or a safe failure reason.
+FN=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+  --query "Stacks[0].Outputs[?OutputKey=='OneMapTokenRefreshFunctionName'].OutputValue" --output text)
+aws lambda invoke --function-name "$FN" /dev/stdout
 
-# 3. Confirm: a recent LastRotatedDate, then /places within 15 minutes.
-aws secretsmanager describe-secret --secret-id "$TOKEN" --query '[RotationEnabled,LastRotatedDate]'
+# 3. Confirm /places answers within 15 minutes (the API's secret cache).
+curl -s -o /dev/null -w '%{http_code}\n' 'https://d2g88qlwvm8dec.cloudfront.net/api/places?q=kent%20ridge'
 ```
 
-A failed rotation leaves the existing token current. The reason is in the rotation Lambda's log group: a malformed credentials secret, a refused login (HTTP status and OneMap's message, never the password), or a new token that OneMap rejects. Fix the cause and run step 2 again. Never put the login or a token in GitHub, chat or the repository.
+A failed refresh leaves the existing token current and raises `OneMapTokenRefreshFailing` on the #27 alert topic. The reason is in the Lambda's log group as fixed text: a malformed credentials secret, a refused login (HTTP status only), a new token that expires too soon or that OneMap rejects, or an unexpected error by type. Fix the cause and run step 2 again. Never put the login or a token in GitHub, chat or the repository.

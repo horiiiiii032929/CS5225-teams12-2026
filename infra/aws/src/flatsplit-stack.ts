@@ -42,6 +42,7 @@ export class FlatSplitStack extends Stack {
       jobsQueue: api.commuteJobsQueue,
       deadLetterQueue: api.commuteDeadLetterQueue,
       apiLogGroup: api.httpHandlerLogGroup,
+      tokenRefresh: api.onemapTokenRefresh,
       alertEmail: props.budgetEmail,
     });
     if (props.budgetEmail) {
@@ -67,6 +68,9 @@ export class FlatSplitStack extends Stack {
     });
     new CfnOutput(this, 'OneMapCredentialsSecret', {
       value: api.onemapCredentialsSecretName,
+    });
+    new CfnOutput(this, 'OneMapTokenRefreshFunctionName', {
+      value: api.onemapTokenRefresh.functionName,
     });
   }
 }
