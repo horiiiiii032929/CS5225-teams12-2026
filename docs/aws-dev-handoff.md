@@ -133,11 +133,31 @@ unset ONEMAP_EMAIL ONEMAP_PASSWORD
 #    only the new token's expiry, or a safe failure reason.
 FN=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
   --query "Stacks[0].Outputs[?OutputKey=='OneMapTokenRefreshFunctionName'].OutputValue" --output text)
-aws lambda invoke --function-name "$FN" /dev/stdout
+REFRESH_RESULT=$(mktemp)
+REFRESH_META=$(mktemp)
+aws lambda invoke --function-name "$FN" "$REFRESH_RESULT" > "$REFRESH_META"
+python3 - "$REFRESH_META" "$REFRESH_RESULT" <<'PY_REFRESH'
+import json, sys
+from datetime import datetime, timezone
+from pathlib import Path
+metadata = json.loads(Path(sys.argv[1]).read_text())
+result = json.loads(Path(sys.argv[2]).read_text())
+if metadata.get("FunctionError"):
+    raise SystemExit("Refresh failed; inspect the sanitized Lambda logs. Stop here.")
+expiry = datetime.fromisoformat(result["expiresAt"])
+if expiry.tzinfo is None or (expiry - datetime.now(timezone.utc)).total_seconds() < 86400:
+    raise SystemExit("Refresh did not confirm a token with 24 hours remaining. Stop here.")
+print("Refresh confirmed; token expires at", result["expiresAt"])
+PY_REFRESH
+rm -f "$REFRESH_RESULT" "$REFRESH_META"
 
-# 3. Confirm /places answers within 15 minutes (the API's secret cache).
+# 3. After a successful refresh receipt, check public lookup availability
+#    within 15 minutes (the API's secret cache). HTTP 200 alone does not
+#    establish token health: OneMap can return results with a token warning.
 curl -s -o /dev/null -w '%{http_code}\n' 'https://d2g88qlwvm8dec.cloudfront.net/api/places?q=kent%20ridge'
 ```
+
+Stop if invocation or receipt validation fails; the AWS CLI can exit successfully while Lambda reports FunctionError. Check the OneMapTokenWarning metric/log events after the lookup rather than treating HTTP 200 as proof of valid credentials.
 
 A failed refresh leaves the existing token current and raises `OneMapTokenRefreshFailing` on the #27 alert topic. The reason is in the Lambda's log group as fixed text: a malformed credentials secret, a refused login (HTTP status only), a new token that expires too soon or that OneMap rejects, or an unexpected error by type. Fix the cause and run step 2 again. Never put the login or a token in GitHub, chat or the repository.
 
