@@ -56,11 +56,16 @@ function unwrap<T>(result: {
     504: 'SERVICE_UNAVAILABLE',
   };
   const code =
-    responseCode ??
-    fallbackCodes[result.response?.status ?? 0] ??
-    'REQUEST_FAILED';
+    (error instanceof Error || error instanceof DOMException) &&
+    error.name === 'TimeoutError'
+      ? 'REQUEST_TIMEOUT'
+      : (responseCode ??
+        fallbackCodes[result.response?.status ?? 0] ??
+        'REQUEST_FAILED');
   // Use controlled copy; never reflect arbitrary upstream response bodies or tokens.
   const messages: Record<string, string> = {
+    REQUEST_TIMEOUT:
+      'The request took too long. We could not confirm the result. Refresh your group before retrying.',
     GROUP_FULL:
       'This group is full. If you joined before, reopen it in the browser you used to join.',
     GROUP_NOT_READY:

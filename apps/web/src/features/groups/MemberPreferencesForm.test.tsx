@@ -324,3 +324,25 @@ it.each([500, 502, 503, 504])(
     ).toBe('1850');
   },
 );
+
+it('does not claim a timed-out PUT left saved preferences unchanged', async () => {
+  const serverGroup = readyGroup();
+  transport.mockImplementation(async (input) => {
+    const body = await (input as Request).json();
+    serverGroup.members[0]!.budget = body.budget;
+    throw new DOMException('response lost after commit', 'TimeoutError');
+  });
+  mount();
+  field('Your monthly rent budget (SGD)', '1850');
+  submit();
+  await screen.findByText(/We could not confirm the result/);
+  expect(serverGroup.members[0]!.budget).toBe(1850);
+  expect(screen.queryByText(/saved group inputs are unchanged/)).toBeNull();
+  expect(
+    (
+      screen.getByLabelText(
+        'Your monthly rent budget (SGD)',
+      ) as HTMLInputElement
+    ).value,
+  ).toBe('1850');
+});
