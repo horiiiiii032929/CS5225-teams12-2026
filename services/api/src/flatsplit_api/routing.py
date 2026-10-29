@@ -151,14 +151,17 @@ def _token() -> str:
     left = token_seconds_left(token)
     if left is None:
         return token
-    if left <= 0:
-        raise RoutingCredential(
-            "The OneMap token expired. Rotate the secret: there is no renewal."
-        )
     if left < TOKEN_WARNING_SECONDS:
         logger.warning(
             "OneMap token is close to expiry",
-            extra={"onemapTokenHoursLeft": round(left / 3600, 2)},
+            extra={
+                "onemapTokenWarning": True,
+                "onemapTokenHoursLeft": round(left / 3600, 2),
+            },
+        )
+    if left <= 0:
+        raise RoutingCredential(
+            "The OneMap token expired. Rotate the secret: there is no renewal."
         )
     return token
 
@@ -214,8 +217,8 @@ def _classify(status: int, payload: Any, fallback: str) -> RoutingError:
 
 def http_get(params: dict[str, Any], *, timeout: float = TIMEOUT_SECONDS) -> Any:
     """One routing GET. Retries belong to the queue, so there are none here."""
-    _spend_budget()
     token = _token()
+    _spend_budget()
     url = f"{BASE_URL}{ROUTE_PATH}?{urllib.parse.urlencode(params)}"
     request = urllib.request.Request(
         url, headers={"Authorization": token, "Accept": "application/json"}
@@ -302,11 +305,24 @@ def _minutes(itinerary: dict[str, Any], key: str) -> float:
 
 
 def _shortest(payload: Any) -> Route:
+    # A 200 can still carry an upstream error. It is not evidence that this
+    # particular station-town pair has no route, even if a plan is included.
+    error = payload.get("error") if isinstance(payload, dict) else None
+    if error:
+        status = (
+            error.get("status", error.get("code")) if isinstance(error, dict) else None
+        )
+        if status in (401, 403, "401", "403") or re.search(
+            r"token|unauthori[sz]ed|credential|authenticat", str(error), re.I
+        ):
+            raise RoutingCredential("OneMap routing rejected the credential.")
+        raise RoutingRetryable("OneMap routing reported an upstream error.")
     plan = payload.get("plan") if isinstance(payload, dict) else None
     itineraries = plan.get("itineraries") if isinstance(plan, dict) else None
-    if not isinstance(itineraries, list) or not itineraries:
-        # #3 saw 404 for an unroutable pair, but a 200 with an empty plan is
-        # the same answer about the pair and must reach the same place.
+    if not isinstance(itineraries, list):
+        raise RoutingRetryable("OneMap returned a missing or malformed routing plan.")
+    if not itineraries:
+        # Only an explicit empty itinerary list is a no-route response.
         raise RoutingUnroutable("OneMap returned no itinerary for this pair.")
     durations = [_seconds(itinerary) for itinerary in itineraries]
     best = min(range(len(durations)), key=durations.__getitem__)

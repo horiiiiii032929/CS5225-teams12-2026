@@ -64,16 +64,16 @@ The event source uses `batchSize: 1`, `maxConcurrency: 3` and `reportBatchItemFa
 
 Routing failures are classified before they reach the cache, because the pair and our request and our credential are three different problems:
 
-| Upstream                                  | Stored `error`           | Terminal            | `retryAfter` |
-| ----------------------------------------- | ------------------------ | ------------------- | ------------ |
-| 404, or 200 with an empty plan            | `NO_ROUTE`               | yes                 | +86,400 s    |
-| Other 4xx (a request we built wrongly)    | `INVALID_ROUTE_REQUEST`  | yes                 | +86,400 s    |
-| 401/403                                   | `CREDENTIAL_UNAVAILABLE` | on the last receive | +900 s       |
-| 408, 429, 5xx, transport, unreadable body | `ROUTING_UNAVAILABLE`    | on the last receive | +900 s       |
+| Upstream                                          | Stored `error`           | Terminal            | `retryAfter` |
+| ------------------------------------------------- | ------------------------ | ------------------- | ------------ |
+| 404, or 200 with an explicit empty itinerary list | `NO_ROUTE`               | yes                 | +86,400 s    |
+| Other 4xx (a request we built wrongly)            | `INVALID_ROUTE_REQUEST`  | yes                 | +86,400 s    |
+| 401/403                                           | `CREDENTIAL_UNAVAILABLE` | on the last receive | +900 s       |
+| 408, 429, 5xx, transport, unreadable body         | `ROUTING_UNAVAILABLE`    | on the last receive | +900 s       |
 
 A routing 404 is never stored as zero minutes (D06). A day is the terminal delay because the monthly routing baseline cannot change sooner; 900 seconds is the transient one because throttling passes and a rotated token works immediately. On its final receive the worker writes the terminal `unavailable` itself rather than leaving the pair `pending` for a DLQ consumer to interpret, so the DLQ holds only what the handler could not account for: a payload that addresses no cache item, a crash, or a completion write that failed.
 
-The worker requests three itineraries and takes the minimum, and records `itineraries` and `shortestWasFirst` on the result so "was upstream's first itinerary the shortest" stays a measured value rather than an assumption (#6 found it was not, in one of eight sampled pairs). Before each call it reads the token's `exp` and fails fast on an expired one instead of spending quota, warning while a long drain can still be stopped.
+The worker requests three itineraries and takes the minimum, and records `itineraries` and `shortestWasFirst` on the result so "was upstream's first itinerary the shortest" stays a measured value rather than an assumption (#6 found it was not, in one of eight sampled pairs). Before each call it resolves and validates the token before reserving quota. Missing, unreadable and expired credentials spend no reservation. Near-expiry and expired tokens emit `onemapTokenWarning: true`; both API and worker log groups feed the shared warning alarm. HTTP-200 error bodies and missing/malformed plans are credential or retryable failures, not terminal no-route evidence; only an explicit empty itinerary list is a no-route answer.
 
 Its role grants `dynamodb:UpdateItem` on `COMMUTE#*` and nothing else: it cannot read a group, place or rent partition, cannot delete a claim and cannot enqueue work. It consumes the job queue and reads the OneMap secret.
 
@@ -133,7 +133,7 @@ The commute queue, its three receives and its dead-letter queue were already in 
 | `CommuteJobsStalled`  | the oldest job has waited more than 9 minutes, twice over | 180-second visibility across three receives is the longest a healthy pair can take; past that nothing is draining and no search can complete       |
 | `OneMapTokenExpiring` | the API handler logs `onemapTokenWarning`                 | the token is a three-day JWT with no renewal endpoint, and a lookup still answers 200 during the grace period, so that log line is the only signal |
 
-The token warning is published from the structured log through a metric filter rather than counted in the application, because the token can expire with no traffic at all and a metric nobody emits cannot alarm. Missing data is the healthy case for all three, so an idle stage does not alarm. The email subscriber is optional; the alarms and their state history exist either way.
+API and worker structured token warnings feed the same metric through separate log-group filters. Log metrics require traffic; the scheduled token refresh and its failure alarm cover idle periods. Missing data is the healthy case for all three, so an idle stage does not alarm. The email subscriber is optional; the alarms and their state history exist either way.
 
 Inspecting and redriving the dead-letter queue, once something is in it:
 

@@ -168,6 +168,38 @@ def item(table: Table) -> dict[str, Any]:
     return stored
 
 
+@pytest.mark.parametrize(
+    ("response", "code"),
+    [
+        ({"error": "Invalid token"}, "CREDENTIAL_UNAVAILABLE"),
+        ({"error": "Routing service unavailable"}, "ROUTING_UNAVAILABLE"),
+        ({}, "ROUTING_UNAVAILABLE"),
+    ],
+)
+def test_success_status_errors_retry_then_use_transient_terminal_accounting(
+    table: Table,
+    store: CommuteResults,
+    monkeypatch: pytest.MonkeyPatch,
+    response: dict[str, Any],
+    code: str,
+) -> None:
+    def upstream(origin: Any, destination: Any, **kwargs: Any) -> Route:
+        return routing.route(
+            origin, destination, **kwargs, transport=lambda _: response
+        )
+
+    monkeypatch.setattr(commute_worker, "route", upstream)
+    claim(table)
+    assert run(record(receives=1)) == ["message-1"]
+    assert item(table)["status"] == "pending"
+    assert run(record(receives=3)) == []
+    result = item(table)
+    assert result["status"] == "unavailable"
+    assert result["error"] == code
+    assert int(result["retryAfter"]) == int(NOW.timestamp()) + 900
+    assert "minutes" not in result
+
+
 def test_a_routed_pair_is_recorded_once_and_the_message_is_deleted(
     table: Table, store: CommuteResults, routes: Routes
 ) -> None:

@@ -53,6 +53,8 @@ export class Api extends Construct {
   readonly commuteDeadLetterQueue: Queue;
   /** Where the OneMap token warning is logged; #27 alarms on it. */
   readonly httpHandlerLogGroup: LogGroup;
+  /** Routing token warnings share the operational alarm with the API. */
+  readonly commuteWorkerLogGroup: LogGroup;
 
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
@@ -260,6 +262,10 @@ export class Api extends Construct {
     // The queue's consumer (#15): one station-town pair per message. Its
     // timeout stays well inside the queue's 3-minute visibility timeout, so a
     // message is never redelivered while an invocation is still working on it.
+    this.commuteWorkerLogGroup = new LogGroup(this, 'CommuteWorkerLogs', {
+      retention: RetentionDays.ONE_WEEK,
+      removalPolicy: props.removalPolicy,
+    });
     const commuteWorker = new Function(this, 'CommuteWorker', {
       runtime: Runtime.PYTHON_3_13,
       architecture: Architecture.ARM_64,
@@ -275,10 +281,7 @@ export class Api extends Construct {
         TABLE_NAME: props.table.tableName,
         COMMUTE_MAX_RECEIVES: String(COMMUTE_MAX_RECEIVES),
       },
-      logGroup: new LogGroup(this, 'CommuteWorkerLogs', {
-        retention: RetentionDays.ONE_WEEK,
-        removalPolicy: props.removalPolicy,
-      }),
+      logGroup: this.commuteWorkerLogGroup,
     });
 
     onemapToken.grantRead(commuteWorker);

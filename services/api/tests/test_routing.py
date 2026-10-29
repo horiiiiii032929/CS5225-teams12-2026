@@ -141,9 +141,8 @@ def test_the_request_carries_the_bounds_measured_in_issue_3() -> None:
 
 
 def test_a_two_hundred_with_an_empty_plan_is_the_same_answer_as_a_404() -> None:
-    for payload in [{"plan": {"itineraries": []}}, {"plan": {}}, {}]:
-        with pytest.raises(RoutingUnroutable):
-            routed(payload)
+    with pytest.raises(RoutingUnroutable):
+        routed({"plan": {"itineraries": []}})
 
 
 def test_a_duration_just_over_a_whole_minute_keeps_its_precision() -> None:
@@ -407,6 +406,50 @@ def test_a_token_near_expiry_warns_but_is_still_used(
     )
     assert routing.http_get({"routeType": "pt"})["plan"]["itineraries"]
     assert warnings[0]["extra"]["onemapTokenHoursLeft"] == 1.0
+    assert warnings[0]["extra"]["onemapTokenWarning"] is True
+
+
+@pytest.mark.parametrize("failure", ["expired", "missing", "unreadable"])
+def test_credential_failure_does_not_reserve_shared_budget(
+    monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    reservations: list[bool] = []
+    monkeypatch.setattr(routing, "_spend_budget", lambda: reservations.append(True))
+
+    def credential() -> str:
+        if failure == "expired":
+            return jwt(time.time() - 1)
+        raise OneMapUnavailable(failure)
+
+    monkeypatch.setattr(routing, "resolve_token", credential)
+    monkeypatch.setattr(
+        urllib.request,
+        "urlopen",
+        lambda *_args, **_kwargs: pytest.fail("credential failure reached OneMap"),
+    )
+    with pytest.raises(RoutingCredential):
+        routing.http_get({"routeType": "pt"})
+    assert reservations == []
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ({"error": "Invalid token"}, RoutingCredential),
+        ({"error": {"status": 401, "message": "denied"}}, RoutingCredential),
+        ({"error": "Routing service unavailable"}, RoutingRetryable),
+        ({"error": "Invalid token", **plan(leg(1800))}, RoutingCredential),
+        ({}, RoutingRetryable),
+        ({"plan": {}}, RoutingRetryable),
+        ({"plan": {"itineraries": None}}, RoutingRetryable),
+    ],
+)
+def test_success_status_error_or_missing_plan_is_not_a_terminal_no_route(
+    payload: Any, expected: type[RoutingError]
+) -> None:
+    with pytest.raises(expected) as exc:
+        routed(payload)
+    assert not isinstance(exc.value, RoutingUnroutable)
 
 
 @pytest.mark.parametrize("token_value", ["not-a-jwt", "a.b", "a.!!!!.c", "a.e30.c"])

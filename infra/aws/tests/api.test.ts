@@ -73,27 +73,33 @@ function accessByRole(
   prefixKey: string,
 ): Record<string, Record<string, string[]>> {
   return Object.fromEntries(
-    Object.entries(allowedByRole(template)).map(([role, statements]) => [
-      role,
-      Object.fromEntries(
-        statements
-          .filter((statement) =>
-            actions(statement).some((action) =>
-              action.startsWith(`${service}:`),
-            ),
-          )
-          .map((statement) => {
-            assert.notEqual(
-              statement.Resource,
-              '*',
-              `${role} may not use ${service}:*`,
-            );
-            const prefixes =
-              statement.Condition?.['ForAllValues:StringLike']?.[prefixKey];
-            return [[prefixes].flat().join(','), actions(statement)];
-          }),
-      ),
-    ]),
+    Object.entries(allowedByRole(template))
+      .filter(([, statements]) =>
+        statements.some((statement) =>
+          actions(statement).some((action) => action.startsWith(`${service}:`)),
+        ),
+      )
+      .map(([role, statements]) => [
+        role,
+        Object.fromEntries(
+          statements
+            .filter((statement) =>
+              actions(statement).some((action) =>
+                action.startsWith(`${service}:`),
+              ),
+            )
+            .map((statement) => {
+              assert.notEqual(
+                statement.Resource,
+                '*',
+                `${role} may not use ${service}:*`,
+              );
+              const prefixes =
+                statement.Condition?.['ForAllValues:StringLike']?.[prefixKey];
+              return [[prefixes].flat().join(','), actions(statement)];
+            }),
+        ),
+      ]),
   );
 }
 
@@ -175,6 +181,7 @@ test('the producer can only send commute jobs and the worker only consume them',
     ]),
   );
   assert.deepEqual(sqs, {
+    OneMapTokenRefresh: [],
     HttpHandler: [
       'sqs:GetQueueAttributes',
       'sqs:GetQueueUrl',
@@ -199,7 +206,7 @@ test('the commute worker drains the queue one pair at a time', () => {
   template.resourceCountIs('AWS::Lambda::EventSourceMapping', 1);
   template.hasResourceProperties('AWS::Lambda::EventSourceMapping', {
     BatchSize: 1,
-    // Concurrency is the only limiter on the OneMap call rate (#3).
+    // Resource concurrency complements the shared DynamoDB call budget.
     ScalingConfig: { MaximumConcurrency: 3 },
     // Without this, one retried pair would redeliver its whole batch.
     FunctionResponseTypes: ['ReportBatchItemFailures'],

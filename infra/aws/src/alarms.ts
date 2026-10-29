@@ -24,6 +24,8 @@ export interface CommuteAlarmsProps {
   readonly deadLetterQueue: IQueue;
   /** The API handler's log group, where the OneMap token warning is written. */
   readonly apiLogGroup: ILogGroup;
+  /** The worker can be the only caller while a queue is draining. */
+  readonly workerLogGroup: ILogGroup;
   /** The scheduled OneMap token refresh (#72); any error is an alert. */
   readonly tokenRefresh: IFunction;
   /** Subscribed to the alert topic when set; alarms exist either way. */
@@ -104,6 +106,14 @@ export class CommuteAlarms extends Construct {
 
     const tokenWarning = new MetricFilter(this, 'OneMapTokenWarning', {
       logGroup: props.apiLogGroup,
+      metricNamespace: `FlatSplit/${props.stage}`,
+      metricName: 'OneMapTokenWarning',
+      filterPattern: FilterPattern.booleanValue('$.onemapTokenWarning', true),
+      metricValue: '1',
+      defaultValue: 0,
+    });
+    new MetricFilter(this, 'CommuteWorkerTokenWarning', {
+      logGroup: props.workerLogGroup,
       metricNamespace: `FlatSplit/${props.stage}`,
       metricName: 'OneMapTokenWarning',
       filterPattern: FilterPattern.booleanValue('$.onemapTokenWarning', true),
