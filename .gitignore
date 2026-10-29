@@ -21,3 +21,4 @@ cdk.out/
 *.tsbuildinfo
 apps/web/src/routeTree.gen.ts
 .tanstack/
+tools/acceptance/evidence/

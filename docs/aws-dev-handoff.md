@@ -89,6 +89,17 @@ Checks after the deploy, against `https://d2g88qlwvm8dec.cloudfront.net`:
 
 What this means for acceptance: group create/join/read on the shared deployment is now evidenced for #12 and #7, but preference saves need #14 (PR #65) and a valid OneMap token, and searches need published rent (#10) and the commute worker (#15). The frontend acceptance in #7 still needs a real cross-browser create/copy/join/reload walk-through on this build.
 
+## Acceptance run after a deployment — 20 October 2026
+
+`tools/acceptance/acceptance.py` runs the #44 acceptance gate against a deployed API in one command and writes a JSON evidence file that records the mode and the revision under test:
+
+```bash
+python3 tools/acceptance/acceptance.py \
+    --base-url https://<host>/api --mode deployed --revision "$(git rev-parse --short HEAD)"
+```
+
+It uses only the Python standard library, so it needs no repository setup on the machine that runs it, and it exits non-zero when a check fails. The live destination lookup still requires the OneMap token in the stage secret; without it `/places` returns 503 and the journey stops at stage 1. `tools/acceptance/README.md` records what each stage checks, and why an absent #15 worker is recorded as a measured gap instead of a failure.
+
 ## OneMap token rotation runbook (#72)
 
 Since #72, the token in `OneMapTokenSecret` is renewed every 12 hours by the `OneMapTokenRotation` Lambda. It logs in with the account stored in `OneMapCredentialsSecret`. Deploys never trigger rotation. After the first deploy that adds it, or when the account changes, the account holder runs these steps once from the README credential subshell:
