@@ -43,6 +43,10 @@ export class Api extends Construct {
   readonly onemapTokenSecretName: string;
   /** Producer queue, written by the API and drained by the commute worker. */
   readonly commuteJobsQueue: Queue;
+  /** Holds only what the worker could not account for; #27 alarms on it. */
+  readonly commuteDeadLetterQueue: Queue;
+  /** Where the OneMap token warning is logged; #27 alarms on it. */
+  readonly httpHandlerLogGroup: LogGroup;
 
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
@@ -64,6 +68,7 @@ export class Api extends Construct {
       retentionPeriod: Duration.days(14),
       removalPolicy: props.removalPolicy,
     });
+    this.commuteDeadLetterQueue = commuteDlq;
     this.commuteJobsQueue = new Queue(this, 'CommuteJobs', {
       encryption: QueueEncryption.SQS_MANAGED,
       enforceSSL: true,
@@ -75,6 +80,12 @@ export class Api extends Construct {
       },
       removalPolicy: props.removalPolicy,
     });
+
+    const handlerLogs = new LogGroup(this, 'HttpHandlerLogs', {
+      retention: RetentionDays.ONE_WEEK,
+      removalPolicy: props.removalPolicy,
+    });
+    this.httpHandlerLogGroup = handlerLogs;
 
     const handler = new Function(this, 'HttpHandler', {
       runtime: Runtime.PYTHON_3_13,
@@ -91,10 +102,7 @@ export class Api extends Construct {
         TABLE_NAME: props.table.tableName,
         COMMUTE_QUEUE_URL: this.commuteJobsQueue.queueUrl,
       },
-      logGroup: new LogGroup(this, 'HttpHandlerLogs', {
-        retention: RetentionDays.ONE_WEEK,
-        removalPolicy: props.removalPolicy,
-      }),
+      logGroup: handlerLogs,
     });
 
     onemapToken.grantRead(handler);

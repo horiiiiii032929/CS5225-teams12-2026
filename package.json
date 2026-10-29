@@ -21,7 +21,7 @@
     "setup:python": "uv sync --locked --all-packages --group dev",
     "test": "turbo run test && pnpm test:evidence",
     "deploy:aws": "pnpm build && pnpm --filter @flatsplit/aws run deploy",
-    "test:evidence": "uv run python -m unittest discover -s tools/evaluation/tests",
+    "test:evidence": "uv run python -m unittest discover -s tools/evaluation/tests && uv run python -m unittest discover -s tools/acceptance/tests",
     "generate:api": "node tools/contracts/generate.mjs",
     "generate:api:check": "node tools/contracts/generate.mjs --check"
   },

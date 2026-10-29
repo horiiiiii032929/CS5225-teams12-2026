@@ -121,6 +121,29 @@ The table below preserves the 14 October design estimates, not a measured bill o
 
 An AWS Budget with alerts at US$20, 50 and 100 (report section 6.2) is defined in CDK and instantiated only when `budgetEmail` is supplied. Its definition is not evidence that billing alerts are active in the shared account.
 
+## Operational alerts (#27)
+
+The commute queue, its three receives and its dead-letter queue were already in place; what was missing was anybody finding out. `infra/aws/src/alarms.ts` adds three alarms, all notifying one SNS topic so later alerts attach to the same place:
+
+| Alarm                 | Fires when                                                | Why that threshold                                                                                                                                 |
+| --------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CommuteDlqNotEmpty`  | the dead-letter queue holds a message for five minutes    | the DLQ is meant to hold only what the consumer could not account for at all, so one message is already an event                                   |
+| `CommuteJobsStalled`  | the oldest job has waited more than 9 minutes, twice over | 180-second visibility across three receives is the longest a healthy pair can take; past that nothing is draining and no search can complete       |
+| `OneMapTokenExpiring` | the API handler logs `onemapTokenWarning`                 | the token is a three-day JWT with no renewal endpoint, and a lookup still answers 200 during the grace period, so that log line is the only signal |
+
+The token warning is published from the structured log through a metric filter rather than counted in the application, because the token can expire with no traffic at all and a metric nobody emits cannot alarm. Missing data is the healthy case for all three, so an idle stage does not alarm. The email subscriber is optional; the alarms and their state history exist either way.
+
+Inspecting and redriving the dead-letter queue, once something is in it:
+
+```bash
+aws sqs receive-message --queue-url "$DLQ_URL" --max-number-of-messages 10 \
+  --message-attribute-names All --visibility-timeout 0
+aws sqs start-message-move-task \
+  --source-arn "$DLQ_ARN" --destination-arn "$JOBS_ARN"
+```
+
+A redrive is only correct once the cause is fixed, and it is not a way to recover a pair: a claim another search has since reclaimed makes the fenced completion refuse the result, which is the intended outcome, not a lost job. The drill itself needs the deployed stack and is still outstanding.
+
 ## Evaluation hooks
 
 These are planned measurement and failure-recovery hooks. Main has structured HTTP logging and queue definitions, but no custom metric emission, CloudWatch dashboard or queue/DLQ alarms. Load/fault scripts and executed evidence remain with their owning issues; see the [evaluation index](evaluation/README.md).

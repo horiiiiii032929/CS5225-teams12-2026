@@ -88,3 +88,14 @@ Checks after the deploy, against `https://d2g88qlwvm8dec.cloudfront.net`:
 - `GET /api/places` returns `503 UPSTREAM_UNAVAILABLE`. Lambda logs show `OneMap token warning` followed by `OneMap lookup failed`: the token value in the `OneMapTokenSecret` secret appears expired (OneMap tokens last about three days; search answers during its grace period but the follow-up call fails). No secret value was read or changed. Refreshing it is a credential operation for the token owner.
 
 What this means for acceptance: group create/join/read on the shared deployment is now evidenced for #12 and #7, but preference saves need #14 (PR #65) and a valid OneMap token, and searches need published rent (#10) and the commute worker (#15). The frontend acceptance in #7 still needs a real cross-browser create/copy/join/reload walk-through on this build.
+
+## Acceptance run after a deployment — 20 October 2026
+
+`tools/acceptance/acceptance.py` runs the #44 acceptance gate against a deployed API in one command and writes a JSON evidence file that records the mode and the revision under test:
+
+```bash
+python3 tools/acceptance/acceptance.py \
+    --base-url https://<host>/api --mode deployed --revision "$(git rev-parse --short HEAD)"
+```
+
+It uses only the Python standard library, so it needs no repository setup on the machine that runs it, and it exits non-zero when a check fails. The live destination lookup still requires the OneMap token in the stage secret; without it `/places` returns 503 and the journey stops at stage 1. `tools/acceptance/README.md` records what each stage checks, and why an absent #15 worker is recorded as a measured gap instead of a failure.
