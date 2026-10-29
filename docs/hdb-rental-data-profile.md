@@ -96,18 +96,18 @@ For the proposed 3/4/5-room recommendation set, 75 of 81 possible combinations a
 5. Keep every valid row in that inclusive window. Do not deduplicate or remove outliers in version 1.
 6. Group by the exact pair `(town, flat_type)` for all six source flat types and sort rents ascending. Compute P25, median, and P75 with the R-7 linear quantile rule: `h = (n - 1) × p`, then linearly interpolate between values at `floor(h)` and `ceil(h)`. Preserve a fractional result if interpolation produces one.
 7. Estimate median stability with 10,000 deterministic block-cluster bootstrap resamples. A cluster is the exact `(street_name, block)` pair within the town. Each resample draws the same number of clusters with replacement and carries every source row from each selected cluster. Use the 2.5th and 97.5th R-7 quantiles of the bootstrap medians as the 95% percentile interval. Derive each group's random seed from the snapshot algorithm version, town, and flat type so reruns are reproducible.
-8. Set `medianCi95RelativeWidth = (medianCi95High - medianCi95Low) / median`. A summary is `USABLE` only when this value is at most `0.10`; otherwise it is `LOW_CONFIDENCE` and must not be used for recommendations.
+8. Set `medianCi95RelativeWidth = (medianCi95High - medianCi95Low) / median`. A summary is `USABLE` only when it has at least two independent blocks and this value is at most `0.10`; otherwise it is `LOW_CONFIDENCE` and must not be used for recommendations.
 9. Publish one item for every non-empty group, including `LOW_CONFIDENCE` groups. Record source-row and distinct-block counts. Do not fabricate an item for a missing group.
 10. Write the entire immutable snapshot first, validate row/group counts and expected keys, then atomically change `RENT/CURRENT`. Searches already in progress remain pinned to their recorded snapshot.
 
 ## Versioned summary shape
 
-The DynamoDB key is `pk = RENT#<snapshotId>`, `sk = TOWN#<town>#<flatType>`. A content digest in `snapshotId` distinguishes a revised export for the same source month.
+The DynamoDB key is `pk = RENT#<snapshotId>`, `sk = TOWN#<town>#<flatType>`. The snapshot ID includes the schema and aggregation algorithm versions plus a content digest, so a revised algorithm publishes a new immutable snapshot even when the source export is unchanged.
 
 ```json
 {
   "schemaVersion": 1,
-  "snapshotId": "rent-v1-2026-09-767a94819f4b",
+  "snapshotId": "rent-v1-r7-block-bootstrap-v1-2026-09-767a94819f4b",
   "sourceDatasetId": "d_c9f57187485a850908655db0e8cfe651",
   "sourceUpdatedAt": "2026-10-02T02:06:14Z",
   "sourceMonthFrom": "2025-10",
@@ -132,10 +132,10 @@ The DynamoDB key is `pk = RENT#<snapshotId>`, `sk = TOWN#<town>#<flatType>`. A c
 }
 ```
 
-The `RENT/CURRENT` pointer carries `schemaVersion`, `snapshotId`, `period`, `sourceMonthTo`, and `validatedAt`. Search responses expose the stored median, per-person estimate, P25, P75, 95% median interval, source-row count, and quality status. A `LOW_CONFIDENCE` summary is returned with the dedicated `RENT_LOW_CONFIDENCE` reason so users can inspect the observed data, but its budget-headroom fields are null and it cannot affect affordability or ranking.
+The `RENT/CURRENT` pointer carries `schemaVersion`, `snapshotId`, `period`, `sourceMonthTo`, `rawRetrievedAt`, and `validatedAt`. It advances only for a newer source month or a strictly newer raw retrieval within the same month. Search responses expose the stored median, per-person estimate, P25, P75, 95% median interval, source-row count, and quality status. A `LOW_CONFIDENCE` summary is returned with the dedicated `RENT_LOW_CONFIDENCE` reason so users can inspect the observed data, but its budget-headroom fields are null and it cannot affect affordability or ranking.
 
 ## Decisions and remaining review
 
-- Approved by Mani on 13–14 October 2026: store median, P25, and P75; use R-7 linear interpolation; retain identical-looking source rows because the source cannot prove they are duplicate transactions; store all six flat types; store all non-empty summaries; exclude summaries whose block-cluster bootstrap median interval is wider than 10% of the median; represent those exclusions with the dedicated `RENT_LOW_CONFIDENCE` API reason; and still expose their observed distribution, confidence interval, quality status, and sample size without using them in affordability or ranking.
+- Approved by Mani on 13–14 October 2026: store median, P25, and P75; use R-7 linear interpolation; retain identical-looking source rows because the source cannot prove they are duplicate transactions; store all six flat types; store all non-empty summaries; mark groups with fewer than two independent blocks or a block-cluster bootstrap median interval wider than 10% of the median as `LOW_CONFIDENCE`; represent those exclusions with the dedicated `RENT_LOW_CONFIDENCE` API reason; and still expose their observed distribution, confidence interval, quality status, and sample size without using them in affordability or ranking.
 - Still to confirm: the project-level interpretation of `monthly_rent` as SGD per whole flat per month because data.gov.sg leaves the column unit blank.
 - Still to confirm: the separate group-size-to-flat-type policy (`2 → 3-ROOM`, `3 → 4-ROOM`, `4-5 → 5-ROOM`). The source profile proves those fields exist but does not establish that occupancy mapping.

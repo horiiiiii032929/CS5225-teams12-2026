@@ -236,3 +236,70 @@ test('a worker invocation cannot outlive the visibility timeout of its message',
     String(jobQueue.Properties.RedrivePolicy.maxReceiveCount),
   );
 });
+
+test('the OneMap token is refreshed every 12 hours by a schedule, not rotation', () => {
+  const template = synthesize('dev');
+  // Secrets Manager rotation would run testSecret during every deploy.
+  template.resourceCountIs('AWS::SecretsManager::RotationSchedule', 0);
+  const functions = template.findResources('AWS::Lambda::Function', {
+    Properties: {
+      Handler: 'flatsplit_api.handlers.onemap_token_refresh.handler',
+    },
+  });
+  const [refreshId] = Object.keys(functions);
+  assert.ok(refreshId);
+  template.hasResourceProperties('AWS::Lambda::Function', {
+    Handler: 'flatsplit_api.handlers.onemap_token_refresh.handler',
+    Runtime: 'python3.13',
+    Architectures: ['arm64'],
+  });
+  template.hasResourceProperties('AWS::Events::Rule', {
+    ScheduleExpression: 'rate(12 hours)',
+    Targets: [Match.objectLike({ Arn: { 'Fn::GetAtt': [refreshId, 'Arn'] } })],
+  });
+});
+
+/** Each IAM statement with the role it is attached to. */
+function statements(template: Template): { role: string; s: Statement }[] {
+  return Object.values(template.findResources('AWS::IAM::Policy')).flatMap(
+    (policy) =>
+      (policy.Properties.PolicyDocument.Statement as Statement[]).map((s) => ({
+        role: JSON.stringify(policy.Properties.Roles),
+        s,
+      })),
+  );
+}
+
+test('only the refresh Lambda can read the OneMap account login', () => {
+  const template = synthesize('dev');
+  const ids = Object.keys(
+    template.findResources('AWS::SecretsManager::Secret'),
+  );
+  const credentials = ids.find((id) => id.includes('OneMapCredentials'));
+  const token = ids.find((id) => id.includes('OneMapToken'));
+  assert.ok(credentials && token);
+  const all = statements(template);
+
+  const readers = all.filter(({ s }) =>
+    JSON.stringify(s.Resource).includes(credentials),
+  );
+  assert.equal(readers.length, 1);
+  assert.match(readers[0].role, /OneMapTokenRefresh/);
+  assert.deepEqual([readers[0].s.Action].flat().sort(), [
+    'secretsmanager:DescribeSecret',
+    'secretsmanager:GetSecretValue',
+  ]);
+
+  // Its only write is a new token value: no UpdateSecret, no stage moves and
+  // none of rotation's account-wide GetRandomPassword.
+  const refresh = all.filter(({ role }) => role.includes('OneMapTokenRefresh'));
+  const writes = refresh.filter(({ s }) =>
+    [s.Action].flat().some((action) => !/Get|Describe|logs:/.test(action)),
+  );
+  assert.equal(writes.length, 1);
+  assert.deepEqual([writes[0].s.Action].flat(), [
+    'secretsmanager:PutSecretValue',
+  ]);
+  assert.ok(JSON.stringify(writes[0].s.Resource).includes(token));
+  assert.ok(!refresh.some(({ s }) => JSON.stringify(s.Resource) === '"*"'));
+});
