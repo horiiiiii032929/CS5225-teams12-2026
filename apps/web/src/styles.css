@@ -1779,6 +1779,216 @@
 .live-rent-note {
   font-size: 12px;
 }
+.town-explorer {
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
+.town-explorer-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.town-eyebrow {
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 550;
+  margin-bottom: 6px;
+}
+.town-explorer h4 {
+  font-size: 23px;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+.town-map-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.town-map-key > span {
+  width: 10px;
+  height: 10px;
+  background: var(--primary);
+  border-radius: 50%;
+}
+.town-map-scroll {
+  width: 100%;
+  min-width: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--secondary);
+}
+.town-map-canvas {
+  position: relative;
+  width: 680px;
+  height: 400px;
+}
+.town-map-grid {
+  stroke: var(--border);
+  stroke-dasharray: 4 6;
+}
+.town-map-axis {
+  fill: var(--muted-foreground);
+  font-size: 11px;
+}
+.town-map-reference {
+  fill: var(--muted-foreground);
+  opacity: 0.45;
+}
+.town-map-leader {
+  stroke: var(--primary);
+  stroke-width: 1.5;
+}
+.town-map-north {
+  fill: var(--foreground);
+  font-size: 13px;
+}
+.town-map-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  background: var(--card);
+  color: var(--primary);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.town-map-pin[aria-pressed='true'] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 0 0 4px var(--card);
+}
+.town-map-pin:hover {
+  box-shadow: 0 0 0 4px var(--input);
+}
+.town-map-pin:focus-visible,
+.town-choice-list button:focus-visible,
+.town-map-scroll:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+.town-choice-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+}
+.town-choice-list button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--card);
+  cursor: pointer;
+}
+.town-choice-list button[aria-pressed='true'] {
+  background: var(--secondary);
+  border-color: var(--primary);
+}
+.town-choice-list button:hover {
+  border-color: var(--primary);
+}
+.town-choice-rank {
+  color: var(--primary);
+  font-size: 14px;
+  min-width: 18px;
+}
+.town-choice-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 550;
+}
+.town-choice-rent {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+}
+.town-choice-rent small {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.town-detail {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  display: grid;
+  gap: 16px;
+}
+.town-detail-heading {
+  overflow-wrap: anywhere;
+}
+.town-detail-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.town-detail-metrics dt {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.town-detail-metrics dd {
+  font-size: 19px;
+  font-weight: 550;
+  margin-top: 5px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.town-member-table {
+  width: 100%;
+  table-layout: fixed;
+  font-size: 13px;
+  border-collapse: collapse;
+}
+.town-member-table caption {
+  text-align: left;
+  font-weight: 550;
+  padding-bottom: 10px;
+}
+.town-member-table th,
+.town-member-table td {
+  text-align: left;
+  padding: 12px 6px;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.town-member-table thead th {
+  color: var(--muted-foreground);
+  font-weight: 450;
+}
+.town-member-table tbody th {
+  font-weight: 550;
+}
+@media (max-width: 420px) {
+  .town-choice-list button {
+    gap: 8px;
+  }
+  .town-detail-metrics {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .town-detail-metrics > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .town-detail-metrics dd {
+    margin-top: 0;
+  }
+}
 .live-workspace .workspace-footer {
   margin-top: 40px;
 }

@@ -11,7 +11,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { client } from '@/api/generated/client.gen';
 import { SearchProgress } from './SearchProgress';
 import { searchKey } from './api';
-import { groupFixture, membership, searchFixture } from './test-fixtures';
+import {
+  groupFixture,
+  membership,
+  searchFixture,
+  rankedSearchFixture,
+} from './test-fixtures';
 
 const transport = vi.fn<typeof fetch>();
 let cache: QueryClient;
@@ -44,6 +49,35 @@ function mount(group = groupFixture()) {
   );
 }
 describe('real search lifecycle UI', () => {
+  it('shows the completed map, then removes it when the group revision changes', async () => {
+    const complete = rankedSearchFixture();
+    transport.mockImplementation(async () => json(complete));
+    const group = {
+      ...groupFixture(),
+      latestSearch: {
+        searchId: complete.searchId,
+        status: 'complete' as const,
+        createdAt: groupFixture().createdAt,
+      },
+    };
+    const ui = mount(group);
+    await screen.findByRole('button', {
+      name: 'Show Queenstown on map, rank 1',
+    });
+    ui.rerender(
+      <QueryClientProvider client={cache}>
+        <SearchProgress
+          group={{ ...group, revision: group.revision + 1 }}
+          membership={membership}
+          groupUpdatedAt={101}
+        />
+      </QueryClientProvider>,
+    );
+    await screen.findByText('Your group has changed');
+    expect(
+      screen.queryByRole('region', { name: 'Singapore town reference map' }),
+    ).toBeNull();
+  });
   it('withholds submission until the group is ready', () => {
     const group = { ...groupFixture(), allReady: false, readyCount: 1 };
     mount(group);

@@ -16,6 +16,12 @@ Once every member is ready, the lobby submits a search and polls pending status 
 
 `pnpm generate:api` exports the backend's OpenAPI and regenerates public schemas/types in `@flatsplit/contracts/api` and the web SDK. `pnpm generate:api:check` checks drift without modifying repository artifacts and runs in CI. Generated files must not be edited by hand.
 
+### Town reference map — local #24 implementation
+
+Completed current-revision searches now include a town reference map, numbered recommendation pins, an equivalent keyboard-accessible town list and selected-town rent/commute details. The map uses a public projection of the existing principal-MRT reference coordinates; the offline evidence suite checks that projection against the API reference. It is a reference-point map, with latitude/longitude guides, rather than a street map or property/town-boundary display. Small screens can scroll the map independently while the list and member details fit the viewport. Pending, stale, empty and no-longer-ready results do not expose recommendations.
+
+`TownMapResults` accepts the public `SearchView` and `GroupView` props so #23 can compose it into the full results/comparison surface without adding a second fetch or server-data cache. Route calculation timestamps are absent from the current response and are explicitly unavailable; the rent source/period and commute basis remain visible. Local component/browser checks use synthetic completed results and do not establish real-data quality, deployment, #23 completion or #24 deployed acceptance.
+
 ## Repository status — 20 October 2026
 
 This historical snapshot, before the frontend work above, describes `main` at `760dd1f` after PRs #60–#63 merged on 19 October. It separates code in the repository from live acceptance; see [issue #44](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/44) for dated coordination updates.
