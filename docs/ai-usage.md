@@ -498,6 +498,12 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Verification: 19 new Python tests run the steps against Moto Secrets Manager. They cover full promotion with the old version becoming `AWSPREVIOUS`, idempotent create, malformed credentials, failed login or check leaving the current token, preconditions, error messages that never echo the password, expiry and acceptance checks, and non-JWT tokens. Two new CDK tests assert the 12-hour schedule without rotate-on-deploy, that only the rotation Lambda reads the credentials, and that its only write is the rotation actions on the token secret. Moto's default `GetSecretValue` does not follow a moved `AWSCURRENT` label, so the tests read the stage explicitly; real Secrets Manager serves `AWSCURRENT`. `pnpm check`, `pnpm test` (316 API, 65 web, 10 CDK) and `pnpm synth` passed.
 - Not verified: no live `getToken` login (the account credentials were not shared with the assistant), no deployment and no rotation on AWS.
 
+## 28 October 2026 — issue 29 deployed e2e CI job
+
+- Tool: Claude Code (Claude Opus 5.5), directed by Shyam.
+- Contribution: `.github/workflows/deployed-e2e.yml`, a manually started workflow that runs the #29 journey against a deployed API and records the verdict for that build. It checks out the deployed revision's tests and the workflow's own summarizer separately, passes inputs only through validated environment variables, pins actions by SHA, uses read-only `contents` permission with no secrets, has no schedule or PR trigger (each run creates test groups), and keeps a 90-day artifact. `tools/e2e/summarize.py` turns the JUnit XML into PASS, INCOMPLETE (skipped steps; readiness, never acceptance) or FAIL, writes the job summary and a JSON record, and fails on INCOMPLETE only with `require_complete`. `pnpm test` now runs its unit tests. The runbook is in `docs/aws-dev-handoff.md`.
+- Verification: 7 summarizer unit tests; ruff and strict mypy clean. The workflow's validation, journey, asset and record steps were run locally under `bash -eo pipefail` against the shared deployment (main `b4a4434`): 2 group journeys passed, 2 search journeys skipped for missing rent (#10), and 12 local-only tests were deselected. The verdict was INCOMPLETE with exit 0, and exit 1 with `require_complete`; the summary recorded asset `index-D2SooS-c.js`. The YAML parses. `actionlint` was not available, and the workflow has not run on GitHub: `workflow_dispatch` only becomes available after merge to main.
+
 ## 28 October 2026 — issue 15 worker, merging main's measured cost inputs
 
 - Tool: Claude Code (Claude Opus 5), directed by Luke to resolve this branch's conflict with main after #68 merged, so the worker PR can be reviewed.
@@ -572,6 +578,25 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Also: `OneMapTokenRefreshFailing` (Lambda errors ≥ 1 per hour) on #79's alert topic. The token warning comment and description in `alarms.ts` were corrected: the log-based alarm only reports while there is traffic. New output `OneMapTokenRefreshFunctionName`; runbook and design updated.
 - Verification: 22 Python tests, including the three review reproductions as regressions: a 401 body echoing the password, a malformed `exp` carrying a sensitive value, and a real two-server loopback redirect asserting the second origin receives nothing. Three mutants (logging the raw exception, following redirects, chaining the parse error) each made the matching test fail; the files were restored. CDK: 17 tests, including the 12-hour rule targeting the function, no `RotationSchedule`, sole credentials reader, `PutSecretValue` as the only write with no `*` resource, and the failure alarm.
 - Not verified: a live `getToken` login with the account, a deploy and a scheduled run on AWS.
+
+## 29 October 2026 — issue 29 deployed e2e CI review fixes
+
+- Tool: Claude Code (Claude Opus 5.5), directed by Shyam, addressing @wkkuu's two findings on #83 (`7a2511d`).
+- **P1, abbreviated revisions:** `actions/checkout` treats only a full 40-character SHA as a commit, and looks up anything shorter as a branch or tag. The workflow now requires exactly 40 hex characters, and the documented invocation uses `git rev-parse HEAD`.
+- **P2, credentials in failure output:** four layers.
+  - The journey's `_ok` raises its own error with credential fields replaced. A pytest-rewritten `assert` would also print the `Reply` repr, raw body included; the new regression test caught that the first time.
+  - The workflow runs pytest with `--tb=no`, so the public log shows only skip reasons.
+  - `tools/e2e/summarize.py` redacts credential fields, bearer values and any 32+ character URL-safe run (issued tokens are 43; ids are 22) from every recorded detail, which covers older deployed revisions' tests.
+  - Only the redacted JSON record is uploaded, not the raw JUnit XML.
+- Verification: 10 summarizer tests, including the reproduced shape with a create response's tokens in an assertion. A new e2e test checks that `_ok`'s failure message hides both tokens. In an end-to-end probe, a throwaway failing test holding a real-format token, run with the workflow's flags, left zero copies in the console, the raw JUnit XML, the JSON record, the summary and the summarizer output. `pnpm check` and `pnpm test` (305 API, 65 web, 14 CDK, 3+32+10 tool tests) passed; ruff and strict mypy are clean on `tools/e2e`.
+
+## 29 October 2026 — queue review and integrated token/CI re-review
+
+- Tool: Codex, directed by Hikaru to act as reviewer across the queue and unblock reviewed merges. Rechecked current heads, approvals, inline findings and CI; refreshed the frontend stack against main `5071d37`, preserved all contribution entries and merged #78 -> #76 -> #85 -> #77 -> #86 with SHA guards after current-head CI passed. No acceptance issue was closed.
+- Frontend verification: root check/test/build/synth, API-generation drift and E10 generator check passed; 304 API, 110 web, 14 CDK, four evaluation and 32 acceptance tests. Fresh local actual-resolver/Moto Playwright two-/five-member journeys passed at 390x844 and 1280x900 with synthetic data/injected routes. Prior user working-tree changes were preserved.
+- Re-reviewed #82's scheduled refresh, sanitized errors, no-redirect transport, scoped IAM and failure alarm; independent standalone and composed root checks/test/build/synth/API drift passed. Standalone counts: 326 API, 65 web, 17 CDK, three evaluation and 32 acceptance. Also corrected the first-refresh runbook to validate Lambda FunctionError and a future expiresAt receipt; HTTP 200 lookup alone is explicitly insufficient token-health proof. No AWS command or provider login was run.
+- Re-reviewed #83: requires full 40-character deployed revision; explicit safe assertion diagnostics, traceback-free workflow logs, redacted JSON/summary and no raw XML artifact. Standalone and composed root check/test/build/synth/API drift passed, including ten summarizer tests and the actual journey privacy regression. Both evaluation and acceptance discovery roots are retained.
+- Reviews and eventual merges approve implementation only. Deployment, first scheduled refresh, live worker/data acceptance, operational drills and participant evidence remain separate. The GitHub connector lacked review-write scope (403); the already-authenticated GitHub CLI submitted the authorized reviews without changing identity.
 
 ## 29 October 2026 — PR #74 review findings and integration fixes
 
