@@ -85,11 +85,22 @@ test('ingestion Lambda has bounded resources and pointer read plus evidence writ
     .flatMap((statement) => [statement.Action].flat());
   assert(s3Actions.includes('s3:PutObject'));
   assert(s3Actions.includes('s3:GetObject'));
+  assert(s3Actions.includes('s3:ListBucket'));
   assert.deepEqual([...new Set(s3Actions)].sort(), [
     's3:GetObject',
+    's3:ListBucket',
     's3:PutObject',
   ]);
   assert(!s3Actions.includes('s3:DeleteObject'));
+});
+
+test('ingestion runs monthly on the third at 03:00 Singapore time', () => {
+  const template = synthesize();
+  template.hasResourceProperties('AWS::Events::Rule', {
+    ScheduleExpression: 'cron(0 19 2 * ? *)',
+    State: 'ENABLED',
+    Targets: [{ Arn: Match.anyValue() }],
+  });
 });
 
 test('production retains the raw evidence bucket', () => {

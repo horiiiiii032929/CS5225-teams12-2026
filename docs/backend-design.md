@@ -31,7 +31,7 @@ EventBridge Scheduler (monthly) → ingest-rental → S3 raw/ + DynamoDB snapsho
 Secrets Manager: OneMap account credentials; access token cached in Lambda memory
 ```
 
-The current HTTP Lambda uses Python 3.13 on arm64 with Powertools routing, validation and logging, 256 MB memory and a 30-second timeout. Metrics/tracing and the worker instrumentation below are evaluation requirements, not completed instrumentation. No VPC, so no NAT Gateway. CDK creates a Secrets Manager placeholder for a manually rotated OneMap access token; its current deployed value was not verified by this reconciliation. Account-credential storage and automatic token renewal in the target design are not implemented.
+The current HTTP Lambda uses Python 3.13 on arm64 with Powertools routing, validation and logging, 256 MB memory and a 30-second timeout. Metrics/tracing and the worker instrumentation below are evaluation requirements, not completed instrumentation. No VPC, so no NAT Gateway. CDK creates two Secrets Manager secrets: the OneMap access token that the API reads, and the OneMap account credentials (`{"email", "password"}`, put in once by hand). A scheduled Lambda (#72; Python 3.13, arm64, 128 MB, 30 s, EventBridge `rate(12 hours)`) renews the token. It logs in through `getToken`, refuses a token that is not a JWT, expires within 24 hours or that OneMap rejects on a nearest-station call, and only then writes it as the token secret's new current value. A failed refresh leaves the current token in place and raises `OneMapTokenRefreshFailing` on the #27 alert topic. Both OneMap calls refuse redirects, and failures are logged as fixed text and status codes, never provider text. It is not Secrets Manager rotation, because rotation runs a `testSecret` step during every deployment, which would fail on the placeholder before the credentials exist.
 
 ## API contract and data model
 
@@ -48,11 +48,36 @@ Search status is derived when it is read: if any required commute pair is `pendi
 
 The API now implements member-authorised submission, idempotent revision reservations, pinned rent/cache reads, pending/complete/stale status, ranking integration and `latestSearch` composition. It packages the reviewed 27-town projection, including non-routable TENGAH. Missing snapshots return 503; unavailable/missing inputs never become invented recommendations.
 
-The SQS source queue/DLQ exist in CDK to carry cache-miss work, not to perform routing in the HTTP request. Both use SQS-managed encryption and deny non-TLS access. Source visibility is 180 seconds, retention four days, and redrive follows three receives; DLQ retention is 14 days. `Api.commuteJobsQueue` is the consumer attachment point, `CommuteQueueUrl` is the output, and `COMMUTE_QUEUE_URL` configures the producer. #15 must consume that same queue; no worker is attached by this change.
+The SQS source queue/DLQ exist in CDK to carry cache-miss work, not to perform routing in the HTTP request. Both use SQS-managed encryption and deny non-TLS access. Source visibility is 180 seconds, retention four days, and redrive follows three receives; DLQ retention is 14 days. `Api.commuteJobsQueue` is the consumer attachment point, `CommuteQueueUrl` is the output, and `COMMUTE_QUEUE_URL` configures the producer. #15 attaches its consumer to that same queue; see the next section.
 
 The HTTP role can send to only that queue (no receive/delete), read rent/place partitions, read/write group partitions and read/claim/delete commute items. Partition-scoped DynamoDB grants require a non-null `dynamodb:LeadingKeys`. Conditional 900-second job leases recover failed sends/crashes; worker completion must be fenced by matching `jobId` and pending status. The [API contract](api-contract.md#16-producer-and-15-worker-handoff) records the payload and retry/profile semantics.
 
-Cost remains a request-based design assumption, not a billing measurement: this adds two queues, DynamoDB claims/metadata reads and SQS sends, without a VPC or continuously running compute. API timeout is 30 seconds to admit cold submissions; cold work can include 135 claims and 130 sends for five distinct stations, so the latency target still needs #30 evidence. Local tests use seeded rent/place records and injected worker-contract completions. Live summary publication (#10), place persistence (#14), routing/consumer/DLQ work (#15/#27), deployment and deployed performance acceptance remain separate.
+Cost remains a request-based design assumption, not a billing measurement: this adds two queues, DynamoDB claims/metadata reads and SQS sends, without a VPC or continuously running compute. API timeout is 30 seconds to admit cold submissions; cold work can include 135 claims and 130 sends for five distinct stations, so the latency target still needs #30 evidence. Local tests use seeded rent/place records, and queued pairs are now resolved by invoking the real worker handler with only OneMap's reply stubbed. Live summary publication (#10), place persistence (#14), routing/consumer/DLQ work (#15/#27), deployment and deployed performance acceptance remain separate.
+
+### Commute worker implementation (#15)
+
+`flatsplit_api.handlers.commute_worker.handler` consumes `CommuteJobs`: one station-town pair per message, routed once, then closed with contract A9's fenced write (`jobId` matches **and** the pair is still `pending`). A refused write is a normal outcome — a duplicate delivery, a lease another search has reclaimed, or an already-finished pair — and never fails the message. `attempts` is copied from `ApproximateReceiveCount`, so a failed attempt costs no extra write.
+
+Three things are deliberately absent. There is **no in-process retry loop**: the backoff is the source queue's 180-second visibility timeout across three receives, because sleeping inside a billed invocation would also hold one of only three concurrent slots. There is **no rate limiter inside the handler**, because C7's 250 calls/minute is shared with `/places` and cannot be enforced per container: `call_budget.py` keeps one counter item per minute in the table, a routing call reserves against the worker's 200 and a lookup against the full 250, so a drain can never spend the 50 calls/minute reserved for an interactive search. Both callers refuse to call upstream when the counter itself cannot be written, because the reserved headroom bounds the worker and not the lookups, and the window is fixed rather than rolling, so a minute boundary allows two windows' worth of calls in quick succession. `maxConcurrency: 3` remains a resource bound rather than the rate: [a drain off a real queue](evaluation/worker-queue/) measured 165 routing calls/minute at three in flight, and per-worker throughput held near 55–61 calls/minute from one slot to six, so the cap would be reached at about concurrency five — but at the measured 154 ms cached-route p50 three busy workers would imply roughly 1,100 calls/minute, which is what the shared counter, not concurrency, now prevents. There is **no fan-in counter**, because search status is derived when it is read.
+
+The event source uses `batchSize: 1`, `maxConcurrency: 3` and `reportBatchItemFailures: true`. Concurrency is set on the event source, not as reserved concurrency, because reserving below a new account's Lambda quota fails to deploy (see Security). The worker's 60-second timeout stays inside the queue's visibility timeout so a message is never redelivered while an invocation is still routing, and `COMMUTE_MAX_RECEIVES` is synthesized from the same constant as the redrive policy's `maxReceiveCount`, since the handler recognises its own final delivery from that number.
+
+Routing failures are classified before they reach the cache, because the pair and our request and our credential are three different problems:
+
+| Upstream                                          | Stored `error`           | Terminal            | `retryAfter` |
+| ------------------------------------------------- | ------------------------ | ------------------- | ------------ |
+| 404, or 200 with an explicit empty itinerary list | `NO_ROUTE`               | yes                 | +86,400 s    |
+| Other 4xx (a request we built wrongly)            | `INVALID_ROUTE_REQUEST`  | yes                 | +86,400 s    |
+| 401/403                                           | `CREDENTIAL_UNAVAILABLE` | on the last receive | +900 s       |
+| 408, 429, 5xx, transport, unreadable body         | `ROUTING_UNAVAILABLE`    | on the last receive | +900 s       |
+
+A routing 404 is never stored as zero minutes (D06). A day is the terminal delay because the monthly routing baseline cannot change sooner; 900 seconds is the transient one because throttling passes and a rotated token works immediately. On its final receive the worker writes the terminal `unavailable` itself rather than leaving the pair `pending` for a DLQ consumer to interpret, so the DLQ holds only what the handler could not account for: a payload that addresses no cache item, a crash, or a completion write that failed.
+
+The worker requests three itineraries and takes the minimum, and records `itineraries` and `shortestWasFirst` on the result so "was upstream's first itinerary the shortest" stays a measured value rather than an assumption (#6 found it was not, in one of eight sampled pairs). Before each call it resolves and validates the token before reserving quota. Missing, unreadable and expired credentials spend no reservation. Near-expiry and expired tokens emit `onemapTokenWarning: true`; both API and worker log groups feed the shared warning alarm. HTTP-200 error bodies and missing/malformed plans are credential or retryable failures, not terminal no-route evidence; only an explicit empty itinerary list is a no-route answer.
+
+Its role grants `dynamodb:UpdateItem` on `COMMUTE#*` and nothing else: it cannot read a group, place or rent partition, cannot delete a claim and cannot enqueue work. It consumes the job queue and reads the OneMap secret.
+
+The module is verified against live OneMap in [evaluation/worker-routing/](evaluation/worker-routing/): 8/8 of #3's sampled pairs reproduce their October figures within 0.3 minutes, and each failure class arrives as the handler expects. Its queue behaviour is measured in [evaluation/worker-queue/](evaluation/worker-queue/), where a real search's 26 messages drain in 14 seconds with three invocations actually in flight, a redelivered payload for a resolved pair is refused without changing the record, an exhausted job is closed as `unavailable` on its third receive, and only an unkeyable payload reaches the DLQ. That harness emulates AWS and replays OneMap's measured latency, so drain on real infrastructure, DLQ redrive, alarms and cost remain E4/E5 work (#27).
 
 ### Local frontend integration (#7/#17)
 
@@ -70,13 +95,13 @@ The frontend now calls the group and search APIs for creation, invite join, save
 
 The ingestion Lambda calls the official data.gov.sg metadata and whole-dataset export APIs, validates the exact six-column schema, the reviewed 27-town inventory, all six flat types, a complete trailing 12-month window, and agreement between the CSV's latest month and the source metadata coverage end. Valid evidence is written first under `raw/source_month=<YYYY-MM>/retrieved_at=<UTC>/<sha256>`, followed by a manifest and the `raw/current.json` pointer. The pointer is read before publication so an older source month or retrieval cannot replace the current snapshot; an ETag condition also prevents an overlapping run from overwriting a pointer that changed during the write. Invalid input is retained under `rejected/` and never updates the pointer.
 
-The Lambda is configured with 1024 MiB memory and a 10-minute timeout. The source body remains bounded at 64 MiB, while API polling and response limits are bounded in the client. Its role can read only `raw/current.json`; raw and rejected evidence writes remain append-only. Monthly scheduling and validated summary publication remain separate #10 work.
+The Lambda is configured with 1024 MiB memory and a 10-minute timeout. The source body remains bounded at 64 MiB, while API polling and response limits are bounded in the client. After valid evidence is archived, #10 derives the trailing-12-month summaries in the same invocation and writes immutable `RENT#<snapshotId>` items before conditionally advancing `RENT/CURRENT`. The summary publisher writes only `RENT` and `RENT#*` keys; an incomplete publication is never made current and can be retried idempotently. Raw and rejected evidence writes remain append-only. Monthly scheduling remains a separate operational concern.
 
 ## Security
 
 - Tokens are 256-bit random values. Only SHA-256 hashes are stored. An invite token can only join; it cannot read or edit the group (D11). Invite tokens travel in the URL fragment, so they never reach server logs.
 - Each Lambda has its own role scoped to the table, queue, bucket or secret it actually uses. There are no wildcard resource grants.
-- OneMap credentials are kept in Secrets Manager and never sent to the browser. `/places` proxies the search.
+- OneMap credentials are kept in Secrets Manager and never sent to the browser. `/places` proxies the search. Only the refresh Lambda can read the account credentials; the API reads the token secret alone, and the refresh Lambda's only write is `PutSecretValue` on the token secret.
 - Logs never contain tokens or member preference values.
 - HTTP API stage throttling (20 requests/s, burst 40) limits abuse. Only the isolated `eval` stage uses 100 requests/s, burst 200 so E2 can admit its hypothesised 50 requests/s workload; account quotas and run authorization still require verification. Per-function reserved concurrency is added only once the account's Lambda concurrency quota is raised above the default for new accounts, because reserving below it fails.
 
@@ -94,6 +119,8 @@ The table below preserves the 14 October design estimates, not a measured bill o
 | Secrets Manager           | 1 secret                                           | US$0.40                             |
 | CloudWatch                | Logs (1-week retention), one dashboard, few alarms | ≈ US$3 (dashboard is the main cost) |
 
+Added since (28 October, #72): the OneMap credentials are a second secret (+US$0.40 a month at US$0.40 per secret), and the token refresh adds about 60 invocations a month of a 128 MB Lambda (well within the free tier) plus a few hundred Secrets Manager API calls (under US$0.01). Evaluate it by the refresh Lambda's success/failure in CloudWatch Logs and its alarm and by `/places` staying available across token expiry.
+
 An AWS Budget with alerts at US$20, 50 and 100 (report section 6.2) is defined in CDK and instantiated only when `budgetEmail` is supplied. Its definition is not evidence that billing alerts are active in the shared account.
 
 ## Operational alerts (#27)
@@ -106,7 +133,7 @@ The commute queue, its three receives and its dead-letter queue were already in 
 | `CommuteJobsStalled`  | the oldest job has waited more than 9 minutes, twice over | 180-second visibility across three receives is the longest a healthy pair can take; past that nothing is draining and no search can complete       |
 | `OneMapTokenExpiring` | the API handler logs `onemapTokenWarning`                 | the token is a three-day JWT with no renewal endpoint, and a lookup still answers 200 during the grace period, so that log line is the only signal |
 
-The token warning is published from the structured log through a metric filter rather than counted in the application, because the token can expire with no traffic at all and a metric nobody emits cannot alarm. Missing data is the healthy case for all three, so an idle stage does not alarm. The email subscriber is optional; the alarms and their state history exist either way.
+API and worker structured token warnings feed the same metric through separate log-group filters. Log metrics require traffic; the scheduled token refresh and its failure alarm cover idle periods. Missing data is the healthy case for all three, so an idle stage does not alarm. The email subscriber is optional; the alarms and their state history exist either way.
 
 Inspecting and redriving the dead-letter queue, once something is in it:
 

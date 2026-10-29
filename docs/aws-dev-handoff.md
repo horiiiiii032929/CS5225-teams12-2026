@@ -99,3 +99,82 @@ python3 tools/acceptance/acceptance.py \
 ```
 
 It uses only the Python standard library, so it needs no repository setup on the machine that runs it, and it exits non-zero when a check fails. The live destination lookup still requires the OneMap token in the stage secret; without it `/places` returns 503 and the journey stops at stage 1. `tools/acceptance/README.md` records what each stage checks, and why an absent #15 worker is recorded as a measured gap instead of a failure.
+
+## Deployment — 28 October 2026 (main `b4a4434`)
+
+Shyam deployed `FlatSplit-dev` from repository main `b4a4434` (which includes #65's place persistence and #68), after refreshing the NUS SSO credentials and confirming account `553455762180` in the README subshell. The stack reached `UPDATE_COMPLETE` at 14:54 UTC. Beforehand, Shyam replaced the expired OneMap token in `OneMapTokenSecret` (changed 22:53 SGT) with a token that was validated locally against live OneMap search, nearest-station and public-transport routing calls. That token expires on 29 October at 23:05 SGT. No token value is recorded here.
+
+The reviewed `cdk diff` added scoped DynamoDB statements for the API Lambda (`PLACE#*` GetItem/PutItem/ConditionCheckItem, `PLACELOOKUP#*` GetItem/PutItem, `STATION#*` GetItem/PutItem/UpdateItem), with new API code. It also showed that Mani's 26 October deployment of the unmerged #75 branch had added a rent-ingestion monthly schedule and an S3 `ListBucket` permission that are not on main. Deploying main removed both and returned the ingestion Lambda to main's version. Mani was told on #75 beforehand. No `RENT/CURRENT` pointer had been published and the schedule was not due until 3 November. Deploying main after #75 merges restores it.
+
+Checks after the deploy, against `https://d2g88qlwvm8dec.cloudfront.net`:
+
+- `/api/health` returns 200. `GET /api/places?q=kent%20ridge` returns 200 with real OneMap candidates (it returned 503 from 21 October while the token was expired); an identical repeat returned in 0.13 s from the query cache.
+- The #29 journey with `FLATSPLIT_API_URL` and **no seeded place** passed for 2- and 5-member groups: live lookup, create, invite-link restrictions, joining to capacity, `GROUP_FULL`, invalid-preference rejection, every member saving preferences until all ready, a rename, and reload consistency. These were the first deployed preference saves.
+- The search journeys passed their group steps, then skipped at search start because no rent snapshot is published (#10). The 12 response-mutation cases are local-only by design; the 10 HTTP-client tests passed. The run created four short-lived test groups that expire with their TTL.
+
+Still outstanding for deployed results: validated rent publication (#10/#75), the commute worker (#15/#74), and a OneMap account holder with automated token rotation before the current token expires (#72).
+
+## OneMap token refresh runbook (#72)
+
+Since #72, the token in `OneMapTokenSecret` is renewed every 12 hours by the `OneMapTokenRefresh` Lambda, on an EventBridge schedule. It logs in with the account stored in `OneMapCredentialsSecret`. Deploys never invoke it. After the first deploy that adds it, or when the account or its password changes, the account holder runs these steps once from the README credential subshell:
+
+```sh
+# 1. Store the account login (both prompts are hidden; Python builds the JSON).
+CREDS=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+  --query "Stacks[0].Outputs[?OutputKey=='OneMapCredentialsSecret'].OutputValue" --output text)
+printf 'OneMap email: '; read -r ONEMAP_EMAIL
+printf 'OneMap password: '; read -rs ONEMAP_PASSWORD; echo
+ONEMAP_EMAIL="$ONEMAP_EMAIL" ONEMAP_PASSWORD="$ONEMAP_PASSWORD" python3 -c \
+  'import json, os; print(json.dumps({"email": os.environ["ONEMAP_EMAIL"], "password": os.environ["ONEMAP_PASSWORD"]}))' \
+  | aws secretsmanager put-secret-value --secret-id "$CREDS" --secret-string file:///dev/stdin --query VersionId --output text
+unset ONEMAP_EMAIL ONEMAP_PASSWORD
+
+# 2. Refresh once now instead of waiting up to 12 hours. The response holds
+#    only the new token's expiry, or a safe failure reason.
+FN=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+  --query "Stacks[0].Outputs[?OutputKey=='OneMapTokenRefreshFunctionName'].OutputValue" --output text)
+REFRESH_RESULT=$(mktemp)
+REFRESH_META=$(mktemp)
+aws lambda invoke --function-name "$FN" "$REFRESH_RESULT" > "$REFRESH_META"
+python3 - "$REFRESH_META" "$REFRESH_RESULT" <<'PY_REFRESH'
+import json, sys
+from datetime import datetime, timezone
+from pathlib import Path
+metadata = json.loads(Path(sys.argv[1]).read_text())
+result = json.loads(Path(sys.argv[2]).read_text())
+if metadata.get("FunctionError"):
+    raise SystemExit("Refresh failed; inspect the sanitized Lambda logs. Stop here.")
+expiry = datetime.fromisoformat(result["expiresAt"])
+if expiry.tzinfo is None or (expiry - datetime.now(timezone.utc)).total_seconds() < 86400:
+    raise SystemExit("Refresh did not confirm a token with 24 hours remaining. Stop here.")
+print("Refresh confirmed; token expires at", result["expiresAt"])
+PY_REFRESH
+rm -f "$REFRESH_RESULT" "$REFRESH_META"
+
+# 3. After a successful refresh receipt, check public lookup availability
+#    within 15 minutes (the API's secret cache). HTTP 200 alone does not
+#    establish token health: OneMap can return results with a token warning.
+curl -s -o /dev/null -w '%{http_code}\n' 'https://d2g88qlwvm8dec.cloudfront.net/api/places?q=kent%20ridge'
+```
+
+Stop if invocation or receipt validation fails; the AWS CLI can exit successfully while Lambda reports FunctionError. Check the OneMapTokenWarning metric/log events after the lookup rather than treating HTTP 200 as proof of valid credentials.
+
+A failed refresh leaves the existing token current and raises `OneMapTokenRefreshFailing` on the #27 alert topic. The reason is in the Lambda's log group as fixed text: a malformed credentials secret, a refused login (HTTP status only), a new token that expires too soon or that OneMap rejects, or an unexpected error by type. Fix the cause and run step 2 again. Never put the login or a token in GitHub, chat or the repository.
+
+## Recording the deployed e2e verdict (#29)
+
+After every deploy, record the #29 journey's verdict for that build with the `Deployed e2e` workflow. It needs no AWS credentials, because it only calls the public API:
+
+```sh
+gh workflow run deployed-e2e.yml -f revision="$(git rev-parse HEAD)"
+# For final acceptance, also pass: -f require_complete=true
+gh run watch "$(gh run list --workflow deployed-e2e.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
+```
+
+It checks out the deployed revision's tests, runs the 2- and 5-member journeys against `api_url` (the shared URL by default), and records one of three verdicts:
+
+- **PASS:** every step ran and passed.
+- **INCOMPLETE:** nothing failed, but steps were skipped because the deployment lacks a dependency, such as unpublished rent (#10) or no worker (#15). This is readiness evidence, not acceptance, and it fails the run only with `require_complete`.
+- **FAIL:** a step failed.
+
+The job summary lists each test with its skip reason, the revision and the web asset being served. The redacted JSON record is kept as a 90-day artifact; the raw JUnit XML is not, because failure text can contain a test group's tokens. Each run creates four short-lived test groups on the target stack.

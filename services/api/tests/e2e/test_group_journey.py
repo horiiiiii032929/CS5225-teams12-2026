@@ -45,15 +45,25 @@ class Journey:
     members: list[Member]
 
 
+CREDENTIAL_FIELDS = {"memberToken", "inviteToken", "tokenHash", "inviteTokenHash"}
+
+
+def _redacted(value: Any) -> Any:
+    """A copy safe to print: assertion messages end up in CI logs and reports."""
+    if isinstance(value, dict):
+        return {
+            key: "[redacted]" if key in CREDENTIAL_FIELDS else _redacted(child)
+            for key, child in value.items()
+        }
+    if isinstance(value, list):
+        return [_redacted(child) for child in value]
+    return value
+
+
 def _no_credentials(value: Any) -> None:
     if isinstance(value, dict):
         for key, child in value.items():
-            assert key not in {
-                "memberToken",
-                "inviteToken",
-                "tokenHash",
-                "inviteTokenHash",
-            }, f"Unexpected credential field: {key}"
+            assert key not in CREDENTIAL_FIELDS, f"Unexpected credential field: {key}"
             _no_credentials(child)
     elif isinstance(value, list):
         for child in value:
@@ -66,8 +76,14 @@ def _ok(
     *,
     credentials: Literal["create", "join"] | None = None,
 ) -> dict[str, Any]:
-    assert reply.status == status, reply.body
-    assert reply.headers.get("cache-control") == "no-store"
+    if reply.status != status:
+        # Raised explicitly: pytest's rewritten `assert` would also print the
+        # Reply repr, raw body and tokens included.
+        raise AssertionError(
+            f"HTTP {reply.status}, expected {status}: {_redacted(reply.body)}"
+        )
+    cache_control = reply.headers.get("cache-control")
+    assert cache_control == "no-store", cache_control
     public = dict(reply.body)
     if credentials is not None:
         public.pop("memberToken", None)
@@ -373,3 +389,18 @@ def test_journey_rejects_leaked_credentials(
     monkeypatch.setattr(api, "call", leaking)
     with pytest.raises(AssertionError, match="credential"):
         test_search_journey(api, place_id, 2)
+
+
+def test_unexpected_status_message_hides_credentials() -> None:
+    # #83 review: a failed `_ok` printed the whole create response into the
+    # JUnit report and job summary.
+    created = Reply(
+        500,
+        {"cache-control": "no-store"},
+        {"group": {"inviteToken": "invite-secret"}, "memberToken": "member-secret"},
+    )
+    with pytest.raises(AssertionError) as exc:
+        _ok(created, 201)
+    assert "invite-secret" not in str(exc.value)
+    assert "member-secret" not in str(exc.value)
+    assert "[redacted]" in str(exc.value)

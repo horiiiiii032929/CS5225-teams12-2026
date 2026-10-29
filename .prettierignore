@@ -15,3 +15,6 @@ docs/evaluation/**/*.jsonl
 
 # Machine-generated acceptance evidence must not be reformatted
 tools/acceptance/evidence/
+
+# Generated local browser QA artifacts
+.qa-artifacts/

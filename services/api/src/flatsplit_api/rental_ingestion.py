@@ -555,6 +555,10 @@ def run_ingestion(
     writer: SnapshotWriter,
     *,
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
+    publish: Callable[
+        [DownloadedSource, ValidationSummary, datetime, Mapping[str, Any]], object
+    ]
+    | None = None,
 ) -> Mapping[str, Any]:
     """Fetch once, preserving rejected bytes without changing last-good state."""
     retrieved_at = now()
@@ -576,4 +580,7 @@ def run_ingestion(
             reason = "Source metadata coverage end does not match the latest CSV month."
             writer.write_rejected(source, reason, retrieved_at)
             raise SnapshotValidationError(reason)
-    return writer.write_valid(source, summary, retrieved_at)
+    pointer = writer.write_valid(source, summary, retrieved_at)
+    if publish is not None:
+        publish(source, summary, retrieved_at, pointer)
+    return pointer

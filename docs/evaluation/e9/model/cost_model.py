@@ -119,7 +119,9 @@ def derive_usage(
         + prefs * billed_writes(measured["preference_save"])
         + searches * billed_writes(start, "_fixed")
         + (jobs + non_routable_writes) * start["ddb_writes_per_pair_record"]
-        + jobs  # one result write per job by #15's worker (assumed; #74 in review)
+        # One result write per job, now the implemented #15 worker's behaviour
+        # rather than an assumption; the WRU conversion still is one (#34).
+        + jobs
         + shared["monthly_ingest_runs"] * shared["rent_snapshot_items"]
     )
 
@@ -151,6 +153,8 @@ def derive_usage(
         "places_lookups_warm": places_warm,
         "commute_jobs": jobs,
         "commute_pair_writes": jobs + non_routable_writes,
+        # One routing call per job: numItineraries=3 is still a single call, and
+        # the implemented #15 worker re-delivers a job only on a transient failure.
         "onemap_routing_calls": jobs,
         "onemap_lookup_calls": onemap_lookup_calls,
         "onemap_calls": jobs + onemap_lookup_calls,

@@ -12,6 +12,7 @@ import {
 } from 'aws-cdk-lib/aws-logs';
 import { Topic } from 'aws-cdk-lib/aws-sns';
 import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
+import type { IFunction } from 'aws-cdk-lib/aws-lambda';
 import type { IQueue } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
@@ -23,6 +24,10 @@ export interface CommuteAlarmsProps {
   readonly deadLetterQueue: IQueue;
   /** The API handler's log group, where the OneMap token warning is written. */
   readonly apiLogGroup: ILogGroup;
+  /** The worker can be the only caller while a queue is draining. */
+  readonly workerLogGroup: ILogGroup;
+  /** The scheduled OneMap token refresh (#72); any error is an alert. */
+  readonly tokenRefresh: IFunction;
   /** Subscribed to the alert topic when set; alarms exist either way. */
   readonly alertEmail?: string;
 }
@@ -41,16 +46,18 @@ export interface CommuteAlarmsProps {
  *   three-day JWT and silent by design upstream - a lookup still answers 200
  *   during the grace period, so the log line is the only signal.
  *
- * `OneMapTokenWarning` is published from the handler's structured log rather
- * than counted in the application, because the token can expire with no
- * traffic at all and a metric nobody emits cannot alarm.
+ * `OneMapTokenWarning` comes from the handler's structured log, so it only
+ * reports while there is traffic: with no requests there are no log events
+ * and no datapoints. Expiry during idle periods is prevented instead by #72's
+ * scheduled refresh, whose failures raise `OneMapTokenRefreshFailing`.
  */
 export class CommuteAlarms extends Construct {
-  /** Alert fan-out; #72's rotation failure and #15's worker errors attach here. */
+  /** Alert fan-out; #15's worker errors attach here too. */
   readonly topic: Topic;
   readonly dlqAlarm: Alarm;
   readonly stalledAlarm: Alarm;
   readonly tokenWarningAlarm: Alarm;
+  readonly tokenRefreshAlarm: Alarm;
 
   constructor(scope: Construct, id: string, props: CommuteAlarmsProps) {
     super(scope, id);
@@ -105,11 +112,21 @@ export class CommuteAlarms extends Construct {
       metricValue: '1',
       defaultValue: 0,
     });
+    new MetricFilter(this, 'CommuteWorkerTokenWarning', {
+      logGroup: props.workerLogGroup,
+      metricNamespace: `FlatSplit/${props.stage}`,
+      metricName: 'OneMapTokenWarning',
+      filterPattern: FilterPattern.booleanValue('$.onemapTokenWarning', true),
+      metricValue: '1',
+      defaultValue: 0,
+    });
     this.tokenWarningAlarm = new Alarm(this, 'OneMapTokenExpiring', {
       alarmDescription:
         'The OneMap token is at or near expiry. It is a three-day JWT with no ' +
         'renewal endpoint, and a lookup still answers 200 during the grace ' +
-        'period, so this log line is the only warning. Rotate the secret.',
+        'period, so this log line is the only warning. Check the ' +
+        'OneMapTokenRefresh Lambda logs; to refresh now, invoke it ' +
+        '(docs/aws-dev-handoff.md).',
       metric: tokenWarning.metric({
         period: Duration.minutes(5),
         statistic: 'Sum',
@@ -120,5 +137,23 @@ export class CommuteAlarms extends Construct {
       treatMissingData: TreatMissingData.NOT_BREACHING,
     });
     this.tokenWarningAlarm.addAlarmAction(notify);
+
+    this.tokenRefreshAlarm = new Alarm(this, 'OneMapTokenRefreshFailing', {
+      alarmDescription:
+        'The scheduled OneMap token refresh failed. The current token stays ' +
+        'in place until it expires (up to three days), so fix the cause ' +
+        'before then: the reason is in the OneMapTokenRefresh Lambda logs ' +
+        '(credentials secret, refused login, or a rejected new token).',
+      metric: props.tokenRefresh.metricErrors({
+        period: Duration.hours(1),
+        statistic: 'Sum',
+      }),
+      threshold: 1,
+      evaluationPeriods: 1,
+      comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      // Runs every 12 hours, so most periods have no invocation at all.
+      treatMissingData: TreatMissingData.NOT_BREACHING,
+    });
+    this.tokenRefreshAlarm.addAlarmAction(notify);
   }
 }

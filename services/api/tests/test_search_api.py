@@ -1,4 +1,10 @@
-"""Search submission/status through the HTTP handler and real Moto SDK calls."""
+"""Search submission/status through the HTTP handler and real Moto SDK calls.
+
+Queued pairs are resolved by #15's worker handler rather than by writing
+results by hand, so the queued path is covered end to end here: the producer's
+payload v1, the worker's routing, contract A9's fenced write, and the status
+the next GET derives from it. OneMap's reply is the only stand-in.
+"""
 
 import json
 from collections.abc import Iterator
@@ -17,9 +23,32 @@ from mypy_boto3_dynamodb.service_resource import Table
 import flatsplit_api.handlers.http as http
 import flatsplit_api.searches as searches
 from flatsplit_api.commute_jobs import CommuteJobs, routing_profile
+from flatsplit_api.commute_results import CommuteResults
 from flatsplit_api.groups import GroupStore
+from flatsplit_api.handlers import commute_worker
+from flatsplit_api.routing import Route, route
 from flatsplit_api.search_data import SearchDataReader
 from flatsplit_api.searches import SearchStore
+
+#: One itinerary of 30.5 minutes, in OneMap's routing shape (#3).
+ONEMAP_REPLY = {
+    "plan": {"itineraries": [{"duration": 1830, "transfers": 1, "walkTime": 300}]}
+}
+WORKER_CONTEXT = SimpleNamespace(
+    function_name="commute-worker-test",
+    memory_limit_in_mb=256,
+    invoked_function_arn="local",
+    aws_request_id="commute-worker-test",
+)
+
+
+def routing_through(reply: Any) -> Any:
+    """Real routing over a stubbed reply, so payload v1 is parsed for real."""
+
+    def routed(origin: Any, destination: Any, **kwargs: Any) -> Route:
+        return route(origin, destination, transport=lambda params: reply, **kwargs)
+
+    return routed
 
 
 @dataclass
@@ -134,6 +163,11 @@ def setup(monkeypatch: pytest.MonkeyPatch) -> Iterator[Setup]:
         )
         monkeypatch.setattr(http, "group_store", lambda: groups)
         monkeypatch.setattr(http, "search_store", lambda _groups: searches)
+        commute_worker._results.cache_clear()
+        monkeypatch.setattr(
+            commute_worker, "_results", lambda: CommuteResults(table, clock=clock)
+        )
+        monkeypatch.setattr(commute_worker, "route", routing_through(ONEMAP_REPLY))
         for station in ["KENT_RIDGE", "ONE_NORTH"]:
             table.put_item(
                 Item={
@@ -197,19 +231,25 @@ def save(gid: str, member: dict[str, Any], i: int = 0) -> tuple[int, dict[str, A
 
 
 def finish(setup: Setup) -> None:
+    """Drain the queue through the real worker, one message per invocation.
+
+    `batchSize: 1` is what the event source uses, and a job whose claim has
+    since been superseded is refused by the fence, not reported as a failure.
+    """
     for job in setup.jobs:
-        setup.table.update_item(
-            Key={"pk": f"COMMUTE#{job['stationKey']}", "sk": f"TOWN#{job['town']}"},
-            UpdateExpression="SET #status = :ok, minutes = :minutes",
-            ConditionExpression="jobId = :job AND #status = :pending",
-            ExpressionAttributeNames={"#status": "status"},
-            ExpressionAttributeValues={
-                ":ok": "ok",
-                ":minutes": Decimal("30.5"),
-                ":job": job["jobId"],
-                ":pending": "pending",
+        response = commute_worker.handler(
+            {
+                "Records": [
+                    {
+                        "messageId": job["jobId"],
+                        "body": json.dumps(job),
+                        "attributes": {"ApproximateReceiveCount": "1"},
+                    }
+                ]
             },
+            WORKER_CONTEXT,  # type: ignore[arg-type]
         )
+        assert response == {"batchItemFailures": []}
 
 
 @pytest.mark.parametrize("size", [2, 5])

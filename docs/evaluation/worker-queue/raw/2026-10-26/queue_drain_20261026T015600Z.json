@@ -1,0 +1,135 @@
+{
+  "script": "measure_queue_drain.py",
+  "scriptVersion": "1.0.0",
+  "issue": 15,
+  "runAt": "2026-10-26T01:56:00.695869+00:00",
+  "runId": "4cb23ace",
+  "stands_in_for": {
+    "aws": "moto server (not AWS); queue semantics probed before use",
+    "onemap": {
+      "mode": "replayed latency, stubbed reply",
+      "source": "docs/evaluation/worker-routing/raw/2026-10-20/",
+      "latenciesMs": [
+        1174,
+        605,
+        997,
+        704,
+        496,
+        1125,
+        1454,
+        987
+      ],
+      "reason": "the shared OneMap token expired on 2026-10-23"
+    },
+    "concurrency": "one worker process per concurrent slot, one message each, emulating the event source's batchSize 1 and maxConcurrency; Lambda's own scaling is not under test"
+  },
+  "config": {
+    "maxReceives": 3,
+    "visibilitySeconds": 180,
+    "shortVisibilitySeconds": 2,
+    "concurrency": 3,
+    "onemapCallsPerMinuteCap": 300
+  },
+  "scenarios": {
+    "drain": {
+      "concurrency": 3,
+      "messagesEnqueuedByProducer": 26,
+      "invocations": 26,
+      "pairRecords": 27,
+      "pairsOk": 26,
+      "pairsUnavailable": 1,
+      "pairsPending": 0,
+      "redeliveries": 0,
+      "wallSeconds": 13.96,
+      "busyWindowSeconds": 9.46,
+      "maxObservedInFlight": 3,
+      "invocationMsP50": 1027.7,
+      "invocationMsMin": 515.8,
+      "invocationMsMax": 1525.8,
+      "achievedCallsPerMinute": 165.0,
+      "headroomUnderCap": 135.0,
+      "perWorkerInvocations": {
+        "0": 8,
+        "1": 8,
+        "2": 10
+      },
+      "searchStatusAfterDrain": {
+        "httpStatus": 200,
+        "status": "complete",
+        "progress": {
+          "total": 27,
+          "resolved": 27,
+          "unavailable": 1
+        },
+        "rankedTowns": 2,
+        "excludedTowns": 25,
+        "topTown": "CLEMENTI"
+      },
+      "dlqDepth": 0,
+      "sampleRecord": {
+        "pk": "COMMUTE#KENT_RIDGE",
+        "sk": "TOWN#CLEMENTI",
+        "status": "ok",
+        "jobId": "e72e765b-c360-40a6-aec3-f6d916331066",
+        "routingProfileVersion": "pt-v1:2026-10",
+        "routingDate": "2026-10-27",
+        "routingTime": "08:30:00",
+        "attempts": 1,
+        "minutes": 30.5,
+        "transfers": 1,
+        "walkMinutes": 5,
+        "itineraries": 1,
+        "shortestWasFirst": true,
+        "computedAt": "2026-10-26T01:56:05.215911+00:00",
+        "source": "onemap:routingsvc/route?routeType=pt"
+      },
+      "question": "At the configured concurrency, how fast does a real search's queue drain, and what routing rate does that imply?"
+    },
+    "duplicate_delivery": {
+      "question": "Does redelivering the exact payload of an already-resolved pair change the stored result?",
+      "pair": "KENT_RIDGE/BISHAN",
+      "jobId": "5be70fe8-3d9c-42b2-b499-b4411119bdf6",
+      "messageDeletedNotRetried": true,
+      "recordUnchanged": true,
+      "computedAtBefore": "2026-10-26T01:56:02.225400+00:00",
+      "computedAtAfter": "2026-10-26T01:56:02.225400+00:00",
+      "attemptsBefore": 1,
+      "attemptsAfter": 1,
+      "dlqDepth": 0
+    },
+    "retry_exhaustion": {
+      "question": "With routing failing transiently, does the queue redeliver and does the worker close the pair itself on its final receive?",
+      "pair": "ONE_NORTH/ANG MO KIO",
+      "receives": [
+        {
+          "receiveCount": 1,
+          "deleted": false
+        },
+        {
+          "receiveCount": 2,
+          "deleted": false
+        },
+        {
+          "receiveCount": 3,
+          "deleted": true
+        }
+      ],
+      "status": "unavailable",
+      "error": "ROUTING_UNAVAILABLE",
+      "attempts": 3,
+      "retryAfterIsEpochSeconds": true,
+      "retryAfterSecondsFromNow": 900,
+      "carriesNoMinutes": true,
+      "dlqDepth": 0
+    },
+    "unaccountable_payload": {
+      "question": "Where does a message the handler cannot key end up?",
+      "payload": "{\"schemaVersion\": 9, \"jobId\": \"nope\"}",
+      "receivesBeforeRedrive": 3,
+      "stillDeliverableAfterRedrive": false,
+      "sourceQueueDepth": 0,
+      "dlqDepth": 1
+    }
+  },
+  "verdict": "PASS"
+}
