@@ -21,6 +21,9 @@ function synthesize(alertEmail?: string): Template {
     apiLogGroup: new LogGroup(stack, 'Logs', {
       removalPolicy: RemovalPolicy.DESTROY,
     }),
+    workerLogGroup: new LogGroup(stack, 'WorkerLogs', {
+      removalPolicy: RemovalPolicy.DESTROY,
+    }),
     tokenRefresh: new Function(stack, 'Refresh', {
       runtime: Runtime.PYTHON_3_13,
       handler: 'index.handler',
@@ -82,6 +85,33 @@ test('the token warning is published from the log and alarmed on', () => {
   ).filter((alarm) => alarm.Properties.MetricName === 'OneMapTokenWarning');
   assert.equal(found.length, 1);
   assert.equal(found[0].Properties.Threshold, 1);
+});
+
+test('API and worker token warnings feed the same alarm from distinct log groups', () => {
+  const filters = Object.values(
+    synthesize().findResources('AWS::Logs::MetricFilter'),
+  );
+  assert.equal(filters.length, 2);
+  assert.equal(
+    new Set(
+      filters.map((filter) => JSON.stringify(filter.Properties.LogGroupName)),
+    ).size,
+    2,
+  );
+  for (const filter of filters) {
+    assert.equal(
+      filter.Properties.FilterPattern,
+      '{ $.onemapTokenWarning IS TRUE }',
+    );
+    assert.deepEqual(filter.Properties.MetricTransformations, [
+      {
+        MetricName: 'OneMapTokenWarning',
+        MetricNamespace: 'FlatSplit/dev',
+        MetricValue: '1',
+        DefaultValue: 0,
+      },
+    ]);
+  }
 });
 
 test('every alarm notifies the one topic', () => {

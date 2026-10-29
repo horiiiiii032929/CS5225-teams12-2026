@@ -42,6 +42,7 @@ export class FlatSplitStack extends Stack {
       jobsQueue: api.commuteJobsQueue,
       deadLetterQueue: api.commuteDeadLetterQueue,
       apiLogGroup: api.httpHandlerLogGroup,
+      workerLogGroup: api.commuteWorkerLogGroup,
       tokenRefresh: api.onemapTokenRefresh,
       alertEmail: props.budgetEmail,
     });
