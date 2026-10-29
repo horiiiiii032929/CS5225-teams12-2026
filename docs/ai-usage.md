@@ -385,6 +385,7 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Contribution: made one-block summaries low-confidence, fenced same-month pointer updates by raw retrieval time, versioned summary snapshot IDs by aggregation algorithm, and corrected the UTC EventBridge date.
 - Verification: added regressions for the confidence and pointer/versioning rules; deployment remains pending merge and shared-account acceptance.
 
+<<<<<<< HEAD
 ## 28 October 2026 — issue 72 OneMap token rotation
 
 - Tool: Claude Code (Claude Opus 5.5), directed by Shyam, who registered the OneMap account.
@@ -408,3 +409,10 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Also: `OneMapTokenRefreshFailing` (Lambda errors ≥ 1 per hour) on #79's alert topic. The token warning comment and description in `alarms.ts` were corrected: the log-based alarm only reports while there is traffic. New output `OneMapTokenRefreshFunctionName`; runbook and design updated.
 - Verification: 22 Python tests, including the three review reproductions as regressions: a 401 body echoing the password, a malformed `exp` carrying a sensitive value, and a real two-server loopback redirect asserting the second origin receives nothing. Three mutants (logging the raw exception, following redirects, chaining the parse error) each made the matching test fail; the files were restored. CDK: 17 tests, including the 12-hour rule targeting the function, no `RotationSchedule`, sole credentials reader, `PutSecretValue` as the only write with no `*` resource, and the failure alarm.
 - Not verified: a live `getToken` login with the account, a deploy and a scheduled run on AWS.
+=======
+## 28 October 2026 — shared dev redeployment checks
+
+- Tool: Claude Code (Claude Opus 5.5), directed by Shyam.
+- Contribution: decoded and validated the new OneMap token locally (claims and expiry; live search, nearest-station and routing calls through the API's own `find_places`, without writing the token to any file). Ran the read-only `cdk diff` for main `b4a4434`, identified that it would undo Mani's unmerged #75 deployment (schedule and `ListBucket` permission), confirmed via read-only queries that no rent had been published, and posted the heads-up on #75. Shyam wrote the secret and ran the deploy; the assistant's own secret write was blocked by the permission classifier. After the deploy, ran read-only stack and endpoint checks and the #29 journey against the shared URL, and recorded the results in `docs/aws-dev-handoff.md`.
+- Not done: no rent publication, worker deployment or token rotation; those remain #10/#75, #15/#74 and #72.
+>>>>>>> origin/main
