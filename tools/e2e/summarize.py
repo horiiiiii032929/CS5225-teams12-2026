@@ -11,15 +11,37 @@ API and calls this to decide and record the outcome for that build:
 
 It writes Markdown for the GitHub job summary and a JSON record kept as a
 workflow artifact. Standard library only, so it runs before any setup step.
+
+Failure text is redacted before it is recorded anywhere: a failed assertion
+can print a response that carries the test group's member or invite token
+(#83 review), and older deployed revisions' tests do not scrub it themselves.
 """
 
 import argparse
 import json
+import re
 import sys
 import xml.etree.ElementTree as ET
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+
+#: Values of credential fields, in JSON or Python-repr form.
+_CREDENTIAL_FIELD = re.compile(
+    r"""(["']?(?:memberToken|inviteToken|tokenHash|inviteTokenHash)["']?\s*[:=]\s*)"""
+    r"""(["'])[^"']*\2"""
+)
+_BEARER = re.compile(r"(?i)(bearer\s+)\S+")
+#: Issued tokens are 43 URL-safe characters (`secrets.token_urlsafe(32)`);
+#: group and member ids are 22, so 32 separates them.
+_TOKEN_LIKE = re.compile(r"[A-Za-z0-9_-]{32,}")
+
+
+def redact(text: str) -> str:
+    """Remove anything shaped like an issued credential from recorded text."""
+    text = _CREDENTIAL_FIELD.sub(r"\1\2[redacted]\2", text)
+    text = _BEARER.sub(r"\1[redacted]", text)
+    return _TOKEN_LIKE.sub("[redacted]", text)
 
 
 @dataclass
@@ -52,11 +74,12 @@ def read_junit(path: Path) -> list[Outcome]:
         skipped = case.find("skipped")
         if problem is not None:
             message = problem.get("message") or (problem.text or "").strip()
-            outcomes.append(Outcome(name, "failed", message.splitlines()[0][:300]))
+            first = message.splitlines()[0] if message else "failed"
+            outcomes.append(Outcome(name, "failed", redact(first)[:300]))
         elif skipped is not None:
             # pytest records the skip reason as "path:line: reason".
             reason = skipped.get("message", "").rsplit(": ", 1)[-1]
-            outcomes.append(Outcome(name, "skipped", reason))
+            outcomes.append(Outcome(name, "skipped", redact(reason)))
         else:
             outcomes.append(Outcome(name, "passed"))
     return outcomes

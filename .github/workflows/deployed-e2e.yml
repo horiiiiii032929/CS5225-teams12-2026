@@ -14,7 +14,7 @@ on:
         required: true
         default: https://d2g88qlwvm8dec.cloudfront.net/api
       revision:
-        description: Git commit that was deployed (its tests are the ones run)
+        description: Full 40-character commit that was deployed (git rev-parse HEAD)
         required: true
       require_complete:
         description: Treat skipped steps as failure (final acceptance)
@@ -42,7 +42,9 @@ jobs:
         id: validate
         run: |
           [[ "$API_URL" =~ ^https://[A-Za-z0-9.-]+(/[A-Za-z0-9._/-]*)?$ ]] || { echo "api_url must be an https URL"; exit 1; }
-          [[ "$REVISION" =~ ^[0-9a-f]{7,40}$ ]] || { echo "revision must be a commit SHA"; exit 1; }
+          # actions/checkout treats only a full SHA as a commit; anything shorter
+          # is looked up as a branch or tag, which could name another commit.
+          [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]] || { echo "revision must be the full 40-character commit SHA"; exit 1; }
       # The summarizer comes from this workflow's commit; the tests come from
       # the deployed revision, so they always match the build under test.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -62,6 +64,8 @@ jobs:
           cache-dependency-glob: build/uv.lock
       - run: uv sync --locked --all-packages --group dev
         working-directory: build
+      # Failure text can include a test group's tokens, so the log shows only
+      # skip reasons (--tb=no), and only the redacted record is kept below.
       - name: Run the journey against the deployed API
         id: journey
         continue-on-error: true
@@ -72,7 +76,7 @@ jobs:
           FLATSPLIT_E2E_SEARCH_TIMEOUT: '300'
         run: >-
           uv run --package flatsplit-api pytest tests/e2e/test_group_journey.py
-          -k "not leaked_credentials" -rs -p no:cacheprovider
+          -k "not leaked_credentials" -rs --tb=no -p no:cacheprovider
           --junitxml="$RUNNER_TEMP/e2e.xml"
       - name: Note the web build being served
         id: site
@@ -95,8 +99,6 @@ jobs:
         if: always() && steps.validate.outcome == 'success'
         with:
           name: deployed-e2e-${{ inputs.revision }}-${{ github.run_id }}
-          path: |
-            ${{ runner.temp }}/deployed-e2e.json
-            ${{ runner.temp }}/e2e.xml
+          path: ${{ runner.temp }}/deployed-e2e.json
           retention-days: 90
           if-no-files-found: warn

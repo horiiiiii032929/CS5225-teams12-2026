@@ -119,7 +119,7 @@ Still outstanding for deployed results: validated rent publication (#10/#75), th
 After every deploy, record the #29 journey's verdict for that build with the `Deployed e2e` workflow. It needs no AWS credentials, because it only calls the public API:
 
 ```sh
-gh workflow run deployed-e2e.yml -f revision="$(git rev-parse --short HEAD)"
+gh workflow run deployed-e2e.yml -f revision="$(git rev-parse HEAD)"
 # For final acceptance, also pass: -f require_complete=true
 gh run watch "$(gh run list --workflow deployed-e2e.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
 ```
@@ -130,4 +130,4 @@ It checks out the deployed revision's tests, runs the 2- and 5-member journeys a
 - **INCOMPLETE:** nothing failed, but steps were skipped because the deployment lacks a dependency, such as unpublished rent (#10) or no worker (#15). This is readiness evidence, not acceptance, and it fails the run only with `require_complete`.
 - **FAIL:** a step failed.
 
-The job summary lists each test with its skip reason, the revision and the web asset being served. The JSON record and JUnit XML are kept as a 90-day artifact. Each run creates four short-lived test groups on the target stack.
+The job summary lists each test with its skip reason, the revision and the web asset being served. The redacted JSON record is kept as a 90-day artifact; the raw JUnit XML is not, because failure text can contain a test group's tokens. Each run creates four short-lived test groups on the target stack.

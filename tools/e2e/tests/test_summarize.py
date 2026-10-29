@@ -9,7 +9,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from summarize import main, read_junit, verdict  # noqa: E402
+from summarize import main, read_junit, redact, verdict  # noqa: E402
 
 # Shapes pytest's --junitxml writes for a pass, a skip and a failure.
 PASS = '<testcase classname="e2e" name="test_group_journey[2]" time="1.0"/>'
@@ -100,6 +100,40 @@ class SummarizeTest(unittest.TestCase):
         failure = '<testcase name="u"><failure message="a | b"/></testcase>'
         _, _, summary = self.run_main(junit(failure))
         self.assertIn("a \\| b", summary)
+
+    def test_failure_details_never_record_credentials(self) -> None:
+        # Review regression: a failed `_ok` printed the whole create response.
+        token = "Q" * 43
+        invite = "i" * 43
+        message = (
+            "AssertionError: {'group': {'groupId': 'g' * 22, 'inviteToken': "
+            f"'{invite}'}}, 'memberToken': '{token}'}} where Bearer {token}"
+        )
+        failure = (
+            f'<testcase name="t"><failure message="{message}">tb</failure></testcase>'
+        )
+        code, record, summary = self.run_main(junit(failure))
+        self.assertEqual(record["verdict"], "FAIL")
+        for text in (json.dumps(record), summary):
+            self.assertNotIn(token, text)
+            self.assertNotIn(invite, text)
+        self.assertIn("[redacted]", record["outcomes"][0]["detail"])
+
+
+class RedactTest(unittest.TestCase):
+    def test_keeps_ids_and_ordinary_text(self) -> None:
+        text = "groupId gA1b2C3d4E5f6G7h8I9j0k returned HTTP 503 SERVICE_UNAVAILABLE"
+        self.assertEqual(redact(text), text)
+
+    def test_removes_fields_bearers_and_token_shaped_runs(self) -> None:
+        self.assertEqual(
+            redact('{"memberToken": "short-but-secret"}'),
+            '{"memberToken": "[redacted]"}',
+        )
+        self.assertEqual(
+            redact("Authorization: Bearer abc"), "Authorization: Bearer [redacted]"
+        )
+        self.assertEqual(redact("x" * 43), "[redacted]")
 
 
 if __name__ == "__main__":
