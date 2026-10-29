@@ -143,6 +143,16 @@ export function MemberPreferencesForm({
         event.preventDefault();
         setSubmitted(true);
         if (isValid && !save.isPending) save.mutate();
+        else if (!save.isPending) {
+          const first = errors.name
+            ? 'member-preference-name'
+            : errors.destination
+              ? 'member-preference-destination'
+              : errors.budget
+                ? 'member-preference-budget'
+                : 'member-preference-commute';
+          document.getElementById(first)?.focus();
+        }
       }}
     >
       <fieldset disabled={save.isPending}>
@@ -173,7 +183,11 @@ export function MemberPreferencesForm({
               value={destinationQuery}
               autoComplete="off"
               aria-invalid={submitted && !!errors.destination}
-              aria-describedby="destination-help"
+              aria-describedby={
+                submitted && errors.destination
+                  ? 'destination-help member-destination-error'
+                  : 'destination-help'
+              }
               onChange={(event) => {
                 setDestinationQuery(event.target.value);
                 setSelectedPlace(null);
@@ -233,7 +247,9 @@ export function MemberPreferencesForm({
               </p>
             )}
             {submitted && errors.destination && (
-              <FieldError role="alert">{errors.destination}</FieldError>
+              <FieldError id="member-destination-error" role="alert">
+                {errors.destination}
+              </FieldError>
             )}
           </Field>
           <Field data-invalid={submitted && !!errors.budget}>
@@ -248,6 +264,9 @@ export function MemberPreferencesForm({
               max={5000}
               value={budget}
               aria-invalid={submitted && !!errors.budget}
+              aria-describedby={
+                submitted && errors.budget ? 'member-budget-error' : undefined
+              }
               onChange={(event) => setBudget(event.target.value)}
             />
             <FieldDescription>
@@ -255,7 +274,9 @@ export function MemberPreferencesForm({
               your limit.
             </FieldDescription>
             {submitted && errors.budget && (
-              <FieldError role="alert">{errors.budget}</FieldError>
+              <FieldError id="member-budget-error" role="alert">
+                {errors.budget}
+              </FieldError>
             )}
           </Field>
           <Field data-invalid={submitted && !!errors.commute}>
@@ -270,10 +291,15 @@ export function MemberPreferencesForm({
               max={120}
               value={maxCommute}
               aria-invalid={submitted && !!errors.commute}
+              aria-describedby={
+                submitted && errors.commute ? 'member-commute-error' : undefined
+              }
               onChange={(event) => setMaxCommute(event.target.value)}
             />
             {submitted && errors.commute && (
-              <FieldError role="alert">{errors.commute}</FieldError>
+              <FieldError id="member-commute-error" role="alert">
+                {errors.commute}
+              </FieldError>
             )}
           </Field>
           {save.isError && (

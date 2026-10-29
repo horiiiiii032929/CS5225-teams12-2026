@@ -346,3 +346,15 @@ it('does not claim a timed-out PUT left saved preferences unchanged', async () =
     ).value,
   ).toBe('1850');
 });
+
+it('focuses the first invalid field and associates its validation message', () => {
+  mount();
+  field('Your monthly rent budget (SGD)', '299');
+  submit();
+  const input = screen.getByLabelText('Your monthly rent budget (SGD)');
+  expect(document.activeElement).toBe(input);
+  expect(
+    document.getElementById(input.getAttribute('aria-describedby')!)!
+      .textContent,
+  ).toContain('S$300');
+});

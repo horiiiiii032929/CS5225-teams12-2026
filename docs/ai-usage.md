@@ -2,6 +2,12 @@
 
 Keep concise records of substantial AI contributions so the team can explain and review its own implementation.
 
+## 12–14 October 2026 — HDB rental profile and evaluation evidence
+
+- Tool: Codex, directed by Mani.
+- Contribution: profiled the official HDB datasets, validated Mani's rent schema decisions, documented E6, and generated the reproducible E8 audit.
+- Verification: 65 of 72 comparable published medians matched exactly; documentation, JSON, sample-data and audit checks passed. E6 was documented but not run; no AWS deployment was performed.
+
 ## 8 October 2026 — repository scaffold
 
 - Tool: Codex.
@@ -69,14 +75,6 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Corrections: aligned the measured search URL with the API contract, assigned E4 usage evidence to the owner of #34, and distinguished the 20 requests/s admission limit from the proposed 50 requests/s capacity workload. Specified isolated local worker processes for the fixed-instance comparison to avoid benchmarking the resolver’s safety lock as compute capacity.
 - Verification: documentation formatting and diff checks pass; the combined stack passes checks, 35 tests, build and synth. Evaluation owner agreement and decisions D-E1–D-E7 remain pending; no experiment results or AWS deployment are claimed.
 
-## 14 October 2026 — project management and blocker reconciliation
-
-- Tool: Codex, directed by Hikaru to act as PM and audit existing discussions before seeking missing information.
-- Evidence: inspected all 46 task bodies, seven PRs, 15 issue/PR comments, the recorded pair review, project fields/statuses, repository collaborators and pending invitations. GitHub discussions and reviews remain the source of owner statements; proposed recovery targets are not owner commitments.
-- Contribution: reconciled stale repository-access blockers and restored assignees from the existing allocation; updated issue #44 with an evidence-linked recovery plan for the at-risk 18 October milestone. Clarified deployment/billing setup, group-contract handoff, canonical station keys and snapping policy, the 27-town mismatch, pending reviews, evaluation amendments and work that can proceed against fixtures. Corrected project statuses only where discussions or reviews document progress.
-- Limits: no implementation, merge, deployment, billing activation, experiment completion or teammate approval is claimed. AWS payer/deployer responsibility remains unconfirmed in the audited discussions. PR #52 has Ming's approval; #51/#53 still await pair review. Existing baseline milestones remain visible alongside PM recovery checkpoints.
-- Verification: GitHub issue bodies and assignees were read back after updates; project status updates were read back. Local Markdown formatting and `git diff --check` passed. Application tests, build and synth were not rerun for tracking/documentation changes.
-
 ## 13 October 2026 — issue 3 feasibility evidence and issue 46 owner confirmation
 
 - Tool: Claude Code (Claude Opus 5).
@@ -87,11 +85,13 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Discrepancies recorded rather than smoothed over: #3's search latency table quotes n=12, while the instrumented run has n=8 and the untokenised console probe n=4; the 300 calls/min routing boundary comes from run 1.0.0, not the final 1.2.0 run, which re-tested routing only at 250/min; endpoint sharing was observed in 1 of 3 runs; and the instrumented routing latency (p50 140 ms) measured OneMap's upstream cache rather than the 861 ms uncached path.
 - Human follow-up: @shyamgj1900 to resolve C6 in #6, which blocks E3; payer-account holder to activate the `project=flatsplit` cost allocation tag, which blocks E9. The two superseded rate-limit archives (645 and 1,573 exchanges) are summarised but their raw bodies are not committed, to keep the repository small.
 
-## 12–14 October 2026 — HDB rental profile and evaluation evidence
+## 14 October 2026 — project management and blocker reconciliation
 
-- Tool: Codex, directed by Mani.
-- Contribution: profiled the official HDB datasets, validated Mani's rent schema decisions, documented E6, and generated the reproducible E8 audit.
-- Verification: 65 of 72 comparable published medians matched exactly; documentation, JSON, sample-data and audit checks passed. E6 was documented but not run; no AWS deployment was performed.
+- Tool: Codex, directed by Hikaru to act as PM and audit existing discussions before seeking missing information.
+- Evidence: inspected all 46 task bodies, seven PRs, 15 issue/PR comments, the recorded pair review, project fields/statuses, repository collaborators and pending invitations. GitHub discussions and reviews remain the source of owner statements; proposed recovery targets are not owner commitments.
+- Contribution: reconciled stale repository-access blockers and restored assignees from the existing allocation; updated issue #44 with an evidence-linked recovery plan for the at-risk 18 October milestone. Clarified deployment/billing setup, group-contract handoff, canonical station keys and snapping policy, the 27-town mismatch, pending reviews, evaluation amendments and work that can proceed against fixtures. Corrected project statuses only where discussions or reviews document progress.
+- Limits: no implementation, merge, deployment, billing activation, experiment completion or teammate approval is claimed. AWS payer/deployer responsibility remains unconfirmed in the audited discussions. PR #52 has Ming's approval; #51/#53 still await pair review. Existing baseline milestones remain visible alongside PM recovery checkpoints.
+- Verification: GitHub issue bodies and assignees were read back after updates; project status updates were read back. Local Markdown formatting and `git diff --check` passed. Application tests, build and synth were not rerun for tracking/documentation changes.
 
 ## 14 October 2026 — issue 14 destination search endpoint
 
@@ -201,6 +201,12 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Verification: #63 with #60/#61 passed check/test/build/synth with 234 API tests. An isolated import directly from its built wheel loaded all 27 town records, including non-routable TENGAH, and both search OpenAPI paths. The final combination including #62's fixes passed pnpm format/check/test/build/synth: 258 API, 29 web, five CDK and three offline evidence tests. Unchanged tasks sometimes reused Turbo cache; the final API suite ran afresh. Diff checks passed. Current PR heads are pushed for CI before merging.
 - Limits: local emulator and synthetic-response checks do not establish real DynamoDB contention, an operating commute worker, live OneMap/places, deployed shared-group/search acceptance, a 500 ms latency result, rate-limit headroom, measured cost or user-study outcomes. No AWS deployment, billing change or scope expansion was performed; open implementation/evaluation acceptance remains tracked by its existing issues.
 
+## 19 October 2026 — issue 9 raw HDB rental ingestion
+
+- Tool: Codex, directed by Mani; ingestion policy and schedule choices remained with Mani.
+- Contribution: implemented the data.gov.sg export client, HDB source validation, S3 evidence/pointer handling, ingestion Lambda, and regression tests. #10 owns rental summaries and DynamoDB publication.
+- Verification: API, web, CDK and evaluation tests, repository checks/build, and local CDK synthesis passed. A read-only export validated 212,597 rows, 27 towns, six flat types and source month `2026-09`; nothing was written to AWS and no deployment or schedule was run.
+
 ## 20 October 2026 — repository status audit and documentation reconciliation
 
 - Tool: Codex, directed by Hikaru to check repository/docs status and update stale documentation while separating implemented features from deployed acceptance and preserving historical evidence.
@@ -255,12 +261,6 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Tool: Codex, directed by Hikaru to review PR #69, fix remaining issues and merge only after checks pass. This was a local self-review, not independent human approval. Reviewed the total-route-failure predicate against the backend's resolved/unavailable counts, partial-success/no-match/stale/error branches, same-search retry and input preservation, regression coverage, and the dated deployment/access evidence. There were no published review comments or outstanding reviewer requests. No additional blocking issue or source fix was identified.
 - Verification: all 65 web tests and 14 targeted search API tests ran afresh and passed. Root check/test/build/synth, API-generation drift and Git diff checks passed; the full suite remains 331 tests (258 API, 65 web, five CDK, three offline), with unchanged Turbo tasks eligible for cache reuse. The preceding entry retains the actual desktop/mobile browser evidence; no visible source change required another browser run in this review. Added only this review record and preserved all earlier evidence.
 - Handoff: both CI checks passed at reviewed source head `4c27229`; push this documentation record and require successful checks at the resulting head before merging. Keep #7/#17 open for their separately recorded deployed acceptance. AWS credential refresh/deployment remains deferred as requested; no AWS or OneMap operation was attempted in this review.
-
-## 19 October 2026 — issue 9 raw HDB rental ingestion
-
-- Tool: Codex, directed by Mani; ingestion policy and schedule choices remained with Mani.
-- Contribution: implemented the data.gov.sg export client, HDB source validation, S3 evidence/pointer handling, ingestion Lambda, and regression tests. #10 owns rental summaries and DynamoDB publication.
-- Verification: API, web, CDK and evaluation tests, repository checks/build, and local CDK synthesis passed. A read-only export validated 212,597 rows, 27 towns, six flat types and source month `2026-09`; nothing was written to AWS and no deployment or schedule was run.
 
 ## 20 October 2026 — issue 14 place and station persistence
 
@@ -371,6 +371,14 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Browser evidence: CUA in-app browser against local Vite and a temporary synthetic HTTP fixture at 127.0.0.1 only. Verified app identity, nonblank/no-overlay rendering, inspected console (no error/warn entries), pointer/Space/Enter disclosure with Tab leaving it, 1280/390/320px widths without document overflow, status-error to queued recovery, all-route-failure retry to queued, data-only results without constraint-relaxation advice, and group revision/stale change removing the panel. Desktop/mobile screenshots remain outside the repository in `/private/tmp/flatsplit-recovery-*-20261027.png`; temporary servers were stopped and viewport restored.
 - Limits: browser records, rents, routes and failures were synthetic. Timeout exceptions were injected through the generated fetch transport in tests rather than waiting for a live timeout. No OneMap call, credential access, AWS operation/deployment, real-data acceptance or participant study was performed. This branch starts from main independently of #76; #23 composition and integrated deployment review remain needed. #26 stays open until its recorded acceptance gates are met; this does not close #17 or #31.
 
+## 27 October 2026 — issue 24 town reference map and accessible details
+
+- Tool: Codex, directed by Hikaru to refresh repository status and start actionable assigned work. Started `codex/24-town-map` from current main `25de759`; no delegated agents. Applied React/UI accessibility guidance within the existing visual system.
+- Contribution: completed-search reference map with numbered native-button pins, an equivalent town list and one selected-town detail panel. Public props consume the generated group/search contract; no additional fetch/cache, API schema, dependency, map key or third-party network request. Reference coordinates project the existing principal-station table and an offline regression guards parity. Leader lines preserve geographic anchors when touch targets are separated. Unmapped towns remain available through the list without invented coordinates. Details retain per-member limits/commutes, equal rent split, source/period and approximation; unavailable route calculation dates are explicit. Pending, stale, changed-revision and not-ready results remain withheld. The parent completion announcement no longer encloses every interactive detail.
+- Verification: root check/test/build/synth and API contract drift passed: 297 API, 74 web, eight CDK and four offline evidence tests (383 total). New tests cover map/list selection, removed-result fallback, pending/stale/revision/readiness withholding, unavailable coordinates/null rent, non-mutating upward display rounding, all 26 mapped-town target spacing and completed-map removal after a group edit. The first spacing test exposed overlaps; fixed placement and reran successfully. Existing non-fatal TanStack/CDK notices remain.
+- Browser: CUA in-app browser against local Vite plus a temporary synthetic HTTP fixture outside the repo, not the actual backend or live data. Pointer map selection and native Tab/Enter/Space list/marker selection update the same details; inspected screenshots, table/member names, visible focus and source notes. At 1280, 390 and 320px document width matched viewport width; the map scrolls independently. Checked five-member/long-name layout, and controlled fixture revision/pending changes removed the map. Inspected console had no error/warning or framework overlay. Screenshots/temporary fixture remain outside Git. No physical device, assistive-technology session, live OneMap/rent/worker integration, deployment or issue acceptance is claimed.
+- Handoff: local #24 implementation for Raccoon33 review and composition with #23; full comparison UI remains #23. Actual source/worker integration, deployed #24 acceptance and existing #7/#17 review gates remain separate. The #72 personal-account/team-mailbox decision was requested from Hikaru rather than inferred. No credential retrieval, AWS mutation, access grant or deployment occurred.
+
 ## 28 October 2026 — issue 44 acceptance gate, the two remaining review roots
 
 - Tool: Claude Code (Claude Opus 5), directed by Luke to close the two findings left open in @wkkuu's 27 October review of #67 (`1ed243e`).
@@ -419,6 +427,11 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Tool: Codex, directed by Hikaru to execute the next repository integration steps. Merged main `b4a4434` into the E10 kit branch; the only conflict was the append-only AI log. Preserved both histories with main entries first; study materials and application source are unchanged.
 - Verification: root check/test/build/synth, generated API drift check and E10 generator --check passed on Node 26.0.0; Turbo reused successful task cache entries. Test totals: 297 API, 65 web, eight CDK and three offline evidence tests. No participant session, deployment or integrated acceptance is claimed.
 
+## 28 October 2026 — PR #77 main refresh
+
+- Tool: Codex, directed by Hikaru to execute the next repository integration steps. Merged main `b4a4434` into the recovery branch; the only conflict was the append-only AI log. Preserved both histories with main entries first; no application source changed during the refresh.
+- Verification: root check/test/build/synth and generated API drift check passed on Node 26.0.0; Turbo reused successful task cache entries. Test totals: 297 API, 72 web, eight CDK and three offline evidence tests. No visible code changed, so no new browser run was needed. No new deployment or integrated acceptance is claimed.
+
 ## 28 October 2026 — PR #76 main refresh
 
 - Tool: Codex, directed by Hikaru to execute the next repository integration steps. Merged main `b4a4434` into the town-map branch; the only conflict was the append-only AI log. Preserved both histories with main entries first; no application source changed during the refresh. Existing map browser QA remains tied to its original implementation.
@@ -457,6 +470,22 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Browser verification: Playwright with installed Chromium, desktop 1280 × 900 and an independent mobile context 390 × 844, against the actual local HTTP resolver and Vite proxy. Verified form errors, `/places?q=Kent Ridge` response/selection and persistence, both members saving, own-member edit/prefill, saving a new budget, editor reload and other-member reload, three-town comparison, freshness disclosure, and immediate/post-reload stale result withholding. Fixed the mobile grid overflow found in the first browser run and reran the full journey successfully; no page overflow or uncaught page errors remained. Screenshots, runner and local QA adapter are kept outside the checkout.
 - Evidence limits: Moto DynamoDB, a deliberately synthetic place/rent snapshot and conditional injected route completions exercised the consumer contract. No live OneMap lookup/worker, real rent freshness, AWS resource change, deployment, merged PR or issue closure is claimed. Issues #13/#23 still require Hikaru's review and integrated deployment/demo evidence under their original acceptance criteria. API freshness metadata additions, if required for exact publication/route age, remain a backend handoff; no schema or endpoint change was invented here.
 
+## 29 October 2026 — Raccoon33 mobile/demo/presentation handoff (#25/#32/#39)
+
+- Tool: OpenAI Codex, directed by Raccoon33. Inspected assigned issue bodies and current #39/#44 handoffs before selecting the remaining scope. New fork-only preparation branch `feat/25-32-39-frontend-handoff` builds on unchanged #84/#85 and locally composes #76 e34ef9e and #77 2fa1f04. No upstream PR merge or deployment was performed; original teammate history and every AI-log entry were preserved.
+- Integration: resolved SearchProgress conflicts by keeping ranked comparisons, map/details and reason-based recovery together. Kept the map fixture under a distinct helper so both regression suites retain their original expectations. Fixed the shared timeout guarantee: a preference PUT may commit before the response is lost. Added a save-after-commit/lost-response regression. Validation now focuses the first invalid field and associates budget, commute and destination errors with inputs.
+- Mobile/accessibility: added fixed-version Playwright and Axe development tools, `pnpm test:browser`, a loopback-only synthetic HTTP/Moto adapter and versioned two-/five-member browser scenarios. They exercise actual creation/invite/join, explicit lookup/save, independent browser reloads, three-town comparison, map Space/Tab actions, horizontal comparison scrolling and stale withholding. First runs found insufficient contrast in the selected map row's small rent-unit text; the implementation was corrected and the full suite rerun. Final two browser journeys passed with 17 WCAG A/AA audits and zero violations at 390 × 844 / 1280 × 900. Chromium scroll animation is awaited before asserting actual keyboard scrolling; checks were not disabled. This is not a complete screen-reader/physical-device certification.
+- Evidence: committed only masked screenshots, anonymous rule IDs/targets and source/artifact hashes under `docs/demo/evidence/local-synthetic/`. Invitation fields are masked, traces/video disabled, and raw error contexts/storage/responses excluded. Source hashes describe the tested working tree rather than inventing a deployed SHA. The helper uses Moto, synthetic seeded places/rent and conditional injected 20.5-minute route completions; no real AWS/provider operation or live worker was used.
+- Deliverables: `docs/remaining-work.md`, a repeatable manual/automated demo and privacy checklist, documented mobile review, and a 12-slide initial HTML/PDF deck with source ledger and proposed speaker notes. Integrated #39's later corrections: #67 privacy findings resolved at 92a480c; old #74/#79 conflict descriptions superseded; #75's new correction still needs acceptance; 500 ms p95 stays a target; cost scenarios/queue arithmetic are not measured cloud outcomes. Speaking handoffs remain proposals; no participant study, six-person agreement, timed rehearsal or submission receipt was fabricated.
+- Validation: 106 web, 297 API, eight CDK and four offline evidence tests passed (415), plus the two browser journeys. Root check/build, API drift and local CDK synthesis passed; added QA ESLint and Python Ruff checks passed. The initial PDF rendered as 12 pages, including its local redacted screenshot; inspected the architecture render. Browser file URLs are blocked in this managed environment, so PDF export uses a temporary loopback HTTP server exposing only the deck and its single image, without changing browser policy.
+- Remaining gates: reviewer approval/merge, authorised integrated deployment with representative records, deployed #25/#32 capture, #31 real participants, accepted #34–#36 measurements, all-six final slide review, rehearsal and actual submission by 13 November 2026 23:59 SGT. GitHub API identity access remains Forbidden; no credentials/account were switched and no public issue status comment was posted.
+
+## 29 October 2026 — PR #76 integration refresh
+
+- Tool: Codex, directed by Hikaru to review #85/#86, resolve frontend PR conflicts and run checks. Merged main `ef1bbf6` into the map branch. The only conflict was the contribution log; every entry from both parents was preserved and checked. No application source changed in this refresh.
+- Verification: root check/test/build/synth and generated API drift check passed on Node 26.0.0. Successful Turbo cache entries were reused; offline evaluation and acceptance suites executed. This refresh does not establish deployment or user acceptance.
+- Merge order: #76 map, #85 forms/results composed with the map, #77 recovery composed with both, then #86 QA/demo/slides. #78 is independent study preparation. No upstream merge or deployment was performed.
+
 ## 29 October 2026 — PR #85 review and map composition
 
 - Tool: Codex, directed by Hikaru to review Lucy's #85/#86, fix conflicts and establish merge order. Reviewed member-only preference writes, destination validation/cancellation, cache replacement, stale withholding, member-ID result joins, three-town comparisons and evidence limits. Merged main `ef1bbf6` and refreshed #76. Preserved both result surfaces, separated the different map/ranking fixture helpers and kept interactive details outside the completion live region. Every original contribution entry is retained.
@@ -470,3 +499,11 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Corrected the shared timeout copy identified by Raccoon33: a timed-out preference PUT may have committed. Carried forward #86's neutral wording and commit-then-lost-response regression, together with #85's four committed-write/server-error cases. Search retry regressions still verify GET/POST behavior without preference writes.
 - Verification: root format/check/test/build/synth and generated API drift check passed on Node 26.0.0; successful unchanged Turbo caches were reused. Final composed browser validation is recorded with #86. No deployed acceptance, live provider operation, participant session or upstream merge was performed.
 - Merge order remains #76 -> #85 -> #77 -> #86, using merge commits to retain predecessor ancestry. #78 is independent.
+
+## 29 October 2026 — PR #86 final frontend review and browser validation
+
+- Tool: Codex, directed by Hikaru to review #85/#86, resolve conflicts and verify the merge sequence. Refreshed the integration branch against main `ef1bbf6` and reviewed #77/#85/#76; kept all application surfaces, all 56 existing contribution entries and both generated-evidence ignore paths. The final branch contains both the neutral timeout correction originally supplied by Raccoon33 and the newly reproduced service-error copy correction. Local QA output is excluded from formatting as well as Git.
+- Final validation: root format/check/test/build/synth and generated API drift check passed on Node 26.0.0. Tests: 297 API + 110 web + 13 CDK + four offline evaluation + 32 acceptance = 456. Successful unchanged Turbo tasks reused caches; changed frontend tests and API tests executed in this review. ESLint on QA sources and Ruff on the local QA adapter passed separately.
+- Browser: Browser plugin unavailable; used the repository's Playwright workflow with installed Google Chrome against loopback Vite and the actual HTTP resolver with Moto. Both two-/five-member independent-browser journeys passed, including input focus/validation, save/reload/edit, three-town comparisons, map Space/Tab selection, keyboard table scrolling, and stale removal. Seventeen WCAG A/AA Axe checks had zero violations at 390x844 / 1280x900. Inspected the rendered mobile results; fresh masked screenshots and receipts remain outside tracked files.
+- Additional browser regression: the actual local preference PUT committed S$1,850, then the intercepted response returned 503. The UI displayed neutral confirmation guidance, retained edits and confirmed S$1,850 after reload. Page identity, nonblank rendering, no framework overlay, no overflow, zero runtime errors and zero unexpected console diagnostics passed; the intentionally injected 503 produced one expected resource diagnostic. Four unit cases for 500/502/503/504 failed before the copy fix and pass afterward.
+- Limits: synthetic place/rent records and conditional injected commute completions; no live OneMap/worker, AWS mutation/deployment, study session, upstream PR merge or issue closure. API freshness timestamps remain unavailable and are disclosed. Author-provided earlier screenshots/deck retain their original provenance. Final order places independent #78 first to avoid the shared contribution-log collision, followed by #76 -> #85 -> #77 -> #86; use merge commits to retain ancestry.

@@ -2,6 +2,8 @@
 
 A React and TanStack monorepo with Python Lambda handlers and an AWS CDK app. The frontend supports API-backed group creation, invite joining, reopening and search progress, alongside an interactive wireframe with fictional data. The backend implements health, destination lookup, token-authorised group APIs, search submission/status with filtering and fairness ranking, and validated raw HDB rental snapshot ingestion. Live rental publication, persistent destinations and the commute worker remain integration work. Its CDK stack defines DynamoDB, an HTTP API Lambda, a private versioned rental-evidence bucket, encrypted commute queues, and CloudFront serving the web app with `/api`. See the [backend and AWS design](docs/backend-design.md).
 
+Presentation: [Google Slides (working draft)](https://docs.google.com/presentation/d/1oOLGvCQOW5bwN6hG5KMhkMyFqmR50FqH/edit) · [speaker notes, sources and export instructions](docs/presentation/README.md).
+
 For issue #1, start with the [user journey and responsive wireframes](docs/user-journey.md). Run `pnpm dev:web` and open `/?review=create` for the Design review selector: member input, processing, ranked comparisons and recovery fixtures. Only these explicit previews run without the API, use fictional data and reset on refresh.
 
 ## Frontend implementation — #7 and #17

@@ -2175,3 +2175,8 @@
 .live-ranked-results > * {
   min-width: 0;
 }
+
+/* Selected map rows need full text contrast against the tinted background. */
+.town-choice-list button[aria-pressed='true'] .town-choice-rent small {
+  color: var(--foreground);
+}
