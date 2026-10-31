@@ -41,7 +41,7 @@ export class Api extends Construct {
   readonly httpApi: HttpApi;
   /** Hostname CloudFront uses as the /api/* origin. */
   readonly originDomain: string;
-  /** Refreshed every 12 hours from `onemapCredentialsSecretName` (#72). */
+  /** Kept valid every 15 minutes from `onemapCredentialsSecretName` (#72). */
   readonly onemapTokenSecretName: string;
   /** OneMap account email/password, put in once by hand; never in the repo. */
   readonly onemapCredentialsSecretName: string;
@@ -66,7 +66,7 @@ export class Api extends Construct {
     // replaced by hand until #72 and lapsed for days when nobody did, so a
     // scheduled Lambda now logs in with a separate credentials secret.
     const onemapToken = new Secret(this, 'OneMapToken', {
-      description: `OneMap API token for FlatSplit ${props.stage}; refreshed every 12 hours from the OneMap credentials secret`,
+      description: `OneMap API token for FlatSplit ${props.stage}; kept valid every 15 minutes from the OneMap credentials secret`,
       removalPolicy: props.removalPolicy,
     });
     this.onemapTokenSecretName = onemapToken.secretName;
@@ -90,6 +90,9 @@ export class Api extends Construct {
       handler: 'flatsplit_api.handlers.onemap_token_refresh.handler',
       memorySize: 128,
       timeout: Duration.seconds(30),
+      // The next run is minutes away, and retrying would triple the logins
+      // OneMap sees from a wrong password.
+      retryAttempts: 0,
       environment: {
         POWERTOOLS_SERVICE_NAME: 'flatsplit-onemap-token-refresh',
         POWERTOOLS_LOG_LEVEL: 'INFO',
@@ -103,17 +106,19 @@ export class Api extends Construct {
     });
     // Only this function can read the account login, and its only write is a
     // new value for the token secret (no UpdateSecret, no version staging).
+    // It reads the token to tell whether a login is due or returned it again.
     onemapCredentials.grantRead(this.onemapTokenRefresh);
+    onemapToken.grantRead(this.onemapTokenRefresh);
     this.onemapTokenRefresh.addToRolePolicy(
       new PolicyStatement({
         actions: ['secretsmanager:PutSecretValue'],
         resources: [onemapToken.secretArn],
       }),
     );
-    // Tokens last three days; every 12 hours leaves several retries (plus
-    // EventBridge's own two async retries) before the current one expires.
+    // OneMap only issues a new token once the old one expires, so this
+    // interval bounds the outage at each expiry. Most runs only read the secret.
     new Rule(this, 'OneMapTokenRefreshSchedule', {
-      schedule: Schedule.rate(Duration.hours(12)),
+      schedule: Schedule.rate(Duration.minutes(15)),
       targets: [new LambdaFunction(this.onemapTokenRefresh)],
     });
 

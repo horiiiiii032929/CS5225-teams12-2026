@@ -3,18 +3,26 @@
 OneMap issues a three-day JWT from `POST /api/auth/post/getToken` given the
 account's email and password, and has no refresh endpoint. Until now the
 token in `OneMapTokenSecret` was replaced by hand, and `/places` failed for
-days whenever nobody did (23-28 October). An EventBridge rule now runs
-`refresh_token` every 12 hours:
+days whenever nobody did (23-28 October).
 
-1. read `{"email", "password"}` from the separate credentials secret;
-2. log in to OneMap;
-3. refuse a token that is not a JWT, expires within 24 hours, or that OneMap
+A login does not renew anything: while the account's token is valid, OneMap
+returns that same token (observed 29-31 October: logins a day apart returned
+one token issued 28 October). So a new token only exists once the old one has
+expired, and the schedule's job is to notice that quickly. An EventBridge rule
+runs `refresh_token` every 15 minutes:
+
+1. stop if the stored token has more than 24 hours left, without logging in;
+2. read `{"email", "password"}` from the separate credentials secret;
+3. log in to OneMap. Getting the stored token back is success, with no write;
+4. otherwise refuse a token that is not a JWT, has expired, or that OneMap
    rejects on a cheap authenticated call;
-4. only then write it as the token secret's new `AWSCURRENT` value.
+5. only then write it as the token secret's new `AWSCURRENT` value.
 
-Any failure leaves the current token untouched, and the next run, 12 hours
-later, tries again while the old token still has days to live. Readers keep
-using `onemap.resolve_token`, whose 15-minute cache picks up the new value.
+Logging in through the last 24 hours exercises the credentials before they are
+needed, so a changed password raises the alarm while the token still works.
+Each expiry still leaves a gap of up to 15 minutes before the next run, plus
+up to 15 more for readers using `onemap.resolve_token`, whose cache picks up
+the new value. Any failure leaves the current token untouched.
 
 This is a scheduled Lambda rather than Secrets Manager rotation on purpose:
 rotation runs `testSecret` against a placeholder during every deployment, so
@@ -37,9 +45,8 @@ from urllib.parse import urlencode
 from flatsplit_api.onemap import BASE_URL, NEAREST_PATH, _decode
 
 TOKEN_PATH = "/api/auth/post/getToken"
-#: A new token with less life than this is refused: runs are 12 hours apart,
-#: so anything shorter could expire before the next attempt.
-MIN_REMAINING_SECONDS = 24 * 60 * 60
+#: A scheduled run with more life than this left does not log in at all.
+RENEW_WITHIN_SECONDS = 24 * 60 * 60
 #: Kent Ridge MRT. The check only needs a cheap authenticated endpoint.
 _PROBE = {"latitude": 1.29330, "longitude": 103.78452, "radius_in_meters": 500}
 
@@ -99,10 +106,9 @@ def fetch_token(email: str, password: str, send: Send = _send) -> str:
 def check_token(
     token: str, send: Send = _send, now: Callable[[], float] = time.time
 ) -> None:
-    """Refuse a token that expires too soon or that OneMap does not accept."""
-    remaining = token_expiry(token) - now()
-    if remaining < MIN_REMAINING_SECONDS:
-        raise RefreshError(f"New token expires in {remaining / 3600:.1f} h.")
+    """Refuse a token that has expired or that OneMap does not accept."""
+    if token_expiry(token) <= now():
+        raise RefreshError("OneMap returned an expired token.")
     request = urllib.request.Request(
         f"{BASE_URL}{NEAREST_PATH}?{urlencode(_PROBE)}",
         headers={"Authorization": token, "Accept": "application/json"},
@@ -128,17 +134,39 @@ def read_credentials(client: Any, secret_id: str) -> tuple[str, str]:
     return email, password
 
 
+def _stored_expiry(token: str) -> int:
+    """The stored token's expiry; CDK's placeholder counts as long expired."""
+    try:
+        return token_expiry(token)
+    except RefreshError:
+        return 0
+
+
 def refresh_token(
     client: Any,
     token_secret_id: str,
     credentials_secret_id: str,
     *,
+    force: bool = False,
     fetch: Callable[[str, str], str] = fetch_token,
     check: Callable[[str], None] = check_token,
+    now: Callable[[], float] = time.time,
 ) -> int:
-    """Store a fresh, checked token as AWSCURRENT; return its expiry."""
+    """Keep a valid token as AWSCURRENT; return its expiry.
+
+    `force` logs in however long the stored token has left, so a changed
+    account takes effect at once.
+    """
+    stored = client.get_secret_value(SecretId=token_secret_id)["SecretString"]
+    stored_expiry = _stored_expiry(stored)
+    if not force and stored_expiry - now() > RENEW_WITHIN_SECONDS:
+        return stored_expiry
     email, password = read_credentials(client, credentials_secret_id)
     token = fetch(email, password)
+    if token == stored:
+        if stored_expiry <= now():
+            raise RefreshError("OneMap returned an expired token.")
+        return stored_expiry
     check(token)
     client.put_secret_value(SecretId=token_secret_id, SecretString=token)
     return token_expiry(token)
