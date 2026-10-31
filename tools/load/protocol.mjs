@@ -9,6 +9,7 @@ const HASH = /^[a-f0-9]{64}$/;
 const OPS = ['create', 'join', 'save', 'read'];
 const OUTCOMES = [
   'success',
+  'empty',
   'http_error',
   'invalid_response',
   'pending',
@@ -129,8 +130,9 @@ function ipv6(value) {
 function dnsHost(value, publicReference) {
   const host = value.toLowerCase().replace(/\.$/, '');
   if (
-    host === 'localhost' ||
-    /\.(?:localhost|local)$/.test(host) ||
+    /(?:^|\.)(?:localhost|local|localdomain|internal|intranet|lan|home|invalid|test|onion|alt|arpa)$/.test(
+      host,
+    ) ||
     host.length > 253 ||
     host
       .split('.')
@@ -142,35 +144,58 @@ function dnsHost(value, publicReference) {
     reject();
   if (
     publicReference &&
-    (!host.includes('.') ||
-      /\.(?:internal|invalid|test)$/.test(host) ||
-      /^[0-9]+$/.test(host.split('.').pop()))
+    (!host.includes('.') || /^[0-9]+$/.test(host.split('.').pop()))
   )
     reject();
 }
 
+function publicIPv4(address) {
+  const [a, b, c] = address;
+  return !(
+    [0, 10, 127].includes(a) ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 &&
+      (b === 168 ||
+        (b === 0 && [0, 2].includes(c)) ||
+        (b === 88 && c === 99))) ||
+    (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100))) ||
+    (a === 203 && b === 0 && c === 113) ||
+    a >= 224
+  );
+}
+
 function remoteHost(value) {
+  // Static spelling checks only: callers must independently pin/review DNS.
   const host = value.toLowerCase().replace(/\.$/, '');
   if (host.startsWith('[')) {
     const address = ipv6(host.slice(1, -1));
-    if (
-      !address ||
-      (address.slice(0, 15).every((part) => part === 0) && address[15] <= 1)
-    )
-      reject();
-    // IPv4-mapped loopback/unspecified literals remain local addresses.
-    if (
+    if (!address) reject();
+    const mapped =
       address.slice(0, 10).every((part) => part === 0) &&
       address[10] === 255 &&
-      address[11] === 255 &&
-      [0, 127].includes(address[12])
-    )
+      address[11] === 255;
+    if (mapped) {
+      if (!publicIPv4(address.slice(12))) reject();
+    } else if (
+      (address[0] & 224) !== 32 ||
+      (address[0] === 32 && address[1] === 1 && address[2] <= 1) ||
+      (address[0] === 32 &&
+        address[1] === 1 &&
+        address[2] === 13 &&
+        address[3] === 184) ||
+      (address[0] === 32 && address[1] === 2) ||
+      (address[0] === 63 && address[1] === 255 && (address[2] & 240) === 0)
+    ) {
+      // Admit global unicast only; exclude special-use and transition ranges.
       reject();
+    }
   } else if (/^[0-9.]+$/.test(host)) {
     const address = ipv4(host);
-    if (!address || [0, 127].includes(address[0])) reject();
+    if (!address || !publicIPv4(address)) reject();
   } else {
-    dnsHost(host, false);
+    dnsHost(host, true);
   }
 }
 
@@ -482,6 +507,9 @@ export function validateConfig(config, plan) {
       plan.catalog.kind !== 'reviewed-public'
     )
       reject();
+    const peakRate = plan.workload === 'W1' ? 2 : 50;
+    if (plan.vus < Math.ceil((peakRate * config.timeout_ms) / 1000) + 1)
+      reject();
     exact(config.approval, [
       'operator',
       'stage',
@@ -556,6 +584,14 @@ function groupState(group, expected) {
     return false;
   if (expected.groupId && group.groupId !== expected.groupId) return false;
   if (expected.revision !== undefined && group.revision !== expected.revision)
+    return false;
+  if (
+    expected.minimumRevision !== undefined &&
+    group.revision < expected.minimumRevision
+  )
+    return false;
+  // Exclusive join pools start at revision/member-count 1 and never save.
+  if (expected.joinOnly && group.revision !== group.members.length)
     return false;
   const ids = new Set();
   for (const member of group.members) {
@@ -693,15 +729,16 @@ export function inspectResponse(op, status, raw, expected = {}) {
     return { outcome: 'pending', search_status: 'pending', state: null };
   }
   if (
-    body.progress.total === 0 ||
     body.progress.resolved !== body.progress.total ||
-    body.ranked.length === 0 ||
+    (body.progress.total === 0 && body.ranked.length !== 0) ||
     !body.ranked.every(
       (entry) =>
         object(entry) && text(entry.town, 128) && integer(entry.rank, 1),
     )
   )
     return invalid;
+  if (body.ranked.length === 0)
+    return { outcome: 'empty', search_status: 'complete', state: null };
   return {
     outcome: 'success',
     search_status: 'complete',
@@ -775,6 +812,10 @@ export function projectSample(context, timing, classification) {
     (classification.outcome === 'success' &&
       (!successfulHTTP ||
         classification.search_status !== (search ? 'complete' : 'unknown'))) ||
+    (classification.outcome === 'empty' &&
+      (!successfulHTTP ||
+        !search ||
+        classification.search_status !== 'complete')) ||
     (classification.outcome === 'http_error' &&
       (successfulHTTP || classification.search_status !== 'unknown')) ||
     (classification.outcome === 'invalid_response' &&

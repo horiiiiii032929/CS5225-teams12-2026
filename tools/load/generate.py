@@ -237,8 +237,10 @@ def validate_catalog(catalog):
     return catalog
 
 
-def build_plan(workload, seed=522530, vus=16, scale=1, catalog=None):
+def build_plan(workload, seed=522530, vus=None, scale=1, catalog=None):
     require(workload in ("W1", "W2"), "workload")
+    if vus is None:
+        vus = 16 if workload == "W1" else 256
     integer(seed, "seed")
     require(abs(seed) <= 2**53 - 1, "seed")
     integer(vus, "vus", minimum=1)
@@ -368,7 +370,7 @@ def main(argv=None):
         parser = SafeArgumentParser(description=__doc__)
         parser.add_argument("--workload", required=True)
         parser.add_argument("--seed", type=int, default=522530)
-        parser.add_argument("--vus", type=int, default=16)
+        parser.add_argument("--vus", type=int)
         parser.add_argument("--scale", type=float, default=1)
         parser.add_argument("--catalog", type=Path)
         parser.add_argument("--output", type=Path, required=True)

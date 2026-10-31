@@ -368,6 +368,31 @@ class SummaryTests(unittest.TestCase):
         self.assertIsNone(result["hold"]["successful_per_second"])
         self.assertEqual(result["lambda_cold_classification"], "unknown")
 
+    def test_arrival_latency_includes_queue_delay_and_empty_results_are_separate(self):
+        for row in self.records[1:]:
+            row["start_ms"] = row["planned_ms"] + 30000
+            row["end_ms"] = row["start_ms"] + 200
+            row["duration_ms"] = 200
+        self.records[1].update(outcome="empty", duration_ms=900)
+        self.records[1]["end_ms"] = self.records[1]["start_ms"] + 900
+        result = summary.summarize(self.plan, self.records)
+        measured = result["measured"]
+        self.assertEqual(
+            (measured["successful"], measured["empty"], measured["invalid"]), (11, 1, 0)
+        )
+        self.assertEqual(
+            measured["successful_http_duration_ms"],
+            {"p50": 200, "p95": 200, "p99": 200},
+        )
+        self.assertEqual(
+            measured["successful_arrival_latency_ms"],
+            {"p50": 30200, "p95": 30200, "p99": 30200},
+        )
+        self.assertEqual(
+            measured["successful_queue_delay_ms"],
+            {"p50": 30000, "p95": 30000, "p99": 30000},
+        )
+
     def test_fast_failures_pending_stale_and_dropped_are_not_success_latency(self):
         for row, outcome in zip(
             self.records[1:5],
@@ -509,6 +534,38 @@ class SummaryTests(unittest.TestCase):
                 1,
             )
             self.assertFalse(json.loads(output.read_text())["complete"])
+
+    def test_truncated_final_sample_retains_safe_prefix_as_incomplete(self):
+        prefix = "".join(json.dumps(row) + "\n" for row in self.records[:-1])
+        last = json.dumps(self.records[-1], separators=(",", ":"))
+        with tempfile.TemporaryDirectory() as directory:
+            samples = Path(directory) / "samples.jsonl"
+            for cut in range(1, len(last)):
+                with self.subTest(cut=cut):
+                    samples.write_text(prefix + last[:cut])
+                    result = summary.summarize(self.plan, summary.read_records(samples))
+                    self.assertFalse(result["complete"])
+                    self.assertTrue(result["truncated_tail"])
+                    self.assertEqual(result["missing_ordinals"], [11])
+                    self.assertEqual(result["measured"]["successful"], 11)
+
+    def test_malformed_or_unsafe_tail_is_not_treated_as_interruption(self):
+        prefix = "".join(json.dumps(row) + "\n" for row in self.records)
+        with tempfile.TemporaryDirectory() as directory:
+            samples = Path(directory) / "samples.jsonl"
+            for tail in (
+                '{"kind":"sample",}',
+                '{"kind":"sample","password":"private-canary"',
+                '{"kind":"sample","run_id":"private-canary"',
+                '{"kind":"sample","duration_ms":NaN',
+                '{"kind":"sample","duration_ms":-1',
+                '{"kind":"sample","kind":',
+                '{"kind":"sample","outcome":"invented',
+                '{"kind":"sample","duration_ms":0} trailing',
+            ):
+                with self.subTest(tail=tail), self.assertRaises(ValueError):
+                    samples.write_text(prefix + tail)
+                    summary.summarize(self.plan, summary.read_records(samples))
 
     def test_duplicate_missing_manifest_plan_mismatch_and_invalid_rows_rejected(self):
         cases = []

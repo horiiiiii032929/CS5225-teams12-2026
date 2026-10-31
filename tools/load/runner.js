@@ -263,12 +263,19 @@ function join(phase, worker, origin, group, index, arrival = null) {
     { name },
     {
       groupId: group.groupId,
-      revision: group.revision + 1,
-      memberCount: group.revision + 1,
+      ...(phase === 'measured' && group.uncertainRevision
+        ? { minimumRevision: group.revision + 1, joinOnly: true }
+        : { revision: group.revision + 1, memberCount: group.revision + 1 }),
       name,
     },
   );
-  if (result.outcome === 'success') group.revision = result.state.revision;
+  if (result.outcome === 'success') {
+    group.revision = result.state.revision;
+    group.uncertainRevision = false;
+  } else if (phase === 'measured' && result.outcome !== 'dropped') {
+    // The original failure stays in evidence; its write may have committed.
+    group.uncertainRevision = true;
+  }
   return result;
 }
 
@@ -298,14 +305,22 @@ function save(phase, worker, origin, group, member, alias, arrival = null) {
     { name: member.name, placeId, budget: 5000, maxCommute: 120 },
     {
       groupId: group.groupId,
-      revision: group.revision + 1,
+      ...(phase === 'measured' && group.uncertainRevision
+        ? { minimumRevision: group.revision + 1 }
+        : { revision: group.revision + 1 }),
+      memberCount: 3,
       memberId: member.memberId,
       name: member.name,
       placeId,
       station: selected.station,
     },
   );
-  if (result.outcome === 'success') group.revision = result.state.revision;
+  if (result.outcome === 'success') {
+    group.revision = result.state.revision;
+    group.uncertainRevision = false;
+  } else if (phase === 'measured' && result.outcome !== 'dropped') {
+    group.uncertainRevision = true;
+  }
   return result;
 }
 

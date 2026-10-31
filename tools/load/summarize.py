@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 import re
 import sys
@@ -44,7 +45,15 @@ SAMPLE_KEYS = {
     "search_status",
     "worker",
 }
-OUTCOMES = ("success", "http_error", "invalid_response", "pending", "stale", "dropped")
+OUTCOMES = (
+    "success",
+    "http_error",
+    "invalid_response",
+    "pending",
+    "stale",
+    "empty",
+    "dropped",
+)
 
 
 def validate_manifest(manifest, plan):
@@ -172,6 +181,11 @@ def validate_sample(row, manifest, plan):
                 row["op"] in ("search", "read") and row["search_status"] == outcome,
                 "sample.search_status",
             )
+        elif outcome == "empty":
+            workload.require(
+                row["op"] in ("search", "read") and row["search_status"] == "complete",
+                "sample.search_status",
+            )
         elif outcome == "success":
             workload.require(
                 row["search_status"]
@@ -182,9 +196,12 @@ def validate_sample(row, manifest, plan):
             workload.require(row["search_status"] == "unknown", "sample.search_status")
 
 
-def percentiles(rows):
+def percentiles(rows, field="duration_ms", subtract=None):
     durations = sorted(
-        row["duration_ms"] for row in rows if row["outcome"] == "success"
+        row[field] - (row[subtract] if subtract else 0)
+        for row in rows
+        if row["outcome"] == "success"
+        and (subtract is None or row[subtract] is not None)
     )
     return {
         name: durations[math.ceil(len(durations) * percentile) - 1]
@@ -205,12 +222,15 @@ def metrics(rows, planned=0):
         "http_errors": outcomes["http_error"],
         "pending": outcomes["pending"],
         "stale": outcomes["stale"],
+        "empty": outcomes["empty"],
         "invalid": outcomes["invalid_response"],
         "status_counts": dict(
             sorted(Counter(str(row["status"]) for row in rows).items())
         ),
         "outcome_counts": {outcome: outcomes[outcome] for outcome in OUTCOMES},
         "successful_http_duration_ms": percentiles(rows),
+        "successful_arrival_latency_ms": percentiles(rows, "end_ms", "planned_ms"),
+        "successful_queue_delay_ms": percentiles(rows, "start_ms", "planned_ms"),
     }
 
 
@@ -297,10 +317,13 @@ def summarize(plan, records):
     measured_metrics["max_lateness_ms"] = max(
         (max(0, row["start_ms"] - row["planned_ms"]) for row in measured), default=None
     )
+    truncated_tail = getattr(records, "truncated_tail", False)
+    complete = not missing and not truncated_tail
     return {
         "version": 1,
-        "complete": not missing,
-        "evidence_status": "complete" if not missing else "incomplete",
+        "complete": complete,
+        "evidence_status": "complete" if complete else "incomplete",
+        "truncated_tail": truncated_tail,
         "run_id": manifest["run_id"],
         "target": manifest["target"],
         "mode": manifest["mode"],
@@ -333,8 +356,9 @@ def summarize(plan, records):
             else {},
         },
         "latency_basis": (
-            "successful eligible elapsed HTTP wall-clock duration only; "
-            "clock regressions excluded"
+            "successful eligible HTTP duration and planned-arrival-to-completion "
+            "wall-clock latency; failures/drops/missing reported separately, "
+            "not successful latency samples; clock regressions excluded"
         ),
         "capacity_claim": (
             "offered versus started under finite VUs; not maximum capacity"
@@ -344,11 +368,108 @@ def summarize(plan, records):
     }
 
 
+def _truncated_sample(source, manifest):
+    """Recognize only an unfinished flat sample prefix; never retain its contents."""
+    source = source.strip()
+    if not source.startswith("{") or manifest is None:
+        return False
+    decoder = json.JSONDecoder()
+    strings = {
+        "kind": ("sample",),
+        "run_id": (manifest.get("run_id"),),
+        "target": (manifest.get("target"),),
+        "phase": ("setup", "measured"),
+        "cohort": ("setup", "warm-complete", "mixed"),
+        "op": ("create", "join", "save", "search", "read"),
+        "outcome": OUTCOMES,
+        "search_status": ("complete", "pending", "stale", "unknown"),
+    }
+    nullable = {"ordinal", "planned_ms"}
+    seen = set()
+    rest = source[1:].lstrip()
+    while rest:
+        try:
+            key, end = decoder.raw_decode(rest)
+        except json.JSONDecodeError:
+            # JSON.stringify emits these field names without escapes.
+            return (not seen and '"kind"'.startswith(rest)) or (
+                "kind" in seen
+                and any(
+                    ('"' + key + '"').startswith(rest) for key in SAMPLE_KEYS - seen
+                )
+            )
+        if not isinstance(key, str) or key not in SAMPLE_KEYS or key in seen:
+            return False
+        seen.add(key)
+        rest = rest[end:].lstrip()
+        if not rest:
+            return "kind" in seen
+        if not rest.startswith(":"):
+            return False
+        rest = rest[1:].lstrip()
+        if not rest:
+            return "kind" in seen
+        try:
+            value, end = decoder.raw_decode(rest)
+        except json.JSONDecodeError:
+            if "kind" not in seen:
+                return False
+            if key in strings:
+                return any(
+                    isinstance(value, str) and json.dumps(value).startswith(rest)
+                    for value in strings[key]
+                )
+            return (key in nullable and "null".startswith(rest)) or re.fullmatch(
+                r"(?:0|[1-9][0-9]*)(?:\.[0-9]*)?(?:[eE][+-]?[0-9]*)?", rest
+            ) is not None
+        if key in strings:
+            if value not in strings[key]:
+                return False
+        elif value is None:
+            if key not in nullable:
+                return False
+        elif type(value) not in (int, float) or not math.isfinite(value) or value < 0:
+            return False
+        suffix = rest[end:].lstrip()
+        if not suffix:
+            return True
+        if not suffix.startswith(","):
+            # raw_decode can consume the integer part of an unfinished exponent.
+            return (
+                key not in strings
+                and re.fullmatch(
+                    r"(?:0|[1-9][0-9]*)(?:\.[0-9]*)?(?:[eE][+-]?[0-9]*)?", rest
+                )
+                is not None
+            )
+        rest = suffix[1:].lstrip()
+    return not seen or "kind" in seen
+
+
+class Records:
+    def __init__(self, path):
+        self.path = path
+        self.truncated_tail = False
+
+    def __iter__(self):
+        manifest = None
+        with Path(self.path).open(encoding="utf-8") as source:
+            for line in source:
+                workload.require(bool(line.strip()), "jsonl.blank")
+                try:
+                    row = workload.parse_json(line)
+                except workload.ValidationError:
+                    if not line.endswith("\n") and _truncated_sample(line, manifest):
+                        self.truncated_tail = True
+                        return
+                    raise
+                if manifest is None:
+                    manifest = row
+                yield row
+
+
 def read_records(path):
-    with Path(path).open(encoding="utf-8") as source:
-        for line in source:
-            workload.require(bool(line.strip()), "jsonl.blank")
-            yield workload.parse_json(line)
+    return Records(path)
 
 
 def main(argv=None):

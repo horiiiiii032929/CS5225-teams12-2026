@@ -405,10 +405,10 @@ test('run configuration rejects extra secrets, malformed numbers and missing tar
 
 test('eval is gated by full standard workload, public catalog and inclusive setup request ceiling', () => {
   const value = plan('W1', 1, true);
+  value.vus = 21;
   validatePlan(value, sha256);
   const approved = config('eval');
   const count = requestBudget(value);
-  assert.equal(count, 1440);
   approved.approval.max_requests = count;
   assert.equal(validateConfig(approved, value), approved);
   approved.approval.max_requests -= 1;
@@ -425,6 +425,104 @@ test('eval is gated by full standard workload, public catalog and inclusive setu
   const wrongLocation = config('eval');
   wrongLocation.approval.client_location = 'elsewhere';
   rejectsSafely(() => validateConfig(wrongLocation, value));
+});
+test('eval concurrency covers the service-tail envelope with one spare worker', () => {
+  for (const [workload, rate] of [
+    ['W1', 2],
+    ['W2', 50],
+  ]) {
+    const value = plan(workload, 1, true);
+    for (const timeout_ms of [1, 5000, 5001, 120000]) {
+      const approved = { ...config('eval'), timeout_ms };
+      const minimum = Math.ceil((rate * timeout_ms) / 1000) + 1;
+      value.vus = minimum;
+      assert.equal(validateConfig(approved, value), approved);
+      value.vus = minimum - 1;
+      rejectsSafely(() => validateConfig(approved, value));
+    }
+  }
+  const smallLocal = { ...plan('W2'), vus: 1 };
+  assert.equal(validateConfig(config(), smallLocal).mode, 'local');
+});
+
+test('eval statically excludes non-public literals and local DNS spellings without resolution', () => {
+  const value = { ...plan('W1', 1, true), vus: 21 };
+  for (const host of [
+    '0.0.0.0',
+    '10.1.2.3',
+    '100.64.0.1',
+    '100.127.255.255',
+    '127.0.0.2',
+    '169.254.169.254',
+    '172.16.0.1',
+    '172.31.255.255',
+    '192.0.0.1',
+    '192.0.2.1',
+    '192.88.99.1',
+    '192.168.1.1',
+    '198.18.0.1',
+    '198.19.255.255',
+    '198.51.100.1',
+    '203.0.113.1',
+    '224.0.0.1',
+    '239.255.255.255',
+    '240.0.0.1',
+    '255.255.255.255',
+    '[::]',
+    '[::1]',
+    '[::127.0.0.1]',
+    '[::ffff:10.0.0.1]',
+    '[::ffff:a9fe:a9fe]',
+    '[::ffff:c0a8:101]',
+    '[64:ff9b::a00:1]',
+    '[fc00::1]',
+    '[fd12::1]',
+    '[fe80::1]',
+    '[ff02::1]',
+    '[2001:db8::1]',
+    '[2001::1]',
+    '[2002:7f00:1::]',
+    '[3fff::1]',
+    'localhost',
+    'LOCALHOST.',
+    'api.local',
+    'api.internal.',
+    'api.localdomain',
+    'api.lan',
+    'api.home',
+    'api.home.arpa',
+    'api.intranet',
+    'api.test',
+    'api.invalid',
+    'api.onion',
+    'api.alt',
+    'single-label',
+    '2130706433',
+    '0x7f000001',
+    '127.1',
+    '0177.0.0.1',
+  ]) {
+    rejectsSafely(() =>
+      validateConfig(
+        {
+          ...config('eval'),
+          base_url: `https://${host}`,
+        },
+        value,
+      ),
+    );
+  }
+  for (const host of [
+    'eval.example.org',
+    '8.8.8.8',
+    '100.128.0.1',
+    '172.32.0.1',
+    '[2606:4700:4700::1111]',
+    '[::ffff:8.8.8.8]',
+  ]) {
+    const approved = { ...config('eval'), base_url: `https://${host}` };
+    assert.equal(validateConfig(approved, value), approved);
+  }
 });
 
 test('separate pool allocation budgets paired joins, independent saves and each read destination', () => {
@@ -559,6 +657,138 @@ test('save success confirms persisted selected destination, readiness and next g
     );
   }
 });
+test('exclusive measured writes recover after either committed or uncommitted ambiguous failures', () => {
+  for (const status of [0, 503]) {
+    assert.equal(inspectResponse('save', status, null).outcome, 'http_error');
+    assert.equal(inspectResponse('join', status, null).outcome, 'http_error');
+  }
+  for (const committed of [false, true]) {
+    const joined = membership('join');
+    joined.group = group(committed ? 3 : 2, committed ? 3 : 2);
+    joined.memberId = String(committed ? 2 : 1).repeat(22);
+    joined.group.members.at(-1).name = 'loadMember2';
+    const joinExpected = {
+      groupId: groupID,
+      minimumRevision: 2,
+      joinOnly: true,
+      name: 'loadMember2',
+    };
+    assert.equal(
+      inspectResponse('join', 201, joined, joinExpected).outcome,
+      'success',
+    );
+    for (const mutate of [
+      (body) => {
+        body.group.revision = 1;
+      },
+      (body) => {
+        body.group.revision += 1;
+      },
+      (body) => {
+        body.group.groupId = 'x'.repeat(22);
+      },
+      (body) => {
+        body.memberId = '0'.repeat(22);
+      },
+      (body) => {
+        body.group.members.at(-1).name = 'wrong member';
+      },
+    ]) {
+      const changed = copy(joined);
+      mutate(changed);
+      assert.equal(
+        inspectResponse('join', 201, changed, joinExpected).outcome,
+        'invalid_response',
+      );
+    }
+    // Setup remains exact even when the response itself is structurally valid.
+    assert.equal(
+      inspectResponse('join', 201, joined, {
+        groupId: groupID,
+        revision: 2,
+        memberCount: 2,
+        name: 'loadMember2',
+      }).outcome,
+      committed ? 'invalid_response' : 'success',
+    );
+
+    const saved = { group: group(3, committed ? 8 : 7, true) };
+    const saveExpected = {
+      groupId: groupID,
+      minimumRevision: 7,
+      memberCount: 3,
+      memberId: '1'.repeat(22),
+      name: 'loadMember1',
+      placeId: 'persisted_place_0',
+      station: catalog().destinations[0].station,
+    };
+    assert.equal(
+      inspectResponse('save', 200, saved, saveExpected).outcome,
+      'success',
+    );
+    for (const mutate of [
+      (body) => {
+        body.group.revision = 6;
+      },
+      (body) => {
+        body.group.revision = 5;
+      },
+      (body) => {
+        body.group.groupId = 'x'.repeat(22);
+      },
+      (body) => {
+        body.group.members[1].memberId = 'x'.repeat(22);
+      },
+      (body) => {
+        body.group.members[1].destination.placeId = 'wrong_place';
+      },
+      (body) => {
+        body.group.members[1].destination.station.stationKey = 'wrong';
+      },
+      (body) => {
+        body.group.members[1].destination.station.lat += 0.001;
+      },
+    ]) {
+      const changed = copy(saved);
+      mutate(changed);
+      assert.equal(
+        inspectResponse('save', 200, changed, saveExpected).outcome,
+        'invalid_response',
+      );
+    }
+    assert.equal(
+      inspectResponse('save', 200, saved, {
+        ...saveExpected,
+        revision: 7,
+      }).outcome,
+      committed ? 'invalid_response' : 'success',
+    );
+  }
+});
+
+test('complete empty searches are valid evidence but not warm successes', () => {
+  for (const total of [0, 54]) {
+    const body = {
+      ...result(),
+      ranked: [],
+      progress: { total, resolved: total, unavailable: total },
+    };
+    for (const op of ['search', 'read']) {
+      const classification = inspectResponse(op, 200, body, { revision: 6 });
+      assert.deepEqual(classification, {
+        outcome: 'empty',
+        search_status: 'complete',
+        state: null,
+      });
+      assert.equal(sample(classification).outcome, 'empty');
+    }
+  }
+  for (const classification of [
+    { outcome: 'empty', search_status: 'unknown' },
+    { outcome: 'empty', search_status: 'pending' },
+  ])
+    rejectsSafely(() => sample(classification));
+});
 
 test('read transitions distinguish complete eligibility, pending, stale, fast errors and malformed data', () => {
   const expected = { searchId: searchID, revision: 6 };
@@ -616,7 +846,6 @@ test('read transitions distinguish complete eligibility, pending, stale, fast er
     true,
     [],
     '{broken',
-    { ...result(), ranked: [] },
     { ...result(), searchId: 'x'.repeat(22) },
     { ...result(), searchId: [searchID] },
     { ...result(), searchId: '../private' },
