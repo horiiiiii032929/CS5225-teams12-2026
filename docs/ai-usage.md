@@ -629,3 +629,9 @@ For future entries, record the requested issue, tool, contribution, checks actua
 
 - Tool: Codex, directed by Hikaru to finish queue review and merge verified work. The runbook's lookup pipeline now fails on curl errors and rejects public error/malformed bodies, while explicitly declining to treat HTTP 200 as credential-health proof. Its parser passed valid/error/malformed synthetic body probes. All 19 shell blocks parse; SQS shapes/enums and exact worker-log discovery were validated from local service models and synthetic inventory. No documented AWS command was executed.
 - Full integration check/test/build/synth, API-generation drift and E10 generator check passed on the runbook descendant: 438 API, 110 web, 20 CDK, four evaluation, 32 acceptance and ten summarizer tests (614 total). Successful Turbo task caches were reused where code was unchanged. Current-head CI and SHA guards are required before each merge; acceptance issues remain open for deployed/runtime/research receipts.
+
+## 31 October 2026 — issue 20 deployed data spot-check
+
+- Tool: Codex, directed by Mani to document the deployed E8 audit.
+- Contribution: added a reproducible read-only capture and a dated receipt covering deployed rent summaries and commute records.
+- Verification: queried the shared dev table with strongly consistent reads; no AWS data or deployment was changed.

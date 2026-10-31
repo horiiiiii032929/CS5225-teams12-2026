@@ -21,15 +21,15 @@ Conventions:
 - **No credentials in this tree.** Scripts read tokens from the environment.
 - **A run without its script is incomplete evidence** and must be labelled as such, because D-E5 requires the script version.
 
-| Evidence                                             | Directory                          | Status                                                                   |
-| ---------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------ |
-| OneMap feasibility and source-level commute coverage | [feasibility/](feasibility/)       | Reviewed archive, with discrepancies and candidate-selection limitations |
-| #15 commute-worker routing, verified live            | [worker-routing/](worker-routing/) | Module verified against live OneMap on 20 Oct                            |
-| #15 queue drain, concurrency and deduplication       | [worker-queue/](worker-queue/)     | Measured off a real queue on 26 Oct; emulated AWS, replayed OneMap       |
-| E6 bad-file/PITR recovery                            | [e6/](e6/)                         | Procedure; not run                                                       |
-| E8 rental audit                                      | [e8/](e8/)                         | Source-level audit; integrated acceptance still pending                  |
-| E9 hosting costs                                     | [e9/](e9/)                         | Reproducible assumption model; measured account/usage inputs pending     |
-| Other experiments                                    | planned                            | Execution after implementation, 30 Oct–8 Nov baseline                    |
+| Evidence                                             | Directory                          | Status                                                                    |
+| ---------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------- |
+| OneMap feasibility and source-level commute coverage | [feasibility/](feasibility/)       | Reviewed archive, with discrepancies and candidate-selection limitations  |
+| #15 commute-worker routing, verified live            | [worker-routing/](worker-routing/) | Module verified against live OneMap on 20 Oct                             |
+| #15 queue drain, concurrency and deduplication       | [worker-queue/](worker-queue/)     | Measured off a real queue on 26 Oct; emulated AWS, replayed OneMap        |
+| E6 bad-file/PITR recovery                            | [e6/](e6/)                         | Procedure; not run                                                        |
+| E8 rent and commute audit                            | [e8/](e8/)                         | Rent audit plus deployed one-destination spot-check; #19 evidence pending |
+| E9 hosting costs                                     | [e9/](e9/)                         | Reproducible assumption model; measured account/usage inputs pending      |
+| Other experiments                                    | planned                            | Execution after implementation, 30 Oct–8 Nov baseline                     |
 
 Use lowercase experiment IDs going forward; the named feasibility archive and historical raw files remain. A renamed directory does not change its measurements.
 
