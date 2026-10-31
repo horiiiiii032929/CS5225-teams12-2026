@@ -244,7 +244,7 @@ test('a worker invocation cannot outlive the visibility timeout of its message',
   );
 });
 
-test('the OneMap token is refreshed every 12 hours by a schedule, not rotation', () => {
+test('the OneMap token is kept valid every 15 minutes by a schedule, not rotation', () => {
   const template = synthesize('dev');
   // Secrets Manager rotation would run testSecret during every deploy.
   template.resourceCountIs('AWS::SecretsManager::RotationSchedule', 0);
@@ -261,8 +261,13 @@ test('the OneMap token is refreshed every 12 hours by a schedule, not rotation',
     Architectures: ['arm64'],
   });
   template.hasResourceProperties('AWS::Events::Rule', {
-    ScheduleExpression: 'rate(12 hours)',
+    ScheduleExpression: 'rate(15 minutes)',
     Targets: [Match.objectLike({ Arn: { 'Fn::GetAtt': [refreshId, 'Arn'] } })],
+  });
+  // A wrong password must not be tried three times per run.
+  template.hasResourceProperties('AWS::Lambda::EventInvokeConfig', {
+    FunctionName: { Ref: refreshId },
+    MaximumRetryAttempts: 0,
   });
 });
 

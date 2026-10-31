@@ -78,9 +78,10 @@ Check the warning (section 2).
 
 ## 2. The OneMap token
 
-A three-day JWT. The reviewed #82 implementation refreshes it every 12 hours
-using an EventBridge-triggered Lambda; confirm that function and credentials
-setup are actually deployed. Resolution order, from
+A three-day JWT. OneMap returns the same token until it expires, so it cannot
+be renewed early. An EventBridge-triggered Lambda runs every 15 minutes and logs
+in during the token's last 24 hours, storing the new token once one exists;
+confirm that function and credentials setup are actually deployed. Resolution order, from
 `onemap.py::resolve_token`:
 
 1. `ONEMAP_TOKEN` in the environment — local development only.

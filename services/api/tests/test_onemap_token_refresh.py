@@ -16,7 +16,7 @@ from moto import mock_aws
 import flatsplit_api.handlers.onemap_token_refresh as refresh_handler
 import flatsplit_api.onemap_token_refresh as refresh
 from flatsplit_api.onemap_token_refresh import (
-    MIN_REMAINING_SECONDS,
+    RENEW_WITHIN_SECONDS,
     RefreshError,
     check_token,
     fetch_token,
@@ -169,10 +169,10 @@ def test_check_token_requires_life_and_onemap_acceptance() -> None:
         seen.append(request)
         return 200, [{"name": "KENT RIDGE MRT STATION"}]
 
-    check_token(jwt(int(now + MIN_REMAINING_SECONDS + 60)), accepted, lambda: now)
+    check_token(jwt(int(now + 60)), accepted, lambda: now)
     assert "/api/public/nearbysvc/getNearestMrtStops?" in seen[0].full_url
-    with pytest.raises(RefreshError, match="expires in"):
-        check_token(jwt(int(now + 3600)), accepted, lambda: now)
+    with pytest.raises(RefreshError, match="expired"):
+        check_token(jwt(int(now - 60)), accepted, lambda: now)
     with pytest.raises(RefreshError, match="HTTP 401"):
         check_token(
             jwt(int(now + 3 * 24 * 3600)),
@@ -304,8 +304,8 @@ def test_handler_reports_the_new_expiry(
     monkeypatch.setattr(
         refresh_handler,
         "refresh_token",
-        lambda c, t, s: refresh_token(
-            c, t, s, fetch=refresh.fetch_token, check=refresh.check_token
+        lambda c, t, s, force: refresh_token(
+            c, t, s, force=force, fetch=refresh.fetch_token, check=refresh.check_token
         ),
     )
     result = refresh_handler.handler({}, context())
@@ -313,6 +313,114 @@ def test_handler_reports_the_new_expiry(
     assert result["expiresAt"].startswith(
         time.strftime("%Y-%m-%d", time.gmtime(token_expiry(NEW_TOKEN)))
     )
+
+
+def versions(client: Any) -> int:
+    listed = client.list_secret_version_ids(SecretId=TOKEN_SECRET)
+    return len(listed["Versions"])
+
+
+def no_login(*_: str) -> str:
+    pytest.fail("no login expected")
+
+
+def test_a_token_with_days_left_needs_no_login(client: Any) -> None:
+    client.put_secret_value(SecretId=TOKEN_SECRET, SecretString=NEW_TOKEN)
+    before = versions(client)
+    expiry = refresh_token(client, TOKEN_SECRET, CREDENTIALS_SECRET, fetch=no_login)
+    assert expiry == token_expiry(NEW_TOKEN)
+    assert versions(client) == before
+
+
+def test_force_logs_in_however_long_the_token_has_left(client: Any) -> None:
+    client.put_secret_value(SecretId=TOKEN_SECRET, SecretString=NEW_TOKEN)
+    other = jwt(int(time.time()) + 2 * 24 * 3600)
+    refresh_token(
+        client,
+        TOKEN_SECRET,
+        CREDENTIALS_SECRET,
+        force=True,
+        fetch=lambda *_: other,
+        check=lambda _: None,
+    )
+    assert current(client) == other
+
+
+def test_getting_the_same_valid_token_back_is_success(client: Any) -> None:
+    """OneMap reuses a valid token: 16.9 h left failed every run on 31 October."""
+    token = jwt(int(time.time() + RENEW_WITHIN_SECONDS - 3600))
+    client.put_secret_value(SecretId=TOKEN_SECRET, SecretString=token)
+    before = versions(client)
+
+    def not_checked(_: str) -> None:
+        pytest.fail("a stored token needs no probe")
+
+    expiry = refresh_token(
+        client,
+        TOKEN_SECRET,
+        CREDENTIALS_SECRET,
+        fetch=lambda *_: token,
+        check=not_checked,
+    )
+    assert expiry == token_expiry(token)
+    assert current(client) == token
+    assert versions(client) == before
+
+
+def test_getting_an_expired_token_back_fails(client: Any) -> None:
+    expired = jwt(int(time.time()) - 60)
+    client.put_secret_value(SecretId=TOKEN_SECRET, SecretString=expired)
+    with pytest.raises(RefreshError, match="expired"):
+        refresh_token(
+            client, TOKEN_SECRET, CREDENTIALS_SECRET, fetch=lambda *_: expired
+        )
+
+
+def test_a_new_token_replaces_an_expired_one(client: Any) -> None:
+    client.put_secret_value(
+        SecretId=TOKEN_SECRET, SecretString=jwt(int(time.time()) - 60)
+    )
+    refresh_token(
+        client,
+        TOKEN_SECRET,
+        CREDENTIALS_SECRET,
+        fetch=lambda *_: NEW_TOKEN,
+        check=lambda _: None,
+    )
+    assert current(client) == NEW_TOKEN
+
+
+def test_the_cdk_placeholder_counts_as_expired(client: Any) -> None:
+    client.put_secret_value(SecretId=TOKEN_SECRET, SecretString="random-placeholder")
+    refresh_token(
+        client,
+        TOKEN_SECRET,
+        CREDENTIALS_SECRET,
+        fetch=lambda *_: NEW_TOKEN,
+        check=lambda _: None,
+    )
+    assert current(client) == NEW_TOKEN
+
+
+@pytest.mark.parametrize(
+    ("event", "force"),
+    [({"source": "aws.events"}, False), ({}, True)],
+)
+def test_only_the_schedule_may_skip_the_login(
+    monkeypatch: pytest.MonkeyPatch, event: dict[str, Any], force: bool
+) -> None:
+    monkeypatch.setenv("ONEMAP_SECRET_NAME", TOKEN_SECRET)
+    monkeypatch.setenv("ONEMAP_CREDENTIALS_SECRET_NAME", CREDENTIALS_SECRET)
+    monkeypatch.setattr(boto3, "client", lambda *_a, **_k: None)
+    seen: list[bool] = []
+
+    def record(*_: Any, force: bool) -> int:
+        seen.append(force)
+        return int(time.time())
+
+    monkeypatch.setattr(refresh_handler, "refresh_token", record)
+    refresh_handler.handler(event, context())
+    assert seen == [force]
 
 
 def test_read_credentials_returns_the_pair(client: Any) -> None:

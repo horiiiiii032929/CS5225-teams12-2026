@@ -114,9 +114,25 @@ Checks after the deploy, against `https://d2g88qlwvm8dec.cloudfront.net`:
 
 Still outstanding for deployed results: validated rent publication (#10/#75), the commute worker (#15/#74), and a OneMap account holder with automated token rotation before the current token expires (#72).
 
+## Deployment — 30 October 2026 (main `316cd71`)
+
+Shyam deployed `FlatSplit-dev` from repository main `316cd71cd27bc9647ba5a01b55d50eb74aaca417` at about 18:17 SGT, after refreshing the NUS SSO credentials and confirming account `553455762180`. The reviewed `cdk diff` added the commute worker and its queue consumer, the `OneMapTokenRefresh` Lambda with its 12-hour schedule and failure alarm, the `OneMapCredentials` secret and the worker's token-warning metric filter, and updated the API, rent ingestion and web code. It removed nothing.
+
+Shyam then stored the OneMap login and ran the first refresh from the runbook below. The Lambda logged `OneMap token refreshed` at 18:18 SGT, with a token expiring on **31 October at 23:08 SGT**. No login or token value is recorded here.
+
+Checks after the deploy, against `https://d2g88qlwvm8dec.cloudfront.net`:
+
+- The served web asset is `assets/index-Bx9Ir7cN.js`, matching the local build of this revision. `/api/health` and `GET /api/places?q=kent%20ridge` return 200, the latter with real candidates.
+- The worker drained the 26 jobs left queued by the 29 October journey run: 26 invocations and 26 resolved pairs with real OneMap routes (12.5–61.6 minutes), no routing or Lambda errors, no token warnings, and empty source and dead-letter queues.
+- The [`Deployed e2e` run 41039919331](https://github.com/horiiiiii032929/CS5225-teams12-2026/actions/runs/41039919331) with `require_complete=true` recorded **PASS** for this revision, with no skips, in the 2- and 5-member group and search journeys. The routes were already resolved, so the worker received no new jobs during that run, and the journey does not assert that `ranked` is non-empty. It is not #21/#22 acceptance or deployed browser evidence.
+
+`CommuteJobsStalled` returned to OK at 18:24 SGT, once the backlog had drained.
+
+The first scheduled refresh then exposed a design fault. On 31 October at 06:17 SGT it failed with `New token expires in 16.9 h`, as did Lambda's two automatic retries. The stored token was issued on 28 October at 23:08 SGT, and the logins on 29 and 30 October returned that same token, so OneMap does not issue a new one while the old one is valid. This deployment's 24-hour refusal therefore fails for the last day of every token. The change that records this entry corrects that; until it is deployed, the refresh must be invoked by hand just after each expiry (#72).
+
 ## OneMap token refresh runbook (#72)
 
-Since #72, the token in `OneMapTokenSecret` is renewed every 12 hours by the `OneMapTokenRefresh` Lambda, on an EventBridge schedule. It logs in with the account stored in `OneMapCredentialsSecret`. Deploys never invoke it. After the first deploy that adds it, or when the account or its password changes, the account holder runs these steps once from the README credential subshell:
+Since #72, the token in `OneMapTokenSecret` is kept valid by the `OneMapTokenRefresh` Lambda, which runs every 15 minutes on an EventBridge schedule. OneMap returns the same token until it expires, so a new token only exists after expiry, and each expiry leaves a gap of up to about 30 minutes. A scheduled run logs in with the account stored in `OneMapCredentialsSecret` only during the token's last 24 hours; a manual invocation always logs in. Deploys never invoke it. After the first deploy that adds it, or when the account or its password changes, the account holder runs these steps once from the README credential subshell:
 
 ```sh
 # 1. Store the account login (both prompts are hidden; Python builds the JSON).
@@ -129,8 +145,8 @@ ONEMAP_EMAIL="$ONEMAP_EMAIL" ONEMAP_PASSWORD="$ONEMAP_PASSWORD" python3 -c \
   | aws secretsmanager put-secret-value --secret-id "$CREDS" --secret-string file:///dev/stdin --query VersionId --output text
 unset ONEMAP_EMAIL ONEMAP_PASSWORD
 
-# 2. Refresh once now instead of waiting up to 12 hours. The response holds
-#    only the new token's expiry, or a safe failure reason.
+# 2. Refresh once now. The response holds only the current token's expiry, or
+#    a safe failure reason. Expect the account's existing token if it is valid.
 FN=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
   --query "Stacks[0].Outputs[?OutputKey=='OneMapTokenRefreshFunctionName'].OutputValue" --output text)
 REFRESH_RESULT=$(mktemp)
@@ -145,8 +161,8 @@ result = json.loads(Path(sys.argv[2]).read_text())
 if metadata.get("FunctionError"):
     raise SystemExit("Refresh failed; inspect the sanitized Lambda logs. Stop here.")
 expiry = datetime.fromisoformat(result["expiresAt"])
-if expiry.tzinfo is None or (expiry - datetime.now(timezone.utc)).total_seconds() < 86400:
-    raise SystemExit("Refresh did not confirm a token with 24 hours remaining. Stop here.")
+if expiry.tzinfo is None or expiry <= datetime.now(timezone.utc):
+    raise SystemExit("Refresh did not confirm an unexpired token. Stop here.")
 print("Refresh confirmed; token expires at", result["expiresAt"])
 PY_REFRESH
 rm -f "$REFRESH_RESULT" "$REFRESH_META"
@@ -159,7 +175,7 @@ curl -s -o /dev/null -w '%{http_code}\n' 'https://d2g88qlwvm8dec.cloudfront.net/
 
 Stop if invocation or receipt validation fails; the AWS CLI can exit successfully while Lambda reports FunctionError. Check the OneMapTokenWarning metric/log events after the lookup rather than treating HTTP 200 as proof of valid credentials.
 
-A failed refresh leaves the existing token current and raises `OneMapTokenRefreshFailing` on the #27 alert topic. The reason is in the Lambda's log group as fixed text: a malformed credentials secret, a refused login (HTTP status only), a new token that expires too soon or that OneMap rejects, or an unexpected error by type. Fix the cause and run step 2 again. Never put the login or a token in GitHub, chat or the repository.
+A failed refresh leaves the existing token current and raises `OneMapTokenRefreshFailing` on the #27 alert topic. The reason is in the Lambda's log group as fixed text: a malformed credentials secret, a refused login (HTTP status only), an expired token or a new token that OneMap rejects, or an unexpected error by type. Fix the cause and run step 2 again. Never put the login or a token in GitHub, chat or the repository.
 
 ## Recording the deployed e2e verdict (#29)
 

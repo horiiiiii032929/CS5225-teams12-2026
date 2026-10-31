@@ -151,7 +151,7 @@ export class CommuteAlarms extends Construct {
       threshold: 1,
       evaluationPeriods: 1,
       comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-      // Runs every 12 hours, so most periods have no invocation at all.
+      // Most runs only read the secret, so errors are rare and data is sparse.
       treatMissingData: TreatMissingData.NOT_BREACHING,
     });
     this.tokenRefreshAlarm.addAlarmAction(notify);

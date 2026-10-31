@@ -162,7 +162,7 @@ test('any failed OneMap token refresh raises an alarm', () => {
   assert.equal(properties.Statistic, 'Sum');
   assert.equal(properties.Period, 3600);
   assert.equal(properties.ComparisonOperator, 'GreaterThanOrEqualToThreshold');
-  // A 12-hourly job leaves most periods without data; that is healthy.
+  // A period with no failed run may have no data; that is healthy.
   assert.equal(properties.TreatMissingData, 'notBreaching');
   assert.match(properties.AlarmDescription, /OneMapTokenRefresh/);
 });
