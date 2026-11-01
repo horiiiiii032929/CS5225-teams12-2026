@@ -7,22 +7,24 @@ days whenever nobody did (23-28 October).
 
 A login does not renew anything: while the account's token is valid, OneMap
 returns that same token (observed 29-31 October: logins a day apart returned
-one token issued 28 October). So a new token only exists once the old one has
-expired, and the schedule's job is to notice that quickly. An EventBridge rule
-runs `refresh_token` every 15 minutes:
+one token issued 28 October). A login 7 hours after it expired got a new one
+(1 November), so the schedule's job is to notice expiry quickly. An EventBridge
+rule runs `refresh_token` every 15 minutes:
 
 1. stop if the stored token has more than 24 hours left, without logging in;
 2. read `{"email", "password"}` from the separate credentials secret;
 3. log in to OneMap. Getting the stored token back is success, with no write;
-4. otherwise refuse a token that is not a JWT, has expired, or that OneMap
-   rejects on a cheap authenticated call;
+4. otherwise refuse a token that is not a JWT, has expired by the end of the
+   checks, or that OneMap rejects on a cheap authenticated call;
 5. only then write it as the token secret's new `AWSCURRENT` value.
 
 Logging in through the last 24 hours exercises the credentials before they are
 needed, so a changed password raises the alarm while the token still works.
-Each expiry still leaves a gap of up to 15 minutes before the next run, plus
-up to 15 more for readers using `onemap.resolve_token`, whose cache picks up
-the new value. Any failure leaves the current token untouched.
+If OneMap issues a new token on the first login after expiry, each expiry
+leaves a gap of up to 15 minutes before the next run, plus up to 15 more for
+readers using `onemap.resolve_token`, whose cache picks up the new value. How
+soon it does is unobserved; until it does, runs fail and the alarm stays raised.
+Any failure leaves the current token untouched.
 
 This is a scheduled Lambda rather than Secrets Manager rotation on purpose:
 rotation runs `testSecret` against a placeholder during every deployment, so
@@ -116,6 +118,9 @@ def check_token(
     status, payload = send(request)
     if status != 200 or not isinstance(payload, list):
         raise RefreshError(f"OneMap rejected the new token: HTTP {status}.")
+    # The probe can take seconds, and an accepted token may have expired since.
+    if token_expiry(token) <= now():
+        raise RefreshError("OneMap returned an expired token.")
 
 
 def read_credentials(client: Any, secret_id: str) -> tuple[str, str]:

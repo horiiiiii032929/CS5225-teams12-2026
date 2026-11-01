@@ -346,6 +346,20 @@ def test_force_logs_in_however_long_the_token_has_left(client: Any) -> None:
     assert current(client) == other
 
 
+def test_a_token_that_expires_during_the_probe_is_refused() -> None:
+    """#89 review: the alarm must not be silenced by storing a dead token."""
+    start = time.time()
+    token = jwt(int(start + 3))
+    clock = [start]
+
+    def slow_probe(_: urllib.request.Request) -> tuple[int, Any]:
+        clock[0] = start + 4
+        return 200, [{"name": "KENT RIDGE MRT STATION"}]
+
+    with pytest.raises(RefreshError, match="expired"):
+        check_token(token, slow_probe, lambda: clock[0])
+
+
 def test_getting_the_same_valid_token_back_is_success(client: Any) -> None:
     """OneMap reuses a valid token: 16.9 h left failed every run on 31 October."""
     token = jwt(int(time.time() + RENEW_WITHIN_SECONDS - 3600))
