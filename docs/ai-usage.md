@@ -636,3 +636,9 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Verification: `Deployed e2e` run 41039919331 recorded PASS for `316cd71` with `require_complete=true`. These checks do not establish #21/#22 acceptance or browser evidence.
 - Token fix: the assistant noticed the token's early expiry in the refresh log. Shyam's check of the stored token's claims and the failed 31 October scheduled run confirmed that OneMap reuses a valid token. The assistant wrote the 15-minute schedule, the login window and the same-token handling, with tests. Whether OneMap issues a new token immediately after expiry still needs observing in the deployed stack.
 - #89 review: WK found that a token could expire during the probe and be stored, and that the 30-minute outage bound was stated as fact. The assistant added the recheck and regression test, made the bound conditional, and recorded the 1 November refresh from the Lambda logs.
+
+## 31 October 2026 — issue 20 deployed data spot-check
+
+- Tool: Codex, directed by Mani to document the deployed E8 audit.
+- Contribution: added a reproducible read-only capture and a dated receipt covering deployed rent summaries and commute records.
+- Verification: queried the shared dev table with strongly consistent reads; no AWS data or deployment was changed.
