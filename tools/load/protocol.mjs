@@ -447,16 +447,16 @@ export function readDestinations(plan, worker, primary, sha256) {
 }
 
 export function requestBudget(plan) {
+  const layout = poolLayout(plan);
+  const reads = new Set(layout.flatMap((worker) => worker.reads));
   return (
     plan.arrivals.length +
-    poolLayout(plan).reduce(
+    layout.reduce(
       (total, worker) =>
-        total +
-        Math.ceil(worker.joins / 2) +
-        (worker.saves > 0 ? 3 : 0) +
-        worker.reads.length * 8,
+        total + Math.ceil(worker.joins / 2) + (worker.saves > 0 ? 3 : 0),
       0,
-    )
+    ) +
+    reads.size * 8
   );
 }
 
@@ -730,7 +730,7 @@ export function inspectResponse(op, status, raw, expected = {}) {
   }
   if (
     body.progress.resolved !== body.progress.total ||
-    (body.progress.total === 0 && body.ranked.length !== 0) ||
+    body.progress.total === 0 ||
     !body.ranked.every(
       (entry) =>
         object(entry) && text(entry.town, 128) && integer(entry.rank, 1),

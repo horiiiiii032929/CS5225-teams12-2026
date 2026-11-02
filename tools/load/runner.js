@@ -329,9 +329,10 @@ export function setup() {
   emit(projectManifest(plan, config, new Date().toISOString()));
   const origin = Date.now();
   const workers = [];
+  const reads = Object.create(null);
   for (let worker = 0; worker < layout.length; worker += 1) {
     const allocation = layout[worker];
-    const pools = { joins: [], save: null, reads: Object.create(null) };
+    const pools = { joins: [], save: null };
     for (let index = 0; index < Math.ceil(allocation.joins / 2); index += 1) {
       const group = create('setup', worker, origin).state;
       pools.joins.push({
@@ -342,6 +343,7 @@ export function setup() {
     }
     if (allocation.saves > 0) pools.save = threeMembers(worker, origin);
     for (const alias of allocation.reads) {
+      if (reads[alias]) continue;
       const group = threeMembers(worker, origin);
       const destinations = readDestinations(plan, worker, alias, (value) =>
         sha256(value, 'hex'),
@@ -373,11 +375,11 @@ export function setup() {
         null,
         { searchId: search.searchId, revision: search.revision },
       );
-      pools.reads[alias] = readState;
+      reads[alias] = readState;
     }
     workers.push(pools);
   }
-  return { workers };
+  return { workers, reads };
 }
 
 export default function run(data) {
@@ -437,7 +439,7 @@ export default function run(data) {
         arrival,
       );
     if (arrival.op === 'read') {
-      const group = pools.reads[arrival.destination];
+      const group = data.reads[arrival.destination];
       call(
         context('measured', worker, 'read', arrival),
         origin,

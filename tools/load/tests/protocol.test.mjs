@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 import test from 'node:test';
 import {
   apiBase,
@@ -525,7 +527,7 @@ test('eval statically excludes non-public literals and local DNS spellings witho
   }
 });
 
-test('separate pool allocation budgets paired joins, independent saves and each read destination', () => {
+test('exclusive write pools and shared per-alias reads are budgeted exactly', () => {
   const value = {
     vus: 2,
     arrivals: [
@@ -542,7 +544,121 @@ test('separate pool allocation budgets paired joins, independent saves and each 
     { joins: 3, saves: 0, reads: ['a'] },
     { joins: 0, saves: 1, reads: ['a', 'b'] },
   ]);
-  assert.equal(requestBudget(value), 36);
+  assert.equal(requestBudget(value), 28);
+});
+
+test('read setup cost depends on distinct aliases, not the number of workers', () => {
+  const arrivals = Array.from({ length: 256 }, (_, ordinal) => ({
+    ordinal,
+    op: 'read',
+    destination: ordinal % 2 ? 'a' : 'b',
+  }));
+  for (const vus of [1, 16, 256]) {
+    assert.equal(requestBudget({ vus, arrivals }), arrivals.length + 16);
+  }
+});
+
+test('runner shares ready reads while keeping mutable worker pools exclusive', () => {
+  const arrivals = ['join', 'join', 'save', 'save', 'read', 'read'].map(
+    (op, ordinal) => ({ ordinal, op, destination: 'destination0', at_ms: 0 }),
+  );
+  const input = { ...plan(), arrivals };
+  const settings = { ...config(), max_lateness_ms: 1000000 };
+  const requests = [];
+  let nextGroup = 0;
+  const execution = {
+    test: {
+      options: null,
+      abort: (message) => {
+        throw new Error(message);
+      },
+    },
+    vu: { idInTest: 1 },
+    scenario: { startTime: Date.now() },
+  };
+  const sandbox = {
+    __ENV: { K6_NO_USAGE_REPORT: 'true', PLAN: '/plan', RUN_CONFIG: '/config' },
+    open: (path) => JSON.stringify(path === '/plan' ? input : settings),
+    http: {
+      request: (method, url, body, options) => {
+        requests.push({ method, url, op: options.tags.op });
+        return { status: 200, body: options.tags.op };
+      },
+    },
+    exec: execution,
+    sleep: () => {},
+    sha256,
+    Counter: class {
+      add() {}
+    },
+    apiBase: () => 'http://127.0.0.1',
+    validatePlan: (value) => value,
+    validateConfig: (value) => value,
+    poolLayout,
+    readDestinations,
+    projectManifest: () => ({}),
+    projectSample: () => ({}),
+    inspectResponse: (op, status, body, expected) => {
+      let state = null;
+      if (op === 'create') {
+        nextGroup += 1;
+        state = {
+          groupId: `group${nextGroup}`,
+          inviteToken: 'invite',
+          memberId: 'm0',
+          memberToken: 'token',
+          revision: 1,
+        };
+      } else if (op === 'join') {
+        state = {
+          memberId: 'member',
+          memberToken: 'token',
+          revision: expected.revision,
+        };
+      } else if (op === 'save') {
+        state = { revision: expected.revision };
+      } else if (op === 'search') {
+        state = { searchId: 'search', revision: expected.revision };
+      }
+      return { outcome: 'success', state };
+    },
+    console: { log() {} },
+  };
+  const source = readFileSync(new URL('../runner.js', import.meta.url), 'utf8')
+    .replace(/^import .*? from ['"].*?['"];\n/gms, '')
+    .replace(/^export default /gm, '')
+    .replace(/^export /gm, '');
+  const runner = vm.runInNewContext(
+    `${source}\n({ options, setup, run })`,
+    sandbox,
+  );
+  execution.test.options = {
+    ...runner.options,
+    maxRedirects: 0,
+    throw: true,
+    discardResponseBodies: false,
+    systemTags: runner.options.systemTags,
+  };
+  const data = runner.setup();
+  assert.equal(requests.length, requestBudget(input) - arrivals.length);
+  const groupIds = [
+    data.workers[0].joins[0].groupId,
+    data.workers[1].joins[0].groupId,
+    data.workers[0].save.groupId,
+    data.workers[1].save.groupId,
+    data.reads.destination0.groupId,
+  ];
+  assert.equal(new Set(groupIds).size, groupIds.length);
+  assert.equal(requests.filter((request) => request.op === 'search').length, 1);
+  const before = requests.length;
+  runner.run(data);
+  execution.vu.idInTest = 2;
+  runner.run(data);
+  const reads = requests
+    .slice(before)
+    .filter((request) => request.op === 'read');
+  assert.equal(reads.length, 2);
+  assert.equal(reads[0].url, reads[1].url);
 });
 
 test('create/join accept only known capability locations and internally retain valid auth', () => {
@@ -767,7 +883,7 @@ test('exclusive measured writes recover after either committed or uncommitted am
 });
 
 test('complete empty searches are valid evidence but not warm successes', () => {
-  for (const total of [0, 54]) {
+  for (const total of [1, 54]) {
     const body = {
       ...result(),
       ranked: [],
@@ -782,6 +898,17 @@ test('complete empty searches are valid evidence but not warm successes', () => 
       });
       assert.equal(sample(classification).outcome, 'empty');
     }
+  }
+  for (const op of ['search', 'read']) {
+    const body = {
+      ...result(),
+      ranked: [],
+      progress: { total: 0, resolved: 0, unavailable: 0 },
+    };
+    assert.equal(
+      inspectResponse(op, 200, body, { revision: 6 }).outcome,
+      'invalid_response',
+    );
   }
   for (const classification of [
     { outcome: 'empty', search_status: 'unknown' },
