@@ -4,7 +4,7 @@
 
 **Run date:** 13 October 2026 (Singapore time)
 
-**Status:** Completed for rent; the OneMap exact-address versus snapped-station commute component remains pending with the routing work.
+**Status:** Completed for the source-level rent audit. A [31 October deployed spot-check](deployed-audit-2026-10-31.md) covers 129 rent summaries and all 27 town keys for one pinned destination; #19's multi-destination and exact-address commute acceptance remains pending.
 
 ## Question and scope
 
@@ -72,6 +72,9 @@ For the production trailing-12-month window (`2025-10` through `2026-09`), FlatS
 
 ## Evidence and reproduction
 
+- [Deployed rent and commute spot-check](deployed-audit-2026-10-31.md)
+- [Deployed machine-readable receipt](raw/2026-10-31/deployed-audit.json)
+- [Deployed read-only capture script](../../../tools/evaluation/e8_deployed_audit.py)
 - [Full 162-row audit table](rent-audit-2026-q2.csv)
 - [Machine-readable result summary](rent-audit-summary.json)
 - [Audit script](../../../tools/evaluation/e8_rent_audit.py)
@@ -94,4 +97,4 @@ python3 tools/evaluation/e8_rent_audit.py \
 
 ## Remaining E8 work
 
-This run does not answer the commute half of E8. That requires 20 fixed destination/address fixtures, OneMap routes to each exact address and its snapped MRT station under the same route parameters, and an audit of median error, maximum error, and route coverage.
+The deployed run confirms cached records for all 27 towns for one pinned destination, with 26 successful routes and one explicit unavailable result. It does not answer the multi-destination exact-address-versus-snapped-station question. That remains #19's responsibility and requires its reviewed route-coverage evidence to be linked before formal E8 closure.

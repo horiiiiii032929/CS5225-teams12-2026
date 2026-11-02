@@ -652,3 +652,21 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Codex addressed Shyam's re-review: share one read-only cohort per destination alias across VUs while retaining exclusive mutable join/save pools; classify a complete search with zero total pairs as invalid. The reduced read-group diversity is documented.
 - With synthetic 30-alias weights from the proposal, standard W2 at 256 VUs budgets 2,724 setup and 16,530 measured requests, 19,254 total; this is calculated, not measured throughput or an approved ceiling.
 - Verification: 21 Node protocol tests, 23 Python workload tests, targeted ESLint and Prettier passed. Official k6 against a loopback real resolver/Moto with synthetic records exercised four VUs, shared reads and mutable pools: two injected failures and 28 successes in each of two 30-request runs; an empty setup aborts. Search responses were synthetic. No shared service, OneMap, deployment or benchmark was exercised.
+
+## 30 October 2026 — deployment verification and handoff record
+
+- Tool: Claude Code, directed by Shyam. It reviewed the `cdk diff` for `316cd71`, wrote guarded local scripts for Shyam to deploy and run the first token refresh, read back the stack, alarms, queues and worker and refresh logs, dispatched the `Deployed e2e` workflow and drafted this record. Shyam ran the deployment and stored the OneMap login; the assistant did not see or handle credentials.
+- Verification: `Deployed e2e` run 41039919331 recorded PASS for `316cd71` with `require_complete=true`. These checks do not establish #21/#22 acceptance or browser evidence.
+- Token fix: the assistant noticed the token's early expiry in the refresh log. Shyam's check of the stored token's claims and the failed 31 October scheduled run confirmed that OneMap reuses a valid token. The assistant wrote the 15-minute schedule, the login window and the same-token handling, with tests. Whether OneMap issues a new token immediately after expiry still needs observing in the deployed stack.
+- #89 review: WK found that a token could expire during the probe and be stored, and that the 30-minute outage bound was stated as fact. The assistant added the recheck and regression test, made the bound conditional, and recorded the 1 November refresh from the Lambda logs.
+
+## 31 October 2026 — issue 20 deployed data spot-check
+
+- Tool: Codex, directed by Mani to document the deployed E8 audit.
+- Contribution: added a reproducible read-only capture and a dated receipt covering deployed rent summaries and commute records.
+- Verification: queried the shared dev table with strongly consistent reads; no AWS data or deployment was changed.
+
+## 2 November 2026 — #88 main merge
+
+- Codex merged main `5b4e9a2` into the approved load-tooling branch, preserving both sides of the additive AI-usage conflict. No load-tooling behavior was changed by the conflict resolution.
+- Verification: 21 Node load protocol tests and 27 Python evaluation tests passed. No shared acceptance, deployment or load run was performed.
