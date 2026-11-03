@@ -648,3 +648,9 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Tool: Codex, directed by Mani to implement the agreed failure alarm and continuity regressions.
 - Contribution: added a structured rent-ingestion failure alarm and tests proving a rejected file leaves the current pointer and search rent data unchanged.
 - Verification: 449 API tests and 21 CDK tests passed; lint, type checks and local CDK synthesis passed. No deployment or AWS data change occurred.
+
+## 3 November 2026 — issue 34 data-quality and usage evidence
+
+- Tool: Codex, directed by Mani to capture deployed evidence for #34.
+- Contribution: added a reproducible read-only AWS usage capture and documented rent coverage/freshness, API and worker failures, queue throughput, measured resource units and a scoped list-price estimate.
+- Limitation: Cost Explorer does not expose the `project=flatsplit` tag, so the actual project bill and account-specific free tier remain open; no AWS resource or application data was changed.
