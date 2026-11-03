@@ -643,6 +643,12 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Contribution: added a reproducible read-only capture and a dated receipt covering deployed rent summaries and commute records.
 - Verification: queried the shared dev table with strongly consistent reads; no AWS data or deployment was changed.
 
+## 3 November 2026 — issue 28 rent failure protection
+
+- Tool: Codex, directed by Mani to implement the agreed failure alarm and continuity regressions.
+- Contribution: added a structured rent-ingestion failure alarm and tests proving a rejected file leaves the current pointer and search rent data unchanged.
+- Verification: 449 API tests and 21 CDK tests passed; lint, type checks and local CDK synthesis passed. No deployment or AWS data change occurred.
+
 ## 3 November 2026 — issue 34 data-quality and usage evidence
 
 - Tool: Codex, directed by Mani to capture deployed evidence for #34.

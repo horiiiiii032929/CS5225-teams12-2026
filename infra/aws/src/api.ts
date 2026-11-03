@@ -115,8 +115,9 @@ export class Api extends Construct {
         resources: [onemapToken.secretArn],
       }),
     );
-    // OneMap only issues a new token once the old one expires, so this
-    // interval bounds the outage at each expiry. Most runs only read the secret.
+    // OneMap only issues a new token once the old one expires. This interval
+    // bounds the wait for the next attempt, not the outage: that also depends
+    // on how soon OneMap issues a replacement. Most runs only read the secret.
     new Rule(this, 'OneMapTokenRefreshSchedule', {
       schedule: Schedule.rate(Duration.minutes(15)),
       targets: [new LambdaFunction(this.onemapTokenRefresh)],

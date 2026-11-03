@@ -29,6 +29,9 @@ function synthesize(alertEmail?: string): Template {
       handler: 'index.handler',
       code: Code.fromInline('def handler(event, context): return {}'),
     }),
+    rentLogGroup: new LogGroup(stack, 'RentLogs', {
+      removalPolicy: RemovalPolicy.DESTROY,
+    }),
     alertEmail,
   });
   return Template.fromStack(stack);
@@ -90,6 +93,10 @@ test('the token warning is published from the log and alarmed on', () => {
 test('API and worker token warnings feed the same alarm from distinct log groups', () => {
   const filters = Object.values(
     synthesize().findResources('AWS::Logs::MetricFilter'),
+  ).filter(
+    (filter) =>
+      filter.Properties.MetricTransformations[0].MetricName ===
+      'OneMapTokenWarning',
   );
   assert.equal(filters.length, 2);
   assert.equal(
@@ -114,6 +121,28 @@ test('API and worker token warnings feed the same alarm from distinct log groups
   }
 });
 
+test('a failed rent ingestion is published from the log and alarmed on', () => {
+  const template = synthesize();
+  template.hasResourceProperties('AWS::Logs::MetricFilter', {
+    FilterPattern: '{ $.rentIngestionFailed IS TRUE }',
+    MetricTransformations: [
+      {
+        MetricName: 'RentIngestionFailure',
+        MetricNamespace: 'FlatSplit/dev',
+        MetricValue: '1',
+        DefaultValue: 0,
+      },
+    ],
+  });
+  const found = Object.values(
+    template.findResources('AWS::CloudWatch::Alarm'),
+  ).filter((alarm) => alarm.Properties.MetricName === 'RentIngestionFailure');
+  assert.equal(found.length, 1);
+  assert.equal(found[0].Properties.Threshold, 1);
+  assert.equal(found[0].Properties.EvaluationPeriods, 1);
+  assert.equal(found[0].Properties.TreatMissingData, 'notBreaching');
+});
+
 test('every alarm notifies the one topic', () => {
   const template = synthesize();
   const topics = template.findResources('AWS::SNS::Topic');
@@ -121,7 +150,7 @@ test('every alarm notifies the one topic', () => {
   const [topicId] = Object.keys(topics);
 
   const all = Object.values(template.findResources('AWS::CloudWatch::Alarm'));
-  assert.equal(all.length, 4);
+  assert.equal(all.length, 5);
   for (const alarm of all) {
     assert.deepEqual(alarm.Properties.AlarmActions, [{ Ref: topicId }]);
     assert.ok(
@@ -146,7 +175,7 @@ test('the email is subscribed when given and the alarms exist without it', () =>
   );
   assert.equal(
     Object.keys(without.findResources('AWS::CloudWatch::Alarm')).length,
-    4,
+    5,
   );
 });
 
