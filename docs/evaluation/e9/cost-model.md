@@ -190,6 +190,25 @@ Four things in that table are worth carrying into the report.
 
 The derived stock is dominated by a **saturating cache**, not by user data: a `COMMUTE#` record is keyed by station and town, so the stock is bounded by the stations that exist (~170) × 27 towns × retained profile months, whatever the demand. At typical demand that is 55,080 of 80,641 items. Group and member records — the part that does scale with users — are 24,000. Three inputs in that derivation (`data_retention_months`, `commute_profile_months_retained`, `rent_snapshots_retained`) are **design decisions, not measurements**, and are labelled as such: nothing in the deployed stack enforces any retention policy today.
 
+### Observed shared-dev burst rates
+
+#34's receipt records three worker bursts on the deployed stack. They belong in the report with their provenance attached, and the wording below is deliberate — it follows @wkkuu's correction in #45 on 3 November, and the restrictions are his:
+
+| Start (UTC)  | Jobs / distinct pairs | Stations                | Wall time |  Observed rate |
+| ------------ | --------------------: | ----------------------- | --------: | -------------: |
+| 30 Oct 10:16 |               26 / 26 | Kent Ridge              |  17.595 s |  88.7 jobs/min |
+| 1 Nov 12:06  |               26 / 26 | Kent Ridge              |  15.873 s |  98.3 jobs/min |
+| 1 Nov 12:19  |               78 / 78 | Bedok, Expo, Telok Ayer |  37.003 s | 126.5 jobs/min |
+
+**These are observed shared-dev burst rates. They are not a lower bound on sustainable capacity.** They are short natural bursts produced by the team's own activity, not a controlled saturation or endurance test: no run was driven to the point where throughput stopped improving, and none lasted long enough to show whether the rate holds. An earlier draft of this chapter was going to call them a lower bound on worker capacity. That would have been wrong — a 17-second burst says nothing about what the worker sustains, and the phrase would have implied a floor the evidence does not establish.
+
+Two further limits matter for where these numbers may be used:
+
+- **They measure worker jobs per minute, not HTTP requests per second.** Different path, different unit. The worker consumes an SQS queue at `maxConcurrency: 3`; the figure the node sizing needs is admitted request rate on the read path.
+- **They cannot replace #30 and cannot determine the node counts for options B or C.** `sustained_rps_per_node` stays a placeholder, and `capacity.target_peak_rps` stays assumed, until a separate authorized evaluation on the isolated stack supplies them. Nothing in #34 changes that, and nothing in this chapter should read as though it did.
+
+What they are good for is the provider-quota discussion below, where the unit is already calls per minute and the question is whether the pipeline can keep inside OneMap's budget — and as a dated, deployed observation that the queue drains at all, which before 30 October no evidence in this repository showed.
+
 ### Main cost drivers
 
 | Option                               | Dominant driver                                                                               | Share              |
@@ -239,7 +258,7 @@ The routing call count per job is no longer assumed: the implemented #15 worker 
 
    **Original note.** `infra/aws/src/app.ts` already tags every resource `project=flatsplit`, `stage=<stage>`. The tag must be activated as a cost allocation tag before Cost Explorer can filter by it. Late activation does not necessarily lose earlier tagged spend: [AWS supports management-account tag backfill for up to twelve months](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-allocation-backfill.html), provided the tag was already assigned to the resource during that period. Backfill cannot invent historical resource tags, applies the current activation status of all tag keys, and billing views refresh after processing. Record activation/backfill eligibility and the actual available measurement window. Owner: the billing-authorised management/payer-account operator, to be identified in #4; do not assume the application deployer has billing access.
 
-3. **`sustained_rps_per_node`** (currently a placeholder of 25 req/s) is the single number that decides how many nodes options B and C need. #30/E2 must measure it under W2 with the 500 ms target in force.
+3. **`sustained_rps_per_node`** (still a placeholder of 25 req/s) is the single number that decides how many nodes options B and C need. #30/E2 must measure it under W2 with the 500 ms target in force. It **stays marked assumed until a separate authorized evaluation supplies it**; the observed shared-dev burst rates above do not substitute for it, because they measure worker jobs/min on a different path and were never driven to saturation. `capacity.target_peak_rps` is assumed on the same basis. Note that option D is unaffected by either, since nothing in it is sized by us — so the realistic on-premise comparison no longer depends on #30.
 4. **Operational effort — done.** Asked in #45 on 1 November with no reply, decided by default and now **implemented as a range**: 2 h at S$15/h to 8 h at S$40/h, likely 4 h at S$25/h, carried through options C and D and the sensitivity output. A single judgement call driving the largest line in both self-hosted options is now visibly a judgement call. Mani can still move the band's endpoints before 5 November; the structure is in place either way.
 5. **Headline metric — decided by default on 3 November.** Both are generated; the report and slides lead with **US$/month** and keep US$ per 1,000 searches as a secondary column, since the seasonal-idle argument is the strongest finding and only makes sense per month. Overridable before 5 November.
 6. **Option D — done.** A university-hosted VM is now priced alongside option C, which stays, so nothing is lost. US$85.94/month at likely effort (band US$31.25–257.81), of which 91% is operational effort. Its four unpriced dependencies — public reachability through a campus network, no availability story, an allocation that is not a contract, and no support SLA — are named in `model/onprem.json` under `university_vm.excluded_but_named` rather than absorbed into the number.

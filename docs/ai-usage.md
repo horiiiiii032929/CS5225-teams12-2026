@@ -668,3 +668,10 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Contribution: made on-premise operational effort a published range (2 h @ S$15/h to 8 h @ S$40/h, likely 4 h @ S$25/h) carried through options C and D and the sensitivity output, and added option D, a university-hosted VM, with its four unpriced dependencies named in `onprem.json` rather than absorbed into the figure.
 - Findings it surfaced: option D is US$85.94/month at likely effort, of which 91% is operational effort — so the on-premise cost that survives institutional generosity is the human one, and the margin against serverless narrows from ~254x to ~90x. The conclusion still holds across the whole band: the most favourable self-hosted assumption in the model (option D at low effort, US$31.25) is still about 33x option A.
 - Verification: model re-run and the regenerated evidence inspected; option C and D totals, bands and the sensitivity column cross-checked against the line items. Prettier and the 10 evaluation tests pass. No AWS call, deployment or data change.
+
+## 3 November 2026 — issue 45 burst-rate wording correction
+
+- Tool: Claude Code, directed by Ming to apply WK's #45 correction before the wording reached the report.
+- Contribution: added an "Observed shared-dev burst rates" section to `cost-model.md` carrying the three bursts with their provenance and WK's four restrictions, and amended open question 3 so `sustained_rps_per_node` and `target_peak_rps` are explicitly marked assumed until a separate authorized evaluation supplies them.
+- Note: the phrase WK objected to ("a lower bound on worker capacity") existed only in an issue comment and had not been written into the chapter, so nothing was retracted; the section states the rejected framing and why it was wrong, so it is not reintroduced later.
+- Verification: Prettier passed; no model input, figure or evidence file changed, so the published totals are unaffected. No AWS call, deployment or data change.
