@@ -44,6 +44,7 @@ export class FlatSplitStack extends Stack {
       apiLogGroup: api.httpHandlerLogGroup,
       workerLogGroup: api.commuteWorkerLogGroup,
       tokenRefresh: api.onemapTokenRefresh,
+      rentLogGroup: rentIngestion.handlerLogGroup,
       alertEmail: props.budgetEmail,
     });
     if (props.budgetEmail) {

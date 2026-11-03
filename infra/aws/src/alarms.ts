@@ -28,15 +28,17 @@ export interface CommuteAlarmsProps {
   readonly workerLogGroup: ILogGroup;
   /** The scheduled OneMap token refresh (#72); any error is an alert. */
   readonly tokenRefresh: IFunction;
+  /** The ingestion Lambda log group, used to alarm on rejected/failed runs. */
+  readonly rentLogGroup: ILogGroup;
   /** Subscribed to the alert topic when set; alarms exist either way. */
   readonly alertEmail?: string;
 }
 
 /**
- * Operational alerts for the commute path (#27).
+ * Operational alerts for the commute and rent ingestion paths (#27, #28).
  *
  * The queue and its redrive policy already existed; what was missing was
- * anybody finding out. Three things can go wrong quietly:
+ * anybody finding out. Four things can go wrong quietly:
  *
  * - a message reaches the dead-letter queue, which the handler only allows
  *   when it could not account for the message at all;
@@ -45,6 +47,8 @@ export interface CommuteAlarmsProps {
  * - the OneMap token approaches or passes expiry, which is routine for a
  *   three-day JWT and silent by design upstream - a lookup still answers 200
  *   during the grace period, so the log line is the only signal.
+ * - HDB rent ingestion rejects a malformed export or fails publication, so
+ *   the last valid snapshot remains current but an operator must investigate.
  *
  * `OneMapTokenWarning` comes from the handler's structured log, so it only
  * reports while there is traffic: with no requests there are no log events
@@ -58,6 +62,7 @@ export class CommuteAlarms extends Construct {
   readonly stalledAlarm: Alarm;
   readonly tokenWarningAlarm: Alarm;
   readonly tokenRefreshAlarm: Alarm;
+  readonly rentFailureAlarm: Alarm;
 
   constructor(scope: Construct, id: string, props: CommuteAlarmsProps) {
     super(scope, id);
@@ -155,5 +160,29 @@ export class CommuteAlarms extends Construct {
       treatMissingData: TreatMissingData.NOT_BREACHING,
     });
     this.tokenRefreshAlarm.addAlarmAction(notify);
+
+    const rentFailure = new MetricFilter(this, 'RentIngestionFailure', {
+      logGroup: props.rentLogGroup,
+      metricNamespace: `FlatSplit/${props.stage}`,
+      metricName: 'RentIngestionFailure',
+      filterPattern: FilterPattern.booleanValue('$.rentIngestionFailed', true),
+      metricValue: '1',
+      defaultValue: 0,
+    });
+    this.rentFailureAlarm = new Alarm(this, 'RentIngestionFailed', {
+      alarmDescription:
+        'The HDB rent ingestion failed validation or publication. ' +
+        'RENT/CURRENT should remain on the last validated snapshot; inspect ' +
+        'the ingestion logs and rejected evidence before retrying.',
+      metric: rentFailure.metric({
+        period: Duration.minutes(5),
+        statistic: 'Sum',
+      }),
+      threshold: 1,
+      evaluationPeriods: 1,
+      comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: TreatMissingData.NOT_BREACHING,
+    });
+    this.rentFailureAlarm.addAlarmAction(notify);
   }
 }
