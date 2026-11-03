@@ -26,6 +26,7 @@ export interface RentIngestionProps {
 export class RentIngestion extends Construct {
   readonly bucket: IBucket;
   readonly handler: Function;
+  readonly handlerLogGroup: LogGroup;
   readonly schedule: Rule;
 
   constructor(scope: Construct, id: string, props: RentIngestionProps) {
@@ -40,6 +41,10 @@ export class RentIngestion extends Construct {
       autoDeleteObjects: props.removalPolicy === RemovalPolicy.DESTROY,
     });
 
+    this.handlerLogGroup = new LogGroup(this, 'HandlerLogs', {
+      retention: RetentionDays.ONE_WEEK,
+      removalPolicy: props.removalPolicy,
+    });
     this.handler = new Function(this, 'Handler', {
       runtime: Runtime.PYTHON_3_13,
       architecture: Architecture.ARM_64,
@@ -53,10 +58,7 @@ export class RentIngestion extends Construct {
         RENT_RAW_BUCKET: this.bucket.bucketName,
         ...(props.table ? { RENT_TABLE_NAME: props.table.tableName } : {}),
       },
-      logGroup: new LogGroup(this, 'HandlerLogs', {
-        retention: RetentionDays.ONE_WEEK,
-        removalPolicy: props.removalPolicy,
-      }),
+      logGroup: this.handlerLogGroup,
     });
 
     // The handler reads only the current pointer to prevent an older valid

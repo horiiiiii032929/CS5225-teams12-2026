@@ -43,7 +43,10 @@ def handler(event: dict[str, Any], context: LambdaContext) -> dict[str, Any]:
             publish=publisher.publish,
         )
     except Exception:
-        logger.exception("HDB rental ingestion failed")
+        logger.exception(
+            "HDB rental ingestion failed",
+            extra={"rentIngestionFailed": True},
+        )
         raise
     logger.info(
         "HDB rental ingestion completed",
