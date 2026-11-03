@@ -654,3 +654,10 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Tool: Codex, directed by Mani to capture deployed evidence for #34.
 - Contribution: added a reproducible read-only AWS usage capture and documented rent coverage/freshness, API and worker failures, queue throughput, measured resource units and a scoped list-price estimate.
 - Limitation: Cost Explorer does not expose the `project=flatsplit` tag, so the actual project bill and account-specific free tier remain open; no AWS resource or application data was changed.
+
+## 3 November 2026 — issue 45 cost model re-run against measured inputs
+
+- Tool: Claude Code, directed by Ming to review the day's PRs and re-run E9 against #34's measured inputs.
+- Contribution: reviewed and merged #91, #92 and #93 (resolving two additive `docs/ai-usage.md` conflicts by retaining both histories); replaced the flat `ddb_table_size_gb` guess with a measured per-item byte rate feeding a stated item-stock derivation in `derive_usage()`; corrected `cloudwatch_custom_metrics`, `cloudwatch_alarms` and `secrets_count` against the tree; adopted #34's measured worker duration, log volume and projected idle SQS polling; regenerated the evidence files and updated the published tables, drivers and sensitivity sections.
+- Findings it surfaced: `secrets_count` was 1 while the stack has held two secrets since #82, which adds US$0.40/month and makes credential storage 84% of the payable bill at typical demand; and the assumed 12 custom metrics carried a spurious US$0.60/month against two actually configured.
+- Verification: the unmodified model reproduced the published 27 October figures exactly before any input was changed, so each delta is attributable to one input. Model re-run at scales 0, 0.1, 1, 10, 100, 250, 400, 500 and 700. No AWS call, deployment or data change; every input is from #34's read-only receipt or counted in the repository.

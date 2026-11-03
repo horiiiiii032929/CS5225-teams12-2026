@@ -141,6 +141,28 @@ def derive_usage(
     log_gb = lambda_invocations * shared["log_bytes_per_invocation"] / GIB
     onemap_lookup_calls = places_cold * cold["onemap_calls"]
 
+    # Stored items are a stock, not a monthly flow, so storage is derived from
+    # what accumulates rather than from a flat table-size guess. The byte rate
+    # is measured: #34's 3 November receipt read 292,216 bytes over about 668
+    # items on the deployed table (~437 B/item).
+    #
+    # Group and member records persist; a preference save updates the member
+    # record rather than adding one (measured: group_create / member_join /
+    # preference_save in measured_operations). PLACE# and PLACELOOKUP# carry a
+    # 24-hour logical expiry, so their steady-state stock is immaterial.
+    retention = shared["data_retention_months"]
+    group_items = (groups + members) * retention
+    # The commute cache saturates: a pair is keyed by station and town, so the
+    # stock is bounded by the stations that exist, not by how many groups ask.
+    stations_seen = min(groups * retention * stations, facts["mrt_stations"])
+    commute_items = (
+        stations_seen * facts["towns"] * shared["commute_profile_months_retained"]
+    )
+    rent_items = shared["rent_snapshot_items"] * shared["rent_snapshots_retained"] + 1
+    ddb_items = group_items + commute_items + rent_items
+    # AWS bills DynamoDB storage in decimal GB, not GiB.
+    ddb_table_size_gb = ddb_items * shared["ddb_bytes_per_item"] / 1e9
+
     return {
         "groups": groups,
         "members": members,
@@ -170,6 +192,8 @@ def derive_usage(
         "sqs_requests": sqs_requests,
         "cold_starts": cold_starts,
         "cloudwatch_log_gb": log_gb,
+        "ddb_items": ddb_items,
+        "ddb_table_size_gb": ddb_table_size_gb,
     }
 
 
@@ -224,15 +248,15 @@ def aws_serverless(u: dict, p: dict, shared: dict) -> list[dict]:
         f"{u['ddb_wru']:,.0f} WRU",
         u["ddb_wru"] * D["write_request_unit"],
     ))
-    size = shared["ddb_table_size_gb"]
+    size = u["ddb_table_size_gb"]
     out.append(line(
         "DynamoDB storage",
-        f"{size} GB",
+        f"{size:.4f} GB ({u['ddb_items']:,.0f} items)",
         size * D["storage_gb_month"],
         min(size, D["free_storage_gb"]) * D["storage_gb_month"],
         "25 GB always free",
     ))
-    out.append(line("DynamoDB PITR", f"{size} GB", size * D["pitr_gb_month"]))
+    out.append(line("DynamoDB PITR", f"{size:.4f} GB", size * D["pitr_gb_month"]))
     s3_gb = shared["web_build_size_mb"] / 1024 + shared["s3_raw_rent_gb"]
     out.append(line(
         "S3 storage (web build + raw rent files)",
@@ -332,7 +356,7 @@ def aws_vm(u: dict, p: dict, shared: dict, nodes: int) -> list[dict]:
              billable_out * E["data_transfer_out_gb"]),
         line("DynamoDB (same data layer)", f"{u['ddb_rru']:,.0f} RRU + {u['ddb_wru']:,.0f} WRU",
              u["ddb_rru"] * D["read_request_unit"] + u["ddb_wru"] * D["write_request_unit"]
-             + shared["ddb_table_size_gb"] * (D["storage_gb_month"] + D["pitr_gb_month"])),
+             + u["ddb_table_size_gb"] * (D["storage_gb_month"] + D["pitr_gb_month"])),
         line("S3 (backups + raw files)", f"{shared['s3_raw_rent_gb'] * 2:.2f} GB",
              shared["s3_raw_rent_gb"] * 2 * S3["storage_gb_month"]),
         line("CloudWatch (agent logs, alarms, dashboard)", "same observability set",
