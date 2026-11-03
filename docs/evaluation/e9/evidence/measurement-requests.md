@@ -31,16 +31,27 @@ Done with `model/measure_operations.py`; the current raw counts are in `measured
 
 ## From Mani (@saravanamani1999), #34 — E8 and E9 usage evidence
 
-| Field                                                 | Currently         | What to measure                                                                                   | Why it matters                                                                 |
-| ----------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Cost Explorer breakdown                               | none              | Monthly cost per service filtered by the `project=flatsplit` tag for a representative run         | The only real validation of option A                                           |
-| `shared_assumptions.ddb_rru_per_read_request`         | 2.0 (assumed)     | `ConsumedReadCapacityUnits` ÷ read requests                                                       | Scales with every result poll                                                  |
-| `shared_assumptions.ddb_wru_per_write`                | 1.5 (assumed)     | `ConsumedWriteCapacityUnits` ÷ writes                                                             | Transactional joins cost 2×                                                    |
-| `shared_assumptions.ddb_table_size_gb`                | 0.5 GB            | Table size and PITR size                                                                          | PITR is a per-GB-month charge that never sleeps                                |
-| `shared_assumptions.log_bytes_per_invocation`         | 2 KB (assumed)    | CloudWatch `IncomingBytes` ÷ invocations                                                          | Log ingest is US$0.70/GB in ap-southeast-1                                     |
-| `shared_assumptions.sqs_idle_poll_requests_per_month` | 650,000 (assumed) | Actual SQS request count in Cost Explorer for a month with little traffic                         | This is the "serverless is not quite zero when idle" line; verify or delete it |
-| `shared_assumptions.cloudwatch_custom_metrics`        | 12                | Number of distinct Powertools metrics actually emitted                                            | Metrics beyond 10 are the top payable serverless line today                    |
-| Account type                                          | unknown           | Whether the deployment account gets the standard free tier, the credit plan, or AWS Academy terms | Decides the whole free-tier column                                             |
+The 3 November shared-dev capture is documented in
+[`deployed-usage-2026-11-03.md`](../deployed-usage-2026-11-03.md), with raw hourly
+series in [`deployed-usage-20261103.json`](deployed-usage-20261103.json). It
+closes the source coverage/freshness, deployed queue activity, API/Lambda
+failure counts, worker duration, table size and log-volume requests for that
+124-hour observation window. It is observed team activity rather than a
+controlled representative workload, so the E9 owner must decide which values
+replace scenario assumptions.
+
+| Field                                                 | Currently            | What to measure                                                                                                                         | Why it matters                                                                                                             |
+| ----------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Deployed source revision                              | unknown              | Add a source-revision stack output or retain a dated operator receipt that identifies the deployed commit                               | CloudFormation's update timestamp does not identify the code measured                                                      |
+| Controlled representative journey                     | none                 | Capture a known workload with start/end time, sample size, exclusions and background activity separated                                 | The 124-hour receipt is genuine shared-dev activity, not the cost of one isolated journey                                  |
+| Cost Explorer breakdown                               | blocked              | `project` returned no Cost Explorer tag value on 3 November; activate the cost-allocation tag, then collect a monthly service breakdown | The only real validation of option A; the current receipt provides a US$0.0338 usage-based list-price estimate, not a bill |
+| `shared_assumptions.ddb_rru_per_read_request`         | 2.0 (assumed)        | `ConsumedReadCapacityUnits` ÷ read requests                                                                                             | Scales with every result poll                                                                                              |
+| `shared_assumptions.ddb_wru_per_write`                | 1.5 (assumed)        | `ConsumedWriteCapacityUnits` ÷ writes                                                                                                   | Transactional joins cost 2×                                                                                                |
+| `shared_assumptions.ddb_table_size_gb`                | measured 0.000292 GB | Table size measured directly; PITR billed size is not exposed separately in this capture                                                | Replaces the 0.5 GB placeholder for the deployed table                                                                     |
+| `shared_assumptions.log_bytes_per_invocation`         | measured 595 bytes   | 581,461 incoming bytes ÷ 977 Lambda invocations                                                                                         | Window-wide mean across HTTP, worker, ingestion and refresh functions                                                      |
+| `shared_assumptions.sqs_idle_poll_requests_per_month` | projected 285,189    | 48,443 empty receives over 124 hours, straight-line projected; Cost Explorer validation blocked by tag activation                       | Projection is not an actual monthly bill                                                                                   |
+| `shared_assumptions.cloudwatch_custom_metrics`        | observed 1           | `OneMapTokenWarning`; list-metrics can omit metrics with no recent datapoint                                                            | Treat as a lower bound, not proof that no other metric is configured                                                       |
+| Account type                                          | unknown              | Whether the deployment account gets the standard free tier, the credit plan, or AWS Academy terms                                       | Decides the whole free-tier column                                                                                         |
 
 ## From me (@lukerspace), #3 / #15 / #27
 

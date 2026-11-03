@@ -642,3 +642,9 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Tool: Codex, directed by Mani to document the deployed E8 audit.
 - Contribution: added a reproducible read-only capture and a dated receipt covering deployed rent summaries and commute records.
 - Verification: queried the shared dev table with strongly consistent reads; no AWS data or deployment was changed.
+
+## 3 November 2026 — issue 34 data-quality and usage evidence
+
+- Tool: Codex, directed by Mani to capture deployed evidence for #34.
+- Contribution: added a reproducible read-only AWS usage capture and documented rent coverage/freshness, API and worker failures, queue throughput, measured resource units and a scoped list-price estimate.
+- Limitation: Cost Explorer does not expose the `project=flatsplit` tag, so the actual project bill and account-specific free tier remain open; no AWS resource or application data was changed.
