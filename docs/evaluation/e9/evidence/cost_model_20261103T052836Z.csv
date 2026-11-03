@@ -30,7 +30,11 @@ quiet,on_premise,Room cooling share,assumption,11.7188,0.0,11.7188
 quiet,on_premise,Business internet + static IP,assumption,62.5,0.0,62.5
 quiet,on_premise,Offsite backup,nightly dumps to object storage,6.25,0.0,6.25
 quiet,on_premise,Domain + TLS,Let's Encrypt = 0,1.5625,0.0,1.5625
-quiet,on_premise,Operational effort,4 h/month @ S$25/h,78.125,0.0,78.125
+quiet,on_premise,Operational effort,4 h/month @ S$25/h (likely),78.125,0.0,78.125
+quiet,university_vm,VM allocation,provided by the university; assumed free to the team,0.0,0.0,0.0
+quiet,university_vm,Offsite backup,nightly dumps to object storage,6.25,0.0,6.25
+quiet,university_vm,Domain + TLS,Let's Encrypt = 0,1.5625,0.0,1.5625
+quiet,university_vm,Operational effort,4 h/month @ S$25/h (likely),78.125,0.0,78.125
 typical,aws_serverless,Lambda requests,42;301 invocations,0.0085,0.0085,0.0
 typical,aws_serverless,Lambda compute (arm64),3;492 GB-s @256 MB,0.0466,0.0466,0.0
 typical,aws_serverless,API Gateway HTTP API,34;500 requests,0.0431,0.0431,0.0
@@ -62,7 +66,11 @@ typical,on_premise,Room cooling share,assumption,11.7188,0.0,11.7188
 typical,on_premise,Business internet + static IP,assumption,62.5,0.0,62.5
 typical,on_premise,Offsite backup,nightly dumps to object storage,6.25,0.0,6.25
 typical,on_premise,Domain + TLS,Let's Encrypt = 0,1.5625,0.0,1.5625
-typical,on_premise,Operational effort,4 h/month @ S$25/h,78.125,0.0,78.125
+typical,on_premise,Operational effort,4 h/month @ S$25/h (likely),78.125,0.0,78.125
+typical,university_vm,VM allocation,provided by the university; assumed free to the team,0.0,0.0,0.0
+typical,university_vm,Offsite backup,nightly dumps to object storage,6.25,0.0,6.25
+typical,university_vm,Domain + TLS,Let's Encrypt = 0,1.5625,0.0,1.5625
+typical,university_vm,Operational effort,4 h/month @ S$25/h (likely),78.125,0.0,78.125
 bursty,aws_serverless,Lambda requests,460;201 invocations,0.092,0.092,0.0
 bursty,aws_serverless,Lambda compute (arm64),57;008 GB-s @256 MB,0.7601,0.7601,0.0
 bursty,aws_serverless,API Gateway HTTP API,273;000 requests,0.3413,0.3413,0.0
@@ -94,4 +102,8 @@ bursty,on_premise,Room cooling share,assumption,11.7188,0.0,11.7188
 bursty,on_premise,Business internet + static IP,assumption,62.5,0.0,62.5
 bursty,on_premise,Offsite backup,nightly dumps to object storage,6.25,0.0,6.25
 bursty,on_premise,Domain + TLS,Let's Encrypt = 0,1.5625,0.0,1.5625
-bursty,on_premise,Operational effort,4 h/month @ S$25/h,78.125,0.0,78.125
+bursty,on_premise,Operational effort,4 h/month @ S$25/h (likely),78.125,0.0,78.125
+bursty,university_vm,VM allocation,provided by the university; assumed free to the team,0.0,0.0,0.0
+bursty,university_vm,Offsite backup,nightly dumps to object storage,6.25,0.0,6.25
+bursty,university_vm,Domain + TLS,Let's Encrypt = 0,1.5625,0.0,1.5625
+bursty,university_vm,Operational effort,4 h/month @ S$25/h (likely),78.125,0.0,78.125

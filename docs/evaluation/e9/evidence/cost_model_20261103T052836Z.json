@@ -1,5 +1,5 @@
 {
-  "generated_utc": "20261103T050214Z",
+  "generated_utc": "20261103T052836Z",
   "issue": 45,
   "experiment": "E9",
   "scale": 1.0,
@@ -306,7 +306,7 @@
           },
           {
             "service": "Operational effort",
-            "driver": "4 h/month @ S$25/h",
+            "driver": "4 h/month @ S$25/h (likely)",
             "gross_usd": 78.125,
             "free_tier_usd": 0.0,
             "net_usd": 78.125,
@@ -314,7 +314,49 @@
           }
         ],
         "payable_usd": 243.5,
+        "payable_usd_low_effort": 188.81,
+        "payable_usd_high_effort": 415.38,
         "usd_per_1000_searches": 2435.022
+      },
+      "university_vm": {
+        "lines": [
+          {
+            "service": "VM allocation",
+            "driver": "provided by the university; assumed free to the team",
+            "gross_usd": 0.0,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Offsite backup",
+            "driver": "nightly dumps to object storage",
+            "gross_usd": 6.25,
+            "free_tier_usd": 0.0,
+            "net_usd": 6.25,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Domain + TLS",
+            "driver": "Let's Encrypt = 0",
+            "gross_usd": 1.5625,
+            "free_tier_usd": 0.0,
+            "net_usd": 1.5625,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Operational effort",
+            "driver": "4 h/month @ S$25/h (likely)",
+            "gross_usd": 78.125,
+            "free_tier_usd": 0.0,
+            "net_usd": 78.125,
+            "free_tier_kind": ""
+          }
+        ],
+        "payable_usd": 85.94,
+        "payable_usd_low_effort": 31.25,
+        "payable_usd_high_effort": 257.81,
+        "usd_per_1000_searches": 859.375
       }
     },
     "typical": {
@@ -617,7 +659,7 @@
           },
           {
             "service": "Operational effort",
-            "driver": "4 h/month @ S$25/h",
+            "driver": "4 h/month @ S$25/h (likely)",
             "gross_usd": 78.125,
             "free_tier_usd": 0.0,
             "net_usd": 78.125,
@@ -625,7 +667,49 @@
           }
         ],
         "payable_usd": 243.5,
+        "payable_usd_low_effort": 188.81,
+        "payable_usd_high_effort": 415.38,
         "usd_per_1000_searches": 243.5022
+      },
+      "university_vm": {
+        "lines": [
+          {
+            "service": "VM allocation",
+            "driver": "provided by the university; assumed free to the team",
+            "gross_usd": 0.0,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Offsite backup",
+            "driver": "nightly dumps to object storage",
+            "gross_usd": 6.25,
+            "free_tier_usd": 0.0,
+            "net_usd": 6.25,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Domain + TLS",
+            "driver": "Let's Encrypt = 0",
+            "gross_usd": 1.5625,
+            "free_tier_usd": 0.0,
+            "net_usd": 1.5625,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Operational effort",
+            "driver": "4 h/month @ S$25/h (likely)",
+            "gross_usd": 78.125,
+            "free_tier_usd": 0.0,
+            "net_usd": 78.125,
+            "free_tier_kind": ""
+          }
+        ],
+        "payable_usd": 85.94,
+        "payable_usd_low_effort": 31.25,
+        "payable_usd_high_effort": 257.81,
+        "usd_per_1000_searches": 85.9375
       }
     },
     "bursty": {
@@ -928,7 +1012,7 @@
           },
           {
             "service": "Operational effort",
-            "driver": "4 h/month @ S$25/h",
+            "driver": "4 h/month @ S$25/h (likely)",
             "gross_usd": 78.125,
             "free_tier_usd": 0.0,
             "net_usd": 78.125,
@@ -936,7 +1020,49 @@
           }
         ],
         "payable_usd": 274.87,
+        "payable_usd_low_effort": 220.18,
+        "payable_usd_high_effort": 446.74,
         "usd_per_1000_searches": 45.8111
+      },
+      "university_vm": {
+        "lines": [
+          {
+            "service": "VM allocation",
+            "driver": "provided by the university; assumed free to the team",
+            "gross_usd": 0.0,
+            "free_tier_usd": 0.0,
+            "net_usd": 0.0,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Offsite backup",
+            "driver": "nightly dumps to object storage",
+            "gross_usd": 6.25,
+            "free_tier_usd": 0.0,
+            "net_usd": 6.25,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Domain + TLS",
+            "driver": "Let's Encrypt = 0",
+            "gross_usd": 1.5625,
+            "free_tier_usd": 0.0,
+            "net_usd": 1.5625,
+            "free_tier_kind": ""
+          },
+          {
+            "service": "Operational effort",
+            "driver": "4 h/month @ S$25/h (likely)",
+            "gross_usd": 78.125,
+            "free_tier_usd": 0.0,
+            "net_usd": 78.125,
+            "free_tier_kind": ""
+          }
+        ],
+        "payable_usd": 85.94,
+        "payable_usd_low_effort": 31.25,
+        "payable_usd_high_effort": 257.81,
+        "usd_per_1000_searches": 14.3229
       }
     }
   },
@@ -946,6 +1072,11 @@
       "aws_payable_usd": 0.8,
       "aws_list_usd": 5.02,
       "onprem_usd": 243.5,
+      "onprem_usd_low_effort": 188.81,
+      "onprem_usd_high_effort": 415.38,
+      "university_vm_usd": 85.94,
+      "university_vm_usd_low_effort": 31.25,
+      "university_vm_usd_high_effort": 257.81,
       "nodes": 2,
       "searches": 0
     },
@@ -954,6 +1085,11 @@
       "aws_payable_usd": 0.82,
       "aws_list_usd": 5.1,
       "onprem_usd": 243.5,
+      "onprem_usd_low_effort": 188.81,
+      "onprem_usd_high_effort": 415.38,
+      "university_vm_usd": 85.94,
+      "university_vm_usd_low_effort": 31.25,
+      "university_vm_usd_high_effort": 257.81,
       "nodes": 2,
       "searches": 100
     },
@@ -962,6 +1098,11 @@
       "aws_payable_usd": 0.96,
       "aws_list_usd": 5.71,
       "onprem_usd": 243.5,
+      "onprem_usd_low_effort": 188.81,
+      "onprem_usd_high_effort": 415.38,
+      "university_vm_usd": 85.94,
+      "university_vm_usd_low_effort": 31.25,
+      "university_vm_usd_high_effort": 257.81,
       "nodes": 2,
       "searches": 1000
     },
@@ -970,6 +1111,11 @@
       "aws_payable_usd": 2.39,
       "aws_list_usd": 11.87,
       "onprem_usd": 243.5,
+      "onprem_usd_low_effort": 188.81,
+      "onprem_usd_high_effort": 415.38,
+      "university_vm_usd": 85.94,
+      "university_vm_usd_low_effort": 31.25,
+      "university_vm_usd_high_effort": 257.81,
       "nodes": 2,
       "searches": 10000
     },
@@ -978,6 +1124,11 @@
       "aws_payable_usd": 20.97,
       "aws_list_usd": 73.41,
       "onprem_usd": 274.87,
+      "onprem_usd_low_effort": 220.18,
+      "onprem_usd_high_effort": 446.74,
+      "university_vm_usd": 85.94,
+      "university_vm_usd_low_effort": 31.25,
+      "university_vm_usd_high_effort": 257.81,
       "nodes": 3,
       "searches": 100000
     }

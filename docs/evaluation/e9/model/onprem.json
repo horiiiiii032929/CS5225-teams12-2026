@@ -10,7 +10,6 @@
     "depreciation_months": 36,
     "depreciation_note": "3-year straight line, no residual value. A 5-year life would cut the hardware line by 40%."
   },
-
   "capacity": {
     "sustained_rps_per_node": 25,
     "sustained_rps_per_node_source": "ASSUMED PLACEHOLDER. #30 (E2) must measure the admitted req/s that one t4g.small with 2 uvicorn workers sustains under W2 while meeting the 500 ms target. This single number drives node_count and is the largest uncertainty in the whole comparison.",
@@ -19,7 +18,6 @@
     "redundancy_nodes": 1,
     "redundancy_note": "One spare node, because a single box has no availability story at all; AWS gives multi-AZ by default."
   },
-
   "capex_sgd": {
     "server_unit": 1200,
     "server_unit_note": "small 4-core / 16 GB mini-PC class machine, NVMe included (assumption)",
@@ -28,7 +26,6 @@
     "backup_disks": 200,
     "spare_parts_buffer": 150
   },
-
   "opex_sgd_per_month": {
     "internet_business_fibre_static_ip": 80,
     "internet_note": "A public endpoint needs a business line with a static IP; a campus network would not expose it. If the university hosts it for free, set this to 0 and say so.",
@@ -39,7 +36,6 @@
     "aircon_room_share": 15,
     "aircon_room_share_note": "share of room cooling beyond the PUE factor below; assumption"
   },
-
   "power": {
     "watts_idle_per_node": 15,
     "watts_load_per_node": 45,
@@ -48,19 +44,44 @@
     "pue": 1.5,
     "pue_note": "power usage effectiveness for an office room with split-unit cooling (assumption; a real DC is 1.2-1.4)"
   },
-
   "operational_effort": {
     "hours_per_month": 4,
-    "hours_note": "OS patching, TLS renewal, log rotation, disk checks, restore drills, incident response. Assumption; the report should state that student time is a real cost even when unpaid.",
+    "hours_note": "OS patching, TLS renewal, log rotation, disk checks, restore drills, incident response. ASSUMPTION, presented as a range because it is the single largest line in option C and a point estimate would hide that. Low (2 h): a quiet month — patch, renew, glance at logs. Likely (4 h): the original estimate. High (8 h): a month containing one real incident, a restore drill or a disk replacement. The report should state that student time is a real cost even when unpaid.",
     "rate_sgd_per_hour": 25,
-    "rate_note": "student/junior-engineer opportunity cost (assumption)"
+    "rate_note": "Student/junior-engineer opportunity cost. ASSUMPTION, ranged: low S$15/h is near a student stipend rate, likely S$25/h is the original estimate, high S$40/h is a junior-engineer market rate in Singapore.",
+    "hours_per_month_low": 2,
+    "hours_per_month_high": 8,
+    "rate_sgd_per_hour_low": 15,
+    "rate_sgd_per_hour_high": 40,
+    "range_note": "The band is deliberately wide: S$30/month at the low end against S$320/month at the high end. That spread IS the finding — the on-premise answer is dominated by a judgement call about people, not by hardware. The comparison's conclusion survives the whole band (see cost-model.md), which is why publishing the range is safer than defending a point."
   },
-
   "excluded_but_named": [
     "Physical security and room rent (assumed free on campus; a company would pay)",
     "Hardware failure replacement beyond the spare-parts buffer",
     "DDoS protection and WAF (CloudFront gives basic Shield Standard for free)",
     "Staff time to build the deployment pipeline (one-off, not monthly)",
     "Downtime cost: the single-box model has no SLA"
-  ]
+  ],
+  "university_vm": {
+    "meta": {
+      "status": "PROVISIONAL estimate built on stated assumptions — NOT a quote.",
+      "definition": "Option D: the same uvicorn-served handler on a VM provided by the university at no marginal cost to the team. Added 3 November 2026 because option C models BUYING hardware, which in an NUS context is the wrong strawman: the realistic on-premise alternative is a machine the institution already owns and powers.",
+      "what_it_removes": "Hardware capex and its depreciation, electricity, room cooling and the business internet line with a static IP — all borne by the university. In option C these are 88% of the total.",
+      "what_it_does_not_remove": "Operational effort. OS patching, TLS renewal, log rotation, disk checks, restore drills and incident response are still ours, at the same ranged cost as option C. This is the point of including option D: it strips out the infrastructure cost and leaves the largest line untouched, so it isolates people from hardware."
+    },
+    "opex_sgd_per_month": {
+      "vm_allocation": 0,
+      "vm_allocation_note": "Assumed free to the team. If the department bills internally, or if the allocation is a fixed quota the project consumes, set this to the charged amount and say so.",
+      "offsite_backup": 8,
+      "offsite_backup_note": "Retained from option C: nightly dumps still need somewhere off the box, and that is still cloud object storage. Could fall to 0 on campus storage, which would be worth confirming before the report.",
+      "domain_and_tls": 2,
+      "domain_and_tls_note": "domain amortised; TLS via Let's Encrypt = 0"
+    },
+    "excluded_but_named": [
+      "Public reachability is NOT established. onprem.json's internet_note already records that a campus network would not expose a public endpoint; a university VM typically needs a firewall exception or a reverse proxy through an institutional gateway. That is an administrative dependency with no price attached here, and it is the biggest practical risk in option D.",
+      "No availability story: one VM, no spare, no multi-AZ. A second VM might also be free, but nothing about the allocation is guaranteed.",
+      "Allocation is not a contract. A university VM can be reclaimed, re-imaged or rate-limited on someone else's schedule; AWS capacity is contractual. The model charges option D nothing for that gap.",
+      "No institutional support SLA for the VM itself."
+    ]
+  }
 }

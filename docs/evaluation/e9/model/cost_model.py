@@ -369,7 +369,45 @@ def aws_vm(u: dict, p: dict, shared: dict, nodes: int) -> list[dict]:
 # --------------------------------------------------------------------------
 # option C: on-premise
 # --------------------------------------------------------------------------
-def onprem(o: dict, nodes: int) -> list[dict]:
+def effort_usd(o: dict, band: str = "likely") -> tuple[float, str]:
+    """Operational effort for one month, as a band rather than a point.
+
+    Effort is the largest single line in option C and the only line in option
+    D, and it is an assumption about people. A point estimate would hide that,
+    so the model carries low/likely/high and reports the band.
+    """
+    eff = o["operational_effort"]
+    hours, rate = eff["hours_per_month"], eff["rate_sgd_per_hour"]
+    if band == "low":
+        hours, rate = eff["hours_per_month_low"], eff["rate_sgd_per_hour_low"]
+    elif band == "high":
+        hours, rate = eff["hours_per_month_high"], eff["rate_sgd_per_hour_high"]
+    return hours * rate, f"{hours} h/month @ S${rate}/h ({band})"
+
+
+def university_vm(o: dict, band: str = "likely") -> list[dict]:
+    """Option D: the same handler on a university-provided VM.
+
+    Removes everything the institution pays for - hardware, power, cooling and
+    the business line, which are 88% of option C - and leaves operational
+    effort exactly where it was. Node count does not appear: the allocation is
+    not sized by us, which is itself a limitation rather than a saving.
+    """
+    rate_fx = o["meta"]["sgd_per_usd"]
+    uni = o["university_vm"]
+    op = uni["opex_sgd_per_month"]
+    effort_sgd, effort_driver = effort_usd(o, band)
+    return [
+        line("VM allocation", "provided by the university; assumed free to the team",
+             op["vm_allocation"] / rate_fx),
+        line("Offsite backup", "nightly dumps to object storage",
+             op["offsite_backup"] / rate_fx),
+        line("Domain + TLS", "Let's Encrypt = 0", op["domain_and_tls"] / rate_fx),
+        line("Operational effort", effort_driver, effort_sgd / rate_fx),
+    ]
+
+
+def onprem(o: dict, nodes: int, band: str = "likely") -> list[dict]:
     rate = o["meta"]["sgd_per_usd"]
     months = o["meta"]["depreciation_months"]
     cap = o["capex_sgd"]
@@ -382,8 +420,7 @@ def onprem(o: dict, nodes: int) -> list[dict]:
     kwh = avg_w * nodes * 730 / 1000 * pw["pue"]
     elec_sgd = kwh * o["meta"]["electricity_sgd_per_kwh"]
     op = o["opex_sgd_per_month"]
-    eff = o["operational_effort"]
-    effort_sgd = eff["hours_per_month"] * eff["rate_sgd_per_hour"]
+    effort_sgd, effort_driver = effort_usd(o, band)
     rows = [
         line(f"Hardware depreciation ({nodes} node(s) + UPS/switch/disks, {months} mo)",
              f"S${capex_sgd:,.0f} capex", capex_sgd / months / rate),
@@ -393,8 +430,7 @@ def onprem(o: dict, nodes: int) -> list[dict]:
         line("Business internet + static IP", "assumption", op["internet_business_fibre_static_ip"] / rate),
         line("Offsite backup", "nightly dumps to object storage", op["offsite_backup"] / rate),
         line("Domain + TLS", "Let's Encrypt = 0", op["domain_and_tls"] / rate),
-        line("Operational effort",
-             f"{eff['hours_per_month']} h/month @ S${eff['rate_sgd_per_hour']}/h", effort_sgd / rate),
+        line("Operational effort", effort_driver, effort_sgd / rate),
     ]
     return rows
 
@@ -477,6 +513,9 @@ def main() -> None:
         a = aws_serverless(u, prices, shared)
         b = aws_vm(u, prices, shared, nodes)
         c = onprem(op, nodes)
+        c_low, c_high = onprem(op, nodes, "low"), onprem(op, nodes, "high")
+        dd = university_vm(op)
+        d_low, d_high = university_vm(op, "low"), university_vm(op, "high")
         per_1k = lambda rows: total(rows) / u["searches"] * 1000 if u["searches"] else 0.0
 
         result["scenarios"][key] = {
@@ -491,7 +530,13 @@ def main() -> None:
             "aws_always_on_vm": {"lines": b, "payable_usd": round(total(b), 2),
                                  "usd_per_1000_searches": round(per_1k(b), 4)},
             "on_premise": {"lines": c, "payable_usd": round(total(c), 2),
+                           "payable_usd_low_effort": round(total(c_low), 2),
+                           "payable_usd_high_effort": round(total(c_high), 2),
                            "usd_per_1000_searches": round(per_1k(c), 4)},
+            "university_vm": {"lines": dd, "payable_usd": round(total(dd), 2),
+                              "payable_usd_low_effort": round(total(d_low), 2),
+                              "payable_usd_high_effort": round(total(d_high), 2),
+                              "usd_per_1000_searches": round(per_1k(dd), 4)},
         }
 
         md += [
@@ -522,6 +567,22 @@ def main() -> None:
             "",
             md_table(c, show_free=False),
             "",
+            f"Operational effort is ranged, so option C is **US${total(c_low):.2f} - "
+            f"US${total(c_high):.2f}/month** with US${total(c):.2f} as the likely point. "
+            "Every other line is unchanged across the band.",
+            "",
+            "### D. University-hosted VM",
+            "",
+            "The same handler on a VM the institution already owns and powers. "
+            "Removes hardware, electricity, cooling and the business line - 88% of "
+            "option C - and leaves operational effort untouched.",
+            "",
+            md_table(dd, show_free=False),
+            "",
+            f"Ranged the same way: **US${total(d_low):.2f} - US${total(d_high):.2f}/month**, "
+            f"likely US${total(dd):.2f}. Public reachability through a campus network is "
+            "an unpriced administrative dependency; see onprem.json university_vm.",
+            "",
             "### Comparison",
             "",
             "| Option | US$/month | US$ per 1,000 searches |",
@@ -530,14 +591,17 @@ def main() -> None:
             f"| A. AWS serverless (list price, no free tier) | {total(a, 'gross_usd'):.2f} | "
             f"{total(a, 'gross_usd') / u['searches'] * 1000 if u['searches'] else 0:.3f} |",
             f"| B. AWS always-on VM | {total(b):.2f} | {per_1k(b):.3f} |",
-            f"| C. On-premise | {total(c):.2f} | {per_1k(c):.3f} |",
+            f"| C. On-premise (likely effort) | {total(c):.2f} | {per_1k(c):.3f} |",
+            f"| C. On-premise (effort band) | {total(c_low):.2f} - {total(c_high):.2f} | |",
+            f"| D. University VM (likely effort) | {total(dd):.2f} | {per_1k(dd):.3f} |",
+            f"| D. University VM (effort band) | {total(d_low):.2f} - {total(d_high):.2f} | |",
             "",
         ]
 
     # ---- sensitivity to demand on the typical scenario ----
     md += ["## Sensitivity to demand (typical scenario scaled)", "",
-           "| Demand | AWS serverless payable | AWS serverless list price | On-premise | Nodes |",
-           "|---|---:|---:|---:|---:|"]
+           "| Demand | AWS serverless payable | AWS serverless list price | On-premise | University VM | Nodes |",
+           "|---|---:|---:|---:|---:|---:|"]
     sens = []
     for f in (0.0, 0.1, 1.0, 10.0, 100.0):
         sc = wl["scenarios"]["typical"]
@@ -552,12 +616,19 @@ def main() -> None:
         peak_rps = max(2, math.ceil(u["api_requests"] / (30 * 24 * 3600) * 20))
         nodes = math.ceil(peak_rps / cap["sustained_rps_per_node"]) + cap["redundancy_nodes"]
         a, c = aws_serverless(u, prices, shared), onprem(op, nodes)
+        dd = university_vm(op)
         sens.append({"scale": f, "aws_payable_usd": round(total(a), 2),
                      "aws_list_usd": round(total(a, "gross_usd"), 2),
-                     "onprem_usd": round(total(c), 2), "nodes": nodes,
-                     "searches": round(u["searches"])})
+                     "onprem_usd": round(total(c), 2),
+                     "onprem_usd_low_effort": round(total(onprem(op, nodes, "low")), 2),
+                     "onprem_usd_high_effort": round(total(onprem(op, nodes, "high")), 2),
+                     "university_vm_usd": round(total(dd), 2),
+                     "university_vm_usd_low_effort": round(total(university_vm(op, "low")), 2),
+                     "university_vm_usd_high_effort": round(total(university_vm(op, "high")), 2),
+                     "nodes": nodes, "searches": round(u["searches"])})
         label = "idle (no users)" if f == 0 else f"x{f:g}"
-        md.append(f"| {label} | {total(a):.2f} | {total(a, 'gross_usd'):.2f} | {total(c):.2f} | {nodes} |")
+        md.append(f"| {label} | {total(a):.2f} | {total(a, 'gross_usd'):.2f} | "
+                  f"{total(c):.2f} | {total(dd):.2f} | {nodes} |")
     result["sensitivity"] = sens
     md += ["", "Idle row: no users at all for a month — the serverless cost that remains is "
                "Secrets Manager, CloudWatch and DynamoDB PITR, not compute.", ""]
@@ -570,7 +641,7 @@ def main() -> None:
 
     csv_rows = ["scenario,option,line_item,driver,list_price_usd,free_tier_usd,payable_usd"]
     for key, s in result["scenarios"].items():
-        for opt in ("aws_serverless", "aws_always_on_vm", "on_premise"):
+        for opt in ("aws_serverless", "aws_always_on_vm", "on_premise", "university_vm"):
             for r in s[opt]["lines"]:
                 item = r["service"].replace(",", ";")
                 drv = r["driver"].replace(",", ";")
@@ -583,7 +654,12 @@ def main() -> None:
         print(f"  {s['label']}: serverless payable US${s['aws_serverless']['payable_usd']:.2f}/mo "
               f"(list US${s['aws_serverless']['list_price_usd']:.2f}), "
               f"VM US${s['aws_always_on_vm']['payable_usd']:.2f}, "
-              f"on-prem US${s['on_premise']['payable_usd']:.2f}")
+              f"on-prem US${s['on_premise']['payable_usd']:.2f} "
+              f"(band {s['on_premise']['payable_usd_low_effort']:.2f}-"
+              f"{s['on_premise']['payable_usd_high_effort']:.2f}), "
+              f"uni-VM US${s['university_vm']['payable_usd']:.2f} "
+              f"(band {s['university_vm']['payable_usd_low_effort']:.2f}-"
+              f"{s['university_vm']['payable_usd_high_effort']:.2f})")
     if args.echo:
         print()
         print(md_text)

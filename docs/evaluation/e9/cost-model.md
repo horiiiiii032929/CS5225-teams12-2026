@@ -33,17 +33,24 @@ E9 asks: _what does FlatSplit cost on AWS compared with on-premise, for the same
 3. The main cost drivers and the sensitivity to demand, refined with measured usage.
 4. A comparison and its evidence, linkable from the final report (#36, #38).
 
-## Three options, not two
+## Four options, not two
 
-The report's claim is about hosting _models_, so a bare "AWS versus a box" comparison would be unfair in both directions: it would credit serverless with the free tier while charging on-premise for a machine sized for the peak. The model therefore prices three options on the same workload:
+The report's claim is about hosting _models_, so a bare "AWS versus a box" comparison would be unfair in both directions: it would credit serverless with the free tier while charging on-premise for a machine sized for the peak. The model therefore prices four options on the same workload:
 
 | Option                  | What it is                                                                                                                               | Why it is in the comparison                                                                                        |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | **A. AWS serverless**   | The deployed architecture: CloudFront + S3, HTTP API, Lambda (arm64, 256 MB), DynamoDB on-demand, SQS + DLQ, Secrets Manager, CloudWatch | What we actually built (T1, T8, T9 in the technique matrix)                                                        |
 | **B. AWS always-on VM** | The same Powertools handler under uvicorn on `t4g.small` instances, 24×7, still using DynamoDB and S3                                    | Isolates "serverless versus always-on" from "cloud versus on-premise". This is the cloud twin of the D-E2 baseline |
-| **C. On-premise**       | Owned hardware sized for the W2 peak, in a room we power and cool, patched by a person                                                   | The report's on-premise alternative                                                                                |
+| **C. On-premise**       | Owned hardware sized for the W2 peak, in a room we power and cool, patched by a person                                                   | The textbook on-premise alternative: capex, power, cooling, a line                                                 |
+| **D. University VM**    | The same uvicorn handler on a VM the institution already owns and powers, at no marginal cost to the team                                | **The realistic on-premise alternative in an NUS context.** Added 3 November 2026                                  |
 
 B is the honest middle column: it shows how much of the saving comes from AWS and how much comes from _not paying for idle capacity_.
+
+**D exists because C on its own is the wrong strawman.** Option C models _buying_ hardware, and no student team in a university would do that — they would ask for a VM. Beating a strawman is worth nothing in a report, so option D removes everything the institution pays for (hardware depreciation, electricity, room cooling, the business line with a static IP — **88% of option C**) and leaves operational effort exactly where it was.
+
+That is the point of including it. **D isolates people from hardware**, and what it shows is that the on-premise cost which survives institutional generosity is the human one. At likely effort, option D is US$85.94/month against option A's US$0.96 — a margin of ~90× rather than ~254×. The conclusion holds, honestly, with a smaller margin, which is a better result to publish than a larger margin against an opponent nobody would field.
+
+Option D is also where this model is most exposed, and the limitations are named rather than buried: public reachability through a campus network is an unpriced administrative dependency (a firewall exception or an institutional reverse proxy), the allocation is not a contract and can be reclaimed or re-imaged on someone else's schedule, and there is no availability story or support SLA. `model/onprem.json`'s `university_vm.excluded_but_named` lists all four.
 
 ## Workload scenarios (provisional)
 
@@ -121,33 +128,36 @@ Two drivers are easy to miss and both are in the model: **CloudWatch is the larg
 
 Full assumptions in `model/onprem.json`. Sizing follows D-E2: one node is a `t4g.small`-class machine (2 vCPU / 2 GiB) running the same handler under two isolated uvicorn workers, and the cluster is sized for the **W2 peak**, with one spare node because a single box has no availability story.
 
-| Category                               | Assumption                                                                                              | Monthly (US$) |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------: |
-| Hardware depreciation                  | 2 × S$1,200 node + UPS S$350 + switch S$250 + backup disks S$200 + spares S$150, 36-month straight line |         72.70 |
-| Electricity                            | 15 W idle / 45 W load, 15% duty cycle, PUE 1.5, S$0.3191/kWh (SP Group household tariff, Q3 2026)       |         10.65 |
-| Room cooling share                     | assumption beyond PUE                                                                                   |         11.72 |
-| Business internet + static IP          | needed for a public endpoint                                                                            |         62.50 |
-| Offsite backup                         | nightly dumps to object storage                                                                         |          6.25 |
-| Domain + TLS                           | Let's Encrypt = 0                                                                                       |          1.56 |
-| Operational effort                     | 4 h/month × S$25/h (patching, TLS, restore drills, incidents)                                           |         78.12 |
-| **Total (quiet and typical, 2 nodes)** |                                                                                                         |    **243.50** |
-| **Total (bursty, 3 nodes)**            |                                                                                                         |    **274.87** |
+| Category                               | Assumption                                                                                                |        Monthly (US$) |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------: |
+| Hardware depreciation                  | 2 × S$1,200 node + UPS S$350 + switch S$250 + backup disks S$200 + spares S$150, 36-month straight line   |                72.70 |
+| Electricity                            | 15 W idle / 45 W load, 15% duty cycle, PUE 1.5, S$0.3191/kWh (SP Group household tariff, Q3 2026)         |                10.65 |
+| Room cooling share                     | assumption beyond PUE                                                                                     |                11.72 |
+| Business internet + static IP          | needed for a public endpoint                                                                              |                62.50 |
+| Offsite backup                         | nightly dumps to object storage                                                                           |                 6.25 |
+| Domain + TLS                           | Let's Encrypt = 0                                                                                         |                 1.56 |
+| Operational effort                     | 4 h/month × S$25/h likely; **ranged 2 h × S$15 to 8 h × S$40** (patching, TLS, restore drills, incidents) | 78.12 (23.44–250.00) |
+| **Total (quiet and typical, 2 nodes)** |                                                                                                           |           **243.50** |
+| **Total (bursty, 3 nodes)**            |                                                                                                           |           **274.87** |
 
 Named but excluded, so the reader can judge the bias: room rent and physical security (assumed free on campus), hardware failure beyond the spares buffer, DDoS protection (CloudFront includes Shield Standard), the one-off time to build a deployment pipeline, and the cost of downtime — the single-box model has no SLA.
 
 ## Comparison (model output, updated 3 November 2026)
 
-Generated by `model/cost_model.py`; raw output in `evidence/cost_model_20261103T050214Z.{md,json,csv}`.
+Generated by `model/cost_model.py`; raw output in `evidence/cost_model_20261103T052836Z.{md,json,csv}`.
 The 27 October run (`evidence/cost_model_20261027T013441Z.*`) is the version these figures replace; see [The 3 November correction](#the-3-november-correction) for what moved and why.
 Earlier runs are kept: `evidence/cost_model_20261020T103456Z.*` is the run before transaction mutations and condition checks were counted apart, `evidence/cost_model_20261014T072020Z.*` is the assumption-only version these figures
 replace, and `evidence/cost_model_20261012T062840Z.*` is the one quoted in #45 (it assumed 26 towns).
 
-| Option                                            | Quiet US$/mo | Typical US$/mo | Bursty US$/mo | US$ per 1,000 searches (typical) |
-| ------------------------------------------------- | -----------: | -------------: | ------------: | -------------------------------: |
-| A. AWS serverless — **payable**                   |         0.82 |           0.96 |          2.10 |                             0.96 |
-| A. AWS serverless — list price, free tier removed |         5.10 |           5.71 |         10.47 |                             5.71 |
-| B. AWS always-on VM                               |        38.33 |          38.46 |         56.96 |                            38.46 |
-| C. On-premise                                     |       243.50 |         243.50 |        274.87 |                           243.50 |
+| Option                                            |  Quiet US$/mo | Typical US$/mo | Bursty US$/mo | US$ per 1,000 searches (typical) |
+| ------------------------------------------------- | ------------: | -------------: | ------------: | -------------------------------: |
+| A. AWS serverless — **payable**                   |          0.82 |           0.96 |          2.10 |                             0.96 |
+| A. AWS serverless — list price, free tier removed |          5.10 |           5.71 |         10.47 |                             5.71 |
+| B. AWS always-on VM                               |         38.33 |          38.46 |         56.96 |                            38.46 |
+| C. On-premise — likely effort                     |        243.50 |         243.50 |        274.87 |                           243.50 |
+| C. On-premise — effort band                       | 188.81–415.38 |  188.81–415.38 | 220.18–446.74 |                                — |
+| D. University VM — likely effort                  |         85.94 |          85.94 |         85.94 |                            85.94 |
+| D. University VM — effort band                    |  31.25–257.81 |   31.25–257.81 |  31.25–257.81 |                                — |
 
 Measuring the operation counts moved the serverless total by **+5% at typical demand and +13% in the burst**, all of it in DynamoDB: writes went from US$0.03 to US$0.07 typical and US$0.47 to US$0.71 bursty, reads from US$0.04 to US$0.06 and US$0.27 to US$0.33. Counting each transaction's condition check as the billed write it is added one more fixed write unit per search, which is the one cent between the 20 October bursty figure and this one. Nothing in the comparison's conclusion changes — the gap to option C is still roughly two orders of magnitude — which is itself the useful result: **the on-premise comparison was never sensitive to the per-request accounting**, so the remaining uncertainty that matters is `sustained_rps_per_node` on the on-premise side, not AWS usage.
 
@@ -190,6 +200,7 @@ The derived stock is dominated by a **saturating cache**, not by user data: a `C
 | A. AWS serverless (list price)       | CloudWatch dashboard (US$3.00), then custom metrics (US$0.60)                                 | ~63% typical       |
 | B. AWS always-on VM                  | EC2 instance-hours, billed whether or not anyone searches                                     | ~80%               |
 | C. On-premise                        | Operational effort and the business internet line — **people and connectivity, not hardware** | ~58%               |
+| D. University VM                     | **Operational effort alone** — 78.12 of 85.94 at likely effort                                | 91%                |
 
 Compute is not the cost driver in any option at this scale. That is the finding worth putting in the report: for a bursty, low-average workload, hosting cost is dominated by _fixed_ commitments (a person, a line, a box, a secret), and the serverless model has the fewest of them.
 
@@ -201,13 +212,15 @@ Only in the burst scenario does a usage-scaling line take over: DynamoDB reads, 
 
 ### Sensitivity to demand
 
-| Demand (typical scaled)           | A. serverless payable | A. list price | C. on-premise | On-prem nodes |
-| --------------------------------- | --------------------: | ------------: | ------------: | ------------: |
-| idle — nobody uses it for a month |                  0.80 |          5.02 |        243.50 |             2 |
-| ×0.1                              |                  0.82 |          5.10 |        243.50 |             2 |
-| ×1 (1,000 searches)               |                  0.96 |          5.71 |        243.50 |             2 |
-| ×10                               |                  2.39 |         11.87 |        243.50 |             2 |
-| ×100 (100,000 searches)           |                 20.97 |         73.41 |        274.87 |             3 |
+| Demand (typical scaled)           | A. serverless payable | A. list price | C. on-premise | D. university VM | On-prem nodes |
+| --------------------------------- | --------------------: | ------------: | ------------: | ---------------: | ------------: |
+| idle — nobody uses it for a month |                  0.80 |          5.02 |        243.50 |            85.94 |             2 |
+| ×0.1                              |                  0.82 |          5.10 |        243.50 |            85.94 |             2 |
+| ×1 (1,000 searches)               |                  0.96 |          5.71 |        243.50 |            85.94 |             2 |
+| ×10                               |                  2.39 |         11.87 |        243.50 |            85.94 |             2 |
+| ×100 (100,000 searches)           |                 20.97 |         73.41 |        274.87 |            85.94 |             3 |
+
+Option D is flat at every demand level, and that is not a modelling shortcut — it is the consequence of the institution absorbing the capacity. Nothing in option D is sized by us, so nothing in it responds to demand. The honest reading is that option D trades a cost curve for a dependency: it never gets more expensive, and it also never guarantees it will still be there.
 
 Option A tracks demand almost linearly and costs **US$0.80/month when idle**; option C is a step function that charges the same whether traffic is zero or 10× higher, then jumps when the peak needs another node.
 
@@ -227,16 +240,17 @@ The routing call count per job is no longer assumed: the implemented #15 worker 
    **Original note.** `infra/aws/src/app.ts` already tags every resource `project=flatsplit`, `stage=<stage>`. The tag must be activated as a cost allocation tag before Cost Explorer can filter by it. Late activation does not necessarily lose earlier tagged spend: [AWS supports management-account tag backfill for up to twelve months](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-allocation-backfill.html), provided the tag was already assigned to the resource during that period. Backfill cannot invent historical resource tags, applies the current activation status of all tag keys, and billing views refresh after processing. Record activation/backfill eligibility and the actual available measurement window. Owner: the billing-authorised management/payer-account operator, to be identified in #4; do not assume the application deployer has billing access.
 
 3. **`sustained_rps_per_node`** (currently a placeholder of 25 req/s) is the single number that decides how many nodes options B and C need. #30/E2 must measure it under W2 with the 500 ms target in force.
-4. **Operational effort — decided by default on 3 November.** Asked in #45 on 1 November with no reply, so rather than block: the 4 h/month at S$25/h assumption will be **presented as a range** rather than a point estimate, because a single judgement call driving 32% of option C should visibly be a judgement call. Mani can still override this before 5 November.
+4. **Operational effort — done.** Asked in #45 on 1 November with no reply, decided by default and now **implemented as a range**: 2 h at S$15/h to 8 h at S$40/h, likely 4 h at S$25/h, carried through options C and D and the sensitivity output. A single judgement call driving the largest line in both self-hosted options is now visibly a judgement call. Mani can still move the band's endpoints before 5 November; the structure is in place either way.
 5. **Headline metric — decided by default on 3 November.** Both are generated; the report and slides lead with **US$/month** and keep US$ per 1,000 searches as a secondary column, since the seasonal-idle argument is the strongest finding and only makes sense per month. Overridable before 5 November.
-6. **Option D — a university-hosted VM.** Being added alongside option C. In an NUS context that is the realistic on-premise alternative, and option C as it stands models buying hardware, which may be the wrong strawman. Option C stays, so nothing is lost.
+6. **Option D — done.** A university-hosted VM is now priced alongside option C, which stays, so nothing is lost. US$85.94/month at likely effort (band US$31.25–257.81), of which 91% is operational effort. Its four unpriced dependencies — public reachability through a campus network, no availability story, an allocation that is not a contract, and no support SLA — are named in `model/onprem.json` under `university_vm.excluded_but_named` rather than absorbed into the number.
 
 ## Limitations to state in the report
 
 - The on-premise model is an estimate from stated assumptions, not a quote; hardware prices, the electricity tariff (household, not non-residential) and the SGD/USD rate of 1.28 are all assumptions.
 - The free tier is shown separately, but which allowances apply depends on the account type (open question 1).
 - Serverless usage figures mix measured and assumed inputs. As of 3 November, per-request operation counts, worker duration, log volume, DynamoDB bytes per item, idle SQS polling, secret count, alarm count and custom-metric count are measured or counted from the deployed stack or the tree; monthly demand, peak request rate, cold-start share and the two cache hit ratios remain assumed. Each input in `model/workloads.json` carries a `_source` string saying which it is. The AWS totals could still move by a factor of a few on the assumed inputs — though not by the ~250× that separates the options at typical demand.
-- The comparison prices the same _workload_, not the same _availability_. Option A is multi-AZ by default; option C is one room with one spare machine. The model charges on-premise nothing for that gap.
+- The comparison prices the same _workload_, not the same _availability_. Option A is multi-AZ by default; option C is one room with one spare machine; option D is a single VM with no spare at all. The model charges neither self-hosted option anything for that gap.
+- Option D assumes the university VM is free to the team, publicly reachable and not reclaimed. None of the three is established. If the allocation is internally billed, or needs an institutional gateway to serve traffic, option D's figure moves and the administrative dependency is the real cost. It is included because excluding it would leave the report arguing against buying hardware, which nobody proposed.
 - CloudWatch dashboard pricing (US$3.00/dashboard/month) is AWS's published list price and is the only figure not taken from the Price List API export.
 
 ## Reproducing this
