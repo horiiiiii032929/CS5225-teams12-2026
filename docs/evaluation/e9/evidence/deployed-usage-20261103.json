@@ -1,0 +1,6441 @@
+{
+  "capturedAt": "2026-11-03T04:28:37.353302+00:00",
+  "window": {
+    "start": "2026-10-29T00:00:00+00:00",
+    "end": "2026-11-03T04:00:00+00:00",
+    "periodSeconds": 3600,
+    "classification": "observed shared-dev activity; not a controlled load run"
+  },
+  "environment": {
+    "accountId": "553455762180",
+    "region": "ap-southeast-1",
+    "stack": "FlatSplit-dev",
+    "stackLastUpdatedAt": "2026-11-02T10:55:49.459000+00:00",
+    "deployedRevision": null,
+    "deployedRevisionReason": "The stack has no source-revision output; its update time does not identify a Git commit.",
+    "resources": {
+      "functions": {
+        "http": "FlatSplit-dev-ApiHttpHandler79C00618-JQfE1ULfBE6C",
+        "worker": "FlatSplit-dev-ApiCommuteWorkerDCCDFB3E-BwB20rpyI6Gc",
+        "rentIngestion": "FlatSplit-dev-RentIngestionHandlerB1C17C6E-Jn7q3UYHunaI",
+        "tokenRefresh": "FlatSplit-dev-ApiOneMapTokenRefreshE5D8A4AB-nklAPlX5TfQt"
+      },
+      "logGroups": {
+        "http": "FlatSplit-dev-ApiHttpHandlerLogs8B55AE41-k9HUnKAvi4b6",
+        "worker": "FlatSplit-dev-ApiCommuteWorkerLogsA37837F9-zadP7Gs4uAkL",
+        "rentIngestion": "FlatSplit-dev-RentIngestionHandlerLogs17709C1C-tKitCGYQF9hB",
+        "tokenRefresh": "FlatSplit-dev-ApiOneMapTokenRefreshLogsD4D93BB1-WlpFgkGF9EZ6"
+      },
+      "queues": {
+        "jobs": "FlatSplit-dev-ApiCommuteJobs7487AB1D-F2qZjHos7Noe",
+        "dlq": "FlatSplit-dev-ApiCommuteDlq5A1C45AD-cQ7b7M0bUifi"
+      },
+      "apiId": "n1igu3dv2m",
+      "tableName": "FlatSplit-dev-DataTableFDBAD0F2-14BXCFXGNJCMO"
+    },
+    "access": "read-only CloudFormation, CloudWatch, Logs and DynamoDB reads"
+  },
+  "dataQuality": {
+    "rentPointer": {
+      "snapshotId": "rent-v1-r7-block-bootstrap-v1-2026-10-b6e2905f6698",
+      "validatedAt": "2026-11-02T19:00:38.731347Z",
+      "rawRetrievedAt": "2026-11-02T19:00:38.731347Z",
+      "rawSnapshotId": "hdb-rent-raw-v1-2026-10-b6e2905f6698",
+      "schemaVersion": 1,
+      "sourceMonthTo": "2026-10",
+      "period": "2025-11/2026-10",
+      "pk": "RENT",
+      "summaryCount": 129,
+      "sk": "CURRENT"
+    },
+    "observedSummaryCount": 129,
+    "sourceDatasetIds": [
+      "d_c9f57187485a850908655db0e8cfe651"
+    ],
+    "schemaVersions": [
+      1
+    ],
+    "statistics": [
+      "trailing-12-month-r7-block-bootstrap-v1-quantiles"
+    ],
+    "townCount": 27,
+    "towns": [
+      "ANG MO KIO",
+      "BEDOK",
+      "BISHAN",
+      "BUKIT BATOK",
+      "BUKIT MERAH",
+      "BUKIT PANJANG",
+      "BUKIT TIMAH",
+      "CENTRAL",
+      "CHOA CHU KANG",
+      "CLEMENTI",
+      "GEYLANG",
+      "HOUGANG",
+      "JURONG EAST",
+      "JURONG WEST",
+      "KALLANG/WHAMPOA",
+      "MARINE PARADE",
+      "PASIR RIS",
+      "PUNGGOL",
+      "QUEENSTOWN",
+      "SEMBAWANG",
+      "SENGKANG",
+      "SERANGOON",
+      "TAMPINES",
+      "TENGAH",
+      "TOA PAYOH",
+      "WOODLANDS",
+      "YISHUN"
+    ],
+    "flatTypes": [
+      "1-ROOM",
+      "2-ROOM",
+      "3-ROOM",
+      "4-ROOM",
+      "5-ROOM",
+      "EXECUTIVE"
+    ],
+    "possibleTownFlatTypePairs": 162,
+    "missingPairCount": 33,
+    "missingPairs": [
+      {
+        "town": "ANG MO KIO",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "BEDOK",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "BISHAN",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "BISHAN",
+        "flatType": "2-ROOM"
+      },
+      {
+        "town": "BUKIT BATOK",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "BUKIT PANJANG",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "BUKIT TIMAH",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "BUKIT TIMAH",
+        "flatType": "2-ROOM"
+      },
+      {
+        "town": "CENTRAL",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "CENTRAL",
+        "flatType": "EXECUTIVE"
+      },
+      {
+        "town": "CHOA CHU KANG",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "CLEMENTI",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "GEYLANG",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "HOUGANG",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "JURONG EAST",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "JURONG WEST",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "KALLANG/WHAMPOA",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "MARINE PARADE",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "MARINE PARADE",
+        "flatType": "2-ROOM"
+      },
+      {
+        "town": "MARINE PARADE",
+        "flatType": "EXECUTIVE"
+      },
+      {
+        "town": "PASIR RIS",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "PUNGGOL",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "QUEENSTOWN",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "SEMBAWANG",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "SENGKANG",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "SERANGOON",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "TAMPINES",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "TENGAH",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "TENGAH",
+        "flatType": "3-ROOM"
+      },
+      {
+        "town": "TENGAH",
+        "flatType": "EXECUTIVE"
+      },
+      {
+        "town": "TOA PAYOH",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "WOODLANDS",
+        "flatType": "1-ROOM"
+      },
+      {
+        "town": "YISHUN",
+        "flatType": "1-ROOM"
+      }
+    ],
+    "missingPairCountsByFlatType": {
+      "1-ROOM": 26,
+      "2-ROOM": 3,
+      "3-ROOM": 1,
+      "EXECUTIVE": 3
+    },
+    "qualityCounts": {
+      "LOW_CONFIDENCE": 35,
+      "USABLE": 94
+    },
+    "qualityRules": {
+      "minimumIndependentBlocks": 2,
+      "maximumMedianCi95RelativeWidth": 0.1
+    },
+    "lowConfidenceReasonCounts": {
+      "INSUFFICIENT_BLOCKS_ONLY": 3,
+      "WIDE_CI_ONLY": 32
+    },
+    "lowConfidenceSummaries": [
+      {
+        "town": "ANG MO KIO",
+        "flatType": "2-ROOM",
+        "count": 28,
+        "blockCount": 9,
+        "medianCi95RelativeWidth": 0.13043478260869565,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "BEDOK",
+        "flatType": "2-ROOM",
+        "count": 35,
+        "blockCount": 13,
+        "medianCi95RelativeWidth": 0.15217391304347827,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "BISHAN",
+        "flatType": "EXECUTIVE",
+        "count": 30,
+        "blockCount": 20,
+        "medianCi95RelativeWidth": 0.12222222222222222,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "BUKIT MERAH",
+        "flatType": "1-ROOM",
+        "count": 12,
+        "blockCount": 1,
+        "medianCi95RelativeWidth": 0,
+        "reason": "INSUFFICIENT_BLOCKS_ONLY"
+      },
+      {
+        "town": "BUKIT MERAH",
+        "flatType": "2-ROOM",
+        "count": 84,
+        "blockCount": 22,
+        "medianCi95RelativeWidth": 0.14,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "BUKIT MERAH",
+        "flatType": "EXECUTIVE",
+        "count": 1,
+        "blockCount": 1,
+        "medianCi95RelativeWidth": 0,
+        "reason": "INSUFFICIENT_BLOCKS_ONLY"
+      },
+      {
+        "town": "BUKIT PANJANG",
+        "flatType": "2-ROOM",
+        "count": 16,
+        "blockCount": 6,
+        "medianCi95RelativeWidth": 0.11627906976744186,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "BUKIT TIMAH",
+        "flatType": "5-ROOM",
+        "count": 17,
+        "blockCount": 9,
+        "medianCi95RelativeWidth": 0.23255813953488372,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "BUKIT TIMAH",
+        "flatType": "EXECUTIVE",
+        "count": 13,
+        "blockCount": 6,
+        "medianCi95RelativeWidth": 0.17391304347826086,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "CENTRAL",
+        "flatType": "2-ROOM",
+        "count": 15,
+        "blockCount": 5,
+        "medianCi95RelativeWidth": 0.5,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "CENTRAL",
+        "flatType": "4-ROOM",
+        "count": 186,
+        "blockCount": 29,
+        "medianCi95RelativeWidth": 0.18181818181818182,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "CENTRAL",
+        "flatType": "5-ROOM",
+        "count": 57,
+        "blockCount": 13,
+        "medianCi95RelativeWidth": 0.11764705882352941,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "CHOA CHU KANG",
+        "flatType": "2-ROOM",
+        "count": 10,
+        "blockCount": 5,
+        "medianCi95RelativeWidth": 0.11627906976744186,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "CLEMENTI",
+        "flatType": "2-ROOM",
+        "count": 7,
+        "blockCount": 3,
+        "medianCi95RelativeWidth": 0.32,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "CLEMENTI",
+        "flatType": "EXECUTIVE",
+        "count": 14,
+        "blockCount": 8,
+        "medianCi95RelativeWidth": 0.33,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "GEYLANG",
+        "flatType": "2-ROOM",
+        "count": 30,
+        "blockCount": 17,
+        "medianCi95RelativeWidth": 0.21428571428571427,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "GEYLANG",
+        "flatType": "EXECUTIVE",
+        "count": 24,
+        "blockCount": 11,
+        "medianCi95RelativeWidth": 0.11906976744186047,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "HOUGANG",
+        "flatType": "EXECUTIVE",
+        "count": 102,
+        "blockCount": 46,
+        "medianCi95RelativeWidth": 0.1095890410958904,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "JURONG EAST",
+        "flatType": "2-ROOM",
+        "count": 11,
+        "blockCount": 3,
+        "medianCi95RelativeWidth": 0.1702127659574468,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "JURONG WEST",
+        "flatType": "2-ROOM",
+        "count": 53,
+        "blockCount": 16,
+        "medianCi95RelativeWidth": 0.13541666666666666,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "KALLANG/WHAMPOA",
+        "flatType": "2-ROOM",
+        "count": 34,
+        "blockCount": 6,
+        "medianCi95RelativeWidth": 0.24742268041237114,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "KALLANG/WHAMPOA",
+        "flatType": "EXECUTIVE",
+        "count": 12,
+        "blockCount": 6,
+        "medianCi95RelativeWidth": 0.24864864864864866,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "PASIR RIS",
+        "flatType": "2-ROOM",
+        "count": 6,
+        "blockCount": 3,
+        "medianCi95RelativeWidth": 0.14285714285714285,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "PASIR RIS",
+        "flatType": "3-ROOM",
+        "count": 26,
+        "blockCount": 11,
+        "medianCi95RelativeWidth": 0.14814814814814814,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "QUEENSTOWN",
+        "flatType": "2-ROOM",
+        "count": 31,
+        "blockCount": 16,
+        "medianCi95RelativeWidth": 0.25,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "QUEENSTOWN",
+        "flatType": "EXECUTIVE",
+        "count": 6,
+        "blockCount": 5,
+        "medianCi95RelativeWidth": 0.5454545454545454,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "SERANGOON",
+        "flatType": "2-ROOM",
+        "count": 3,
+        "blockCount": 1,
+        "medianCi95RelativeWidth": 0,
+        "reason": "INSUFFICIENT_BLOCKS_ONLY"
+      },
+      {
+        "town": "SERANGOON",
+        "flatType": "EXECUTIVE",
+        "count": 43,
+        "blockCount": 25,
+        "medianCi95RelativeWidth": 0.125,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "TAMPINES",
+        "flatType": "2-ROOM",
+        "count": 9,
+        "blockCount": 6,
+        "medianCi95RelativeWidth": 0.15625,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "TENGAH",
+        "flatType": "2-ROOM",
+        "count": 3,
+        "blockCount": 3,
+        "medianCi95RelativeWidth": 0.2222222222222222,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "TENGAH",
+        "flatType": "4-ROOM",
+        "count": 4,
+        "blockCount": 4,
+        "medianCi95RelativeWidth": 0.23880597014925373,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "TENGAH",
+        "flatType": "5-ROOM",
+        "count": 5,
+        "blockCount": 3,
+        "medianCi95RelativeWidth": 0.375,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "TOA PAYOH",
+        "flatType": "EXECUTIVE",
+        "count": 17,
+        "blockCount": 12,
+        "medianCi95RelativeWidth": 0.21428571428571427,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "WOODLANDS",
+        "flatType": "2-ROOM",
+        "count": 61,
+        "blockCount": 14,
+        "medianCi95RelativeWidth": 0.10869565217391304,
+        "reason": "WIDE_CI_ONLY"
+      },
+      {
+        "town": "YISHUN",
+        "flatType": "EXECUTIVE",
+        "count": 75,
+        "blockCount": 40,
+        "medianCi95RelativeWidth": 0.10135135135135136,
+        "reason": "WIDE_CI_ONLY"
+      }
+    ],
+    "sampleCountDistribution": {
+      "min": 1,
+      "p25": 44.0,
+      "median": 169.0,
+      "p75": 430.0,
+      "max": 1283
+    },
+    "blockCountDistribution": {
+      "min": 1,
+      "p25": 16.0,
+      "median": 59.0,
+      "p75": 139.0,
+      "max": 441
+    },
+    "sampleCountDistributionByQuality": {
+      "LOW_CONFIDENCE": {
+        "min": 1,
+        "p25": 9.5,
+        "median": 17.0,
+        "p75": 34.5,
+        "max": 186
+      },
+      "USABLE": {
+        "min": 6,
+        "p25": 133.75,
+        "median": 303.5,
+        "p75": 582.0,
+        "max": 1283
+      }
+    },
+    "sourceUpdatedAt": "2026-11-02T10:06:56+08:00"
+  },
+  "usage": {
+    "lambda": {
+      "http": {
+        "invocations": 763.0,
+        "errors": 0.0,
+        "throttles": 0.0,
+        "meanDurationMs": 190.504
+      },
+      "worker": {
+        "invocations": 130.0,
+        "errors": 0.0,
+        "throttles": 0.0,
+        "meanDurationMs": 990.307
+      },
+      "rentIngestion": {
+        "invocations": 4.0,
+        "errors": 0.0,
+        "throttles": 0.0,
+        "meanDurationMs": 169913.342
+      },
+      "tokenRefresh": {
+        "invocations": 80.0,
+        "errors": 6.0,
+        "throttles": 0.0,
+        "meanDurationMs": 1673.972
+      }
+    },
+    "api": {
+      "requests": 763.0,
+      "clientErrors4xx": 51.0,
+      "serverErrors5xx": 0.0
+    },
+    "queue": {
+      "jobs": {
+        "messagesSent": 130.0,
+        "messagesReceived": 130.0,
+        "messagesDeleted": 130.0,
+        "emptyReceives": 48443.0,
+        "maxOldestMessageAgeSeconds": 72382.0
+      },
+      "dlq": {
+        "messagesSent": 0.0,
+        "messagesReceived": 0.0,
+        "messagesDeleted": 0.0,
+        "emptyReceives": 0.0,
+        "maxOldestMessageAgeSeconds": 0.0
+      }
+    },
+    "dynamodb": {
+      "tableSizeBytes": 292216,
+      "itemCountApproximate": 668,
+      "consumedReadCapacityUnits": 4071.5,
+      "consumedWriteCapacityUnits": 2680.0,
+      "readThrottleEvents": null,
+      "writeThrottleEvents": null,
+      "systemErrors": null,
+      "userErrors": null
+    },
+    "logs": {
+      "http": {
+        "incomingBytes": 269906.0,
+        "incomingEvents": 2322.0
+      },
+      "worker": {
+        "incomingBytes": 211488.0,
+        "incomingEvents": 659.0
+      },
+      "rentIngestion": {
+        "incomingBytes": 4864.0,
+        "incomingEvents": 20.0
+      },
+      "tokenRefresh": {
+        "incomingBytes": 95203.0,
+        "incomingEvents": 402.0
+      }
+    },
+    "workerSessions": [
+      {
+        "startedAt": "2026-10-30T10:16:34.659000+00:00",
+        "endedAt": "2026-10-30T10:16:52.254000+00:00",
+        "durationSeconds": 17.595,
+        "invocations": 26,
+        "completionLogs": 26,
+        "resolved": 26,
+        "unavailable": 0,
+        "distinctPairCount": 26,
+        "townCount": 26,
+        "stations": [
+          "KENT_RIDGE"
+        ],
+        "invocationsPerMinute": 88.7
+      },
+      {
+        "startedAt": "2026-11-01T12:06:54.544000+00:00",
+        "endedAt": "2026-11-01T12:07:10.417000+00:00",
+        "durationSeconds": 15.873,
+        "invocations": 26,
+        "completionLogs": 26,
+        "resolved": 26,
+        "unavailable": 0,
+        "distinctPairCount": 26,
+        "townCount": 26,
+        "stations": [
+          "KENT_RIDGE"
+        ],
+        "invocationsPerMinute": 98.3
+      },
+      {
+        "startedAt": "2026-11-01T12:19:42.036000+00:00",
+        "endedAt": "2026-11-01T12:20:19.039000+00:00",
+        "durationSeconds": 37.003,
+        "invocations": 78,
+        "completionLogs": 78,
+        "resolved": 78,
+        "unavailable": 0,
+        "distinctPairCount": 78,
+        "townCount": 26,
+        "stations": [
+          "BEDOK",
+          "EXPO",
+          "TELOK_AYER"
+        ],
+        "invocationsPerMinute": 126.5
+      }
+    ],
+    "customMetricCountObserved": 1,
+    "customMetrics": [
+      "OneMapTokenWarning"
+    ],
+    "alarmCountDeployed": 4
+  },
+  "metricSeries": {
+    "lambda_http_invocations": {
+      "stat": "Sum",
+      "aggregate": 763.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T10:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 123.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 6.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 6.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 3.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 94.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 134.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 261.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 2.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 2.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 34.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 92.0
+        }
+      ]
+    },
+    "lambda_http_errors": {
+      "stat": "Sum",
+      "aggregate": 0.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "lambda_http_throttles": {
+      "stat": "Sum",
+      "aggregate": 0.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "lambda_http_duration_sum": {
+      "stat": "Sum",
+      "aggregate": 145354.239998,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T10:00:00+00:00",
+          "value": 16.57
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 14440.300000000001
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 2678.93
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 1707.16
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 2587.13
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 6.17
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 6.61
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 11003.919999999998
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 2711.37
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 2980.75
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 3.68
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 31908.91
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 53814.159999
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 1858.2
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 3216.7200000000003
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 5232.88
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 11180.779999
+        }
+      ]
+    },
+    "lambda_http_duration_samples": {
+      "stat": "SampleCount",
+      "aggregate": 763.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T10:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 123.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 6.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 6.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 3.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 94.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 134.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 261.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 2.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 2.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 34.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 92.0
+        }
+      ]
+    },
+    "lambda_worker_invocations": {
+      "stat": "Sum",
+      "aggregate": 130.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 26.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 104.0
+        }
+      ]
+    },
+    "lambda_worker_errors": {
+      "stat": "Sum",
+      "aggregate": 0.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "lambda_worker_throttles": {
+      "stat": "Sum",
+      "aggregate": 0.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "lambda_worker_duration_sum": {
+      "stat": "Sum",
+      "aggregate": 128739.90989,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 31127.98
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 97611.92989
+        }
+      ]
+    },
+    "lambda_worker_duration_samples": {
+      "stat": "SampleCount",
+      "aggregate": 130.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 26.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 104.0
+        }
+      ]
+    },
+    "lambda_rentingestion_invocations": {
+      "stat": "Sum",
+      "aggregate": 4.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 3.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 1.0
+        }
+      ]
+    },
+    "lambda_rentingestion_errors": {
+      "stat": "Sum",
+      "aggregate": 0.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "lambda_rentingestion_throttles": {
+      "stat": "Sum",
+      "aggregate": 0.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "lambda_rentingestion_duration_sum": {
+      "stat": "Sum",
+      "aggregate": 679653.37,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 510795.29000000004
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 168858.08
+        }
+      ]
+    },
+    "lambda_rentingestion_duration_samples": {
+      "stat": "SampleCount",
+      "aggregate": 4.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 3.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 1.0
+        }
+      ]
+    },
+    "lambda_tokenrefresh_invocations": {
+      "stat": "Sum",
+      "aggregate": 80.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 3.0
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 3.0
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 2.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 4.0
+        }
+      ]
+    },
+    "lambda_tokenrefresh_errors": {
+      "stat": "Sum",
+      "aggregate": 6.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 3.0
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 3.0
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "lambda_tokenrefresh_throttles": {
+      "stat": "Sum",
+      "aggregate": 0.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "lambda_tokenrefresh_duration_sum": {
+      "stat": "Sum",
+      "aggregate": 133917.74,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 1898.39
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 2588.19
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 2548.54
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 1951.22
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 1936.14
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 1971.65
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 3636.77
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 6664.469999999999
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 6682.73
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 6667.38
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 6783.5599999999995
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 7087.109999999999
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 6552.31
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 6545.18
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 6794.700000000001
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 6700.27
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 6521.03
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 6883.610000000001
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 7145.99
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 7234.719999999999
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 7147.1
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 7493.91
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 7277.24
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 7205.53
+        }
+      ]
+    },
+    "lambda_tokenrefresh_duration_samples": {
+      "stat": "SampleCount",
+      "aggregate": 80.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 3.0
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 3.0
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 2.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 4.0
+        }
+      ]
+    },
+    "api_count": {
+      "stat": "Sum",
+      "aggregate": 763.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T10:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 123.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 6.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 6.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 3.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 94.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 134.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 261.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 2.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 2.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 34.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 92.0
+        }
+      ]
+    },
+    "api_4xx": {
+      "stat": "Sum",
+      "aggregate": 51.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 14.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 14.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 8.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 14.0
+        }
+      ]
+    },
+    "api_5xx": {
+      "stat": "Sum",
+      "aggregate": 0.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "sqs_jobs_numberofmessagessent": {
+      "stat": "Sum",
+      "aggregate": 130.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 26.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 104.0
+        },
+        {
+          "timestamp": "2026-11-01T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "sqs_jobs_numberofmessagesreceived": {
+      "stat": "Sum",
+      "aggregate": 130.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 26.0
+        },
+        {
+          "timestamp": "2026-10-30T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 104.0
+        },
+        {
+          "timestamp": "2026-11-01T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "sqs_jobs_numberofmessagesdeleted": {
+      "stat": "Sum",
+      "aggregate": 130.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 26.0
+        },
+        {
+          "timestamp": "2026-10-30T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 104.0
+        },
+        {
+          "timestamp": "2026-11-01T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "sqs_jobs_numberofemptyreceives": {
+      "stat": "Sum",
+      "aggregate": 48443.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 387.0
+        },
+        {
+          "timestamp": "2026-10-30T11:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-30T12:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-30T13:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-30T14:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-30T15:00:00+00:00",
+          "value": 539.0
+        },
+        {
+          "timestamp": "2026-10-30T16:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-30T17:00:00+00:00",
+          "value": 539.0
+        },
+        {
+          "timestamp": "2026-10-30T18:00:00+00:00",
+          "value": 539.0
+        },
+        {
+          "timestamp": "2026-10-30T19:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-30T20:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-30T21:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-30T23:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T00:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T01:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T02:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T03:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T04:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T05:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T06:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T07:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T09:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T11:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T12:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T13:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 538.0
+        },
+        {
+          "timestamp": "2026-10-31T15:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T16:00:00+00:00",
+          "value": 539.0
+        },
+        {
+          "timestamp": "2026-10-31T17:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T18:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T19:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T20:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-10-31T23:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T00:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T01:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T02:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T03:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T04:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T05:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T06:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T07:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T08:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T09:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 539.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 547.0
+        },
+        {
+          "timestamp": "2026-11-01T13:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T15:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T16:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T17:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T18:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T19:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T20:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T21:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-01T23:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T00:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T01:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T02:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T03:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T04:00:00+00:00",
+          "value": 539.0
+        },
+        {
+          "timestamp": "2026-11-02T05:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T06:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T07:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T09:00:00+00:00",
+          "value": 539.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 539.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 540.0
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 539.0
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 540.0
+        }
+      ]
+    },
+    "sqs_jobs_max_age": {
+      "stat": "Maximum",
+      "aggregate": 72382.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 2958.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 6500.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 10142.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 13757.0
+        },
+        {
+          "timestamp": "2026-10-29T18:00:00+00:00",
+          "value": 17342.0
+        },
+        {
+          "timestamp": "2026-10-29T19:00:00+00:00",
+          "value": 20960.0
+        },
+        {
+          "timestamp": "2026-10-29T20:00:00+00:00",
+          "value": 24559.0
+        },
+        {
+          "timestamp": "2026-10-29T21:00:00+00:00",
+          "value": 28157.0
+        },
+        {
+          "timestamp": "2026-10-29T22:00:00+00:00",
+          "value": 31761.0
+        },
+        {
+          "timestamp": "2026-10-29T23:00:00+00:00",
+          "value": 35358.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 38912.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 42531.0
+        },
+        {
+          "timestamp": "2026-10-30T02:00:00+00:00",
+          "value": 46157.0
+        },
+        {
+          "timestamp": "2026-10-30T03:00:00+00:00",
+          "value": 49740.0
+        },
+        {
+          "timestamp": "2026-10-30T04:00:00+00:00",
+          "value": 53357.0
+        },
+        {
+          "timestamp": "2026-10-30T05:00:00+00:00",
+          "value": 56962.0
+        },
+        {
+          "timestamp": "2026-10-30T06:00:00+00:00",
+          "value": 60556.0
+        },
+        {
+          "timestamp": "2026-10-30T07:00:00+00:00",
+          "value": 64158.0
+        },
+        {
+          "timestamp": "2026-10-30T08:00:00+00:00",
+          "value": 67759.0
+        },
+        {
+          "timestamp": "2026-10-30T09:00:00+00:00",
+          "value": 71362.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 72382.0
+        },
+        {
+          "timestamp": "2026-10-30T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 12.0
+        },
+        {
+          "timestamp": "2026-11-01T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "sqs_dlq_numberofmessagessent": {
+      "stat": "Sum",
+      "aggregate": 0.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "sqs_dlq_numberofmessagesreceived": {
+      "stat": "Sum",
+      "aggregate": 0.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "sqs_dlq_numberofmessagesdeleted": {
+      "stat": "Sum",
+      "aggregate": 0.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "sqs_dlq_numberofemptyreceives": {
+      "stat": "Sum",
+      "aggregate": 0.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "sqs_dlq_max_age": {
+      "stat": "Maximum",
+      "aggregate": 0.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "ddb_consumedreadcapacityunits": {
+      "stat": "Sum",
+      "aggregate": 4071.5,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 28.0
+        },
+        {
+          "timestamp": "2026-10-29T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 573.5
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 5.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 25.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 10.0
+        },
+        {
+          "timestamp": "2026-10-29T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 545.0
+        },
+        {
+          "timestamp": "2026-10-30T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 3.0
+        },
+        {
+          "timestamp": "2026-10-31T09:00:00+00:00",
+          "value": 174.0
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 5.0
+        },
+        {
+          "timestamp": "2026-10-31T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 525.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 1387.5
+        },
+        {
+          "timestamp": "2026-11-01T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 48.0
+        },
+        {
+          "timestamp": "2026-11-01T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 48.0
+        },
+        {
+          "timestamp": "2026-11-02T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 153.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 541.5
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "ddb_consumedwritecapacityunits": {
+      "stat": "Sum",
+      "aggregate": 2680.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 390.0
+        },
+        {
+          "timestamp": "2026-10-29T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 255.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 9.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-29T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 329.0
+        },
+        {
+          "timestamp": "2026-10-30T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-30T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 11.0
+        },
+        {
+          "timestamp": "2026-10-31T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T11:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 15.0
+        },
+        {
+          "timestamp": "2026-10-31T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-10-31T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 462.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 785.0
+        },
+        {
+          "timestamp": "2026-11-01T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T19:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-01T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T03:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T04:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T05:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T06:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T07:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T09:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 17.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 277.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 130.0
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 0.0
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 0.0
+        }
+      ]
+    },
+    "ddb_readthrottleevents": {
+      "stat": "Sum",
+      "aggregate": null,
+      "status": "Complete",
+      "points": []
+    },
+    "ddb_writethrottleevents": {
+      "stat": "Sum",
+      "aggregate": null,
+      "status": "Complete",
+      "points": []
+    },
+    "ddb_systemerrors": {
+      "stat": "Sum",
+      "aggregate": null,
+      "status": "Complete",
+      "points": []
+    },
+    "ddb_usererrors": {
+      "stat": "Sum",
+      "aggregate": null,
+      "status": "Complete",
+      "points": []
+    },
+    "logs_http_incomingbytes": {
+      "stat": "Sum",
+      "aggregate": 269906.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T10:00:00+00:00",
+          "value": 576.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 42780.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 2987.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 2529.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 1733.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 575.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 575.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 32732.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 579.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 579.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 575.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 46533.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 91337.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 924.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 1158.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 11912.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 31822.0
+        }
+      ]
+    },
+    "logs_http_incominglogevents": {
+      "stat": "Sum",
+      "aggregate": 2322.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T10:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-10-29T14:00:00+00:00",
+          "value": 371.0
+        },
+        {
+          "timestamp": "2026-10-29T15:00:00+00:00",
+          "value": 22.0
+        },
+        {
+          "timestamp": "2026-10-29T16:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-10-29T17:00:00+00:00",
+          "value": 12.0
+        },
+        {
+          "timestamp": "2026-10-30T00:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-10-30T01:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 284.0
+        },
+        {
+          "timestamp": "2026-10-31T08:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-10-31T14:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-10-31T21:00:00+00:00",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2026-11-01T11:00:00+00:00",
+          "value": 404.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 790.0
+        },
+        {
+          "timestamp": "2026-11-01T14:00:00+00:00",
+          "value": 7.0
+        },
+        {
+          "timestamp": "2026-11-02T08:00:00+00:00",
+          "value": 8.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 103.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 277.0
+        }
+      ]
+    },
+    "logs_worker_incomingbytes": {
+      "stat": "Sum",
+      "aggregate": 211488.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 42652.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 168836.0
+        }
+      ]
+    },
+    "logs_worker_incominglogevents": {
+      "stat": "Sum",
+      "aggregate": 659.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 133.0
+        },
+        {
+          "timestamp": "2026-11-01T12:00:00+00:00",
+          "value": 526.0
+        }
+      ]
+    },
+    "logs_rentingestion_incomingbytes": {
+      "stat": "Sum",
+      "aggregate": 4864.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 3648.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 1216.0
+        }
+      ]
+    },
+    "logs_rentingestion_incominglogevents": {
+      "stat": "Sum",
+      "aggregate": 20.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-29T11:00:00+00:00",
+          "value": 15.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 5.0
+        }
+      ]
+    },
+    "logs_tokenrefresh_incomingbytes": {
+      "stat": "Sum",
+      "aggregate": 95203.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 1168.0
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 4423.0
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 4417.0
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 1168.0
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 1168.0
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 1168.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 2335.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 4668.0
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 4668.0
+        }
+      ]
+    },
+    "logs_tokenrefresh_incominglogevents": {
+      "stat": "Sum",
+      "aggregate": 402.0,
+      "status": "Complete",
+      "points": [
+        {
+          "timestamp": "2026-10-30T10:00:00+00:00",
+          "value": 5.0
+        },
+        {
+          "timestamp": "2026-10-30T22:00:00+00:00",
+          "value": 16.0
+        },
+        {
+          "timestamp": "2026-10-31T10:00:00+00:00",
+          "value": 16.0
+        },
+        {
+          "timestamp": "2026-10-31T22:00:00+00:00",
+          "value": 5.0
+        },
+        {
+          "timestamp": "2026-11-01T10:00:00+00:00",
+          "value": 5.0
+        },
+        {
+          "timestamp": "2026-11-01T22:00:00+00:00",
+          "value": 5.0
+        },
+        {
+          "timestamp": "2026-11-02T10:00:00+00:00",
+          "value": 10.0
+        },
+        {
+          "timestamp": "2026-11-02T11:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-02T12:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-02T13:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-02T14:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-02T15:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-02T16:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-02T17:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-02T18:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-02T19:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-02T20:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-02T21:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-02T22:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-02T23:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-03T00:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-03T01:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-03T02:00:00+00:00",
+          "value": 20.0
+        },
+        {
+          "timestamp": "2026-11-03T03:00:00+00:00",
+          "value": 20.0
+        }
+      ]
+    }
+  }
+}

@@ -1,10 +1,10 @@
 # FlatSplit hosting cost model: AWS versus on-premise
 
 **Issue:** [#45 — Compare AWS and on-premise hosting costs](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/45) · **Experiment:** E9 in [evaluation-plan.md](https://github.com/horiiiiii032929/CS5225-teams12-2026/blob/main/docs/evaluation-plan.md)
-**Draft:** 12 October 2026 · **Updated:** 26 October 2026 · **Owner:** Ming (@lukerspace) · **Reviewer:** Mani (@saravanamani1999) · **Status:** Partially measured — per-request operation counts measured; demand volumes and AWS-side metrics still assumed
+**Draft:** 12 October 2026 · **Updated:** 3 November 2026 · **Owner:** Ming (@lukerspace) · **Reviewer:** Mani (@saravanamani1999) · **Status:** Partially measured — per-request operations and one shared-dev usage window measured; tagged bill and demand volumes remain open
 **Repository path:** `docs/evaluation/e9/cost-model.md` (the original draft proposed `docs/evaluation/E9-cost/cost-model.md`; D-E5 now uses lowercase experiment IDs)
 
-The demand figures are assumptions. What each request _costs in AWS operations_ is no longer an assumption: on 20 October 2026 every DynamoDB, SQS and OneMap call was counted per request against the real Lambda resolver, and those counts replaced the design budgets the model used before (see [Measured per-request operations](#measured-per-request-operations-20-october-2026)). What remains assumed is how many people do these things, how long Lambda runs outside the lookup path, cold-start share, log volume, and the RRU/WRU conversion — all owned by #30 and #34. The on-premise figures are an estimate built on stated assumptions, **not a quote** (required wording, evaluation-plan limitations).
+The demand figures are assumptions. What each request _costs in AWS operations_ is no longer an assumption: on 20 October 2026 every DynamoDB, SQS and OneMap call was counted per request against the real Lambda resolver, and those counts replaced the design budgets the model used before (see [Measured per-request operations](#measured-per-request-operations-20-october-2026)). Issue #34's [3 November deployed receipt](deployed-usage-2026-11-03.md) adds one 124-hour shared-dev observation of durations, logs, queue traffic, table size, failures and rent coverage. It does not establish monthly demand or an actual tagged bill. The on-premise figures are an estimate built on stated assumptions, **not a quote** (required wording, evaluation-plan limitations).
 
 ## Status reconciliation — 20 October 2026
 
