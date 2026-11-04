@@ -54,6 +54,19 @@ The local workload generator, k6 runner and privacy-safe summarizer are in [`too
 - k6 uses one single-instance `per-vu-iterations` execution, sharded by ordinal. Requests wait for absolute planned arrivals; arrivals beyond `max_lateness_ms` are explicitly dropped rather than hidden in a response-dependent queue. Finite-VU drops are client limitations to disclose, not measured backend capacity.
 - Generator defaults are16 VUs for W1 and256 for W2. Eval requires **at least `ceil(peak_requests_per_second * timeout_ms / 1000) + 1` VUs**, using2/s for W1 and50/s for W2. The timeout is a conservative service-tail envelope: W2 with a5,000 ms timeout needs251 VUs; a larger timeout needs explicit higher `--vus`. The extra VU is minimal scheduling headroom, not a generator-capacity guarantee. Pilot and record generator resource saturation/lateness, and add headroom if needed; never interpret a low request-only p95 with drops/backlog as backend success. Local smoke may deliberately use fewer VUs.
 
+### Resolve the destination catalog on the target
+
+The 30 reviewed destinations are in [`tools/load/destinations.json`](../../tools/load/destinations.json). Each pins the `/places` label, address and station chosen in [#30](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/30). The weights are assumed tiers, not measured demand. NTU and SUSS are absent because `/places` reports both as `STATION_TOO_FAR` under the 1,000 m station limit, which leaves western Singapore under-weighted.
+
+Place IDs are target-local and expire 24 hours after the lookup that created them. A cached lookup does not extend them. So resolve the catalog on the target shortly before each run:
+
+```sh
+python tools/load/resolve_catalog.py --base-url https://<target>/api --target eval \
+  --reviewer <name> --revision <revision> --output /absolute/catalog.json
+```
+
+It stops without writing if any destination no longer matches exactly one candidate. It prints a deadline 23 hours after it started, by which setup and measurement must finish. That deadline holds only when none of these queries was looked up on the target in the previous 24 hours: a fresh stack, or a day after the last resolution. Resolving costs one lookup per destination (30), not routing calls; warming routes is separate.
+
 ### Run only against a verified, authorized target
 
 Requires Python3.13/Node24 from the repository setup and a separately installed k6 binary. No application dependency or lockfile change is needed. Supply operator-created absolute catalog/run paths, existing target records and a fresh evidence path for each run:
