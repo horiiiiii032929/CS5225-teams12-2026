@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 import urllib.parse
@@ -108,6 +109,13 @@ def http_lookup(base_url: str) -> Lookup:
     return lookup
 
 
+def write_new(path: Path, text: str) -> None:
+    """Create `path` with `text`, refusing an existing file or any symlink there."""
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    with os.fdopen(os.open(path, flags, 0o644), "w") as output:
+        output.write(text)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--base-url", required=True, help="API base, ending in /api")
@@ -117,7 +125,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--destinations", type=Path, default=HERE / "destinations.json")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
-    if args.output.exists():
+    if os.path.lexists(args.output):
         parser.error(f"{args.output} exists; use a fresh path for each resolution")
     started = datetime.now(UTC)
     try:
@@ -131,7 +139,14 @@ def main(argv: list[str] | None = None) -> int:
     except SelectionError as exc:
         print(f"{exc} Review destinations.json; nothing was written.", file=sys.stderr)
         return 1
-    args.output.write_text(json.dumps(catalog, indent=1) + "\n")
+    try:
+        write_new(args.output, json.dumps(catalog, indent=1) + "\n")
+    except FileExistsError:
+        print(
+            f"{args.output} appeared during resolution; nothing was written.",
+            file=sys.stderr,
+        )
+        return 1
     deadline = (started + timedelta(hours=VALID_HOURS)).astimezone(SGT)
     print(
         f"Resolved {len(catalog['destinations'])} destinations into {args.output}. "

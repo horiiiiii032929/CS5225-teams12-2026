@@ -1,9 +1,13 @@
 """#30 catalog resolver: pinned selections and the reviewed destination list."""
 
+import contextlib
 import importlib.util
+import io
 import json
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -97,6 +101,66 @@ class ReviewedListTests(unittest.TestCase):
         )
         plan = generator.build_plan("W1", catalog=catalog)
         self.assertEqual(len(plan["arrivals"]), 1200)
+
+
+class OutputTests(unittest.TestCase):
+    """The catalog never replaces a file, even one created mid-resolution (#95)."""
+
+    def run_main(self, output, lookup):
+        argv = ["--base-url", "http://test/api", "--target", "eval"]
+        argv += ["--reviewer", "test", "--revision", "test", "--output", str(output)]
+        with (
+            mock.patch.object(resolver, "http_lookup", return_value=lookup),
+            mock.patch.object(resolver.time, "sleep"),
+            contextlib.redirect_stderr(io.StringIO()),
+        ):
+            return resolver.main(argv)
+
+    def lookup_for(self, on_call=lambda: None):
+        def lookup(query):
+            on_call()
+            d = next(d for d in REVIEWED["destinations"] if d["query"] == query)
+            return [
+                place(f"pl_{d['alias']}", d["address"], d["stationKey"], d["label"])
+            ]
+
+        return lookup
+
+    def test_writes_a_new_catalog(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "catalog.json"
+            self.assertEqual(self.run_main(output, self.lookup_for()), 0)
+            self.assertEqual(len(json.loads(output.read_text())["destinations"]), 30)
+
+    def test_keeps_a_file_created_during_lookups(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "catalog.json"
+
+            def create():
+                if not output.exists():
+                    output.write_text("theirs")
+
+            self.assertEqual(self.run_main(output, self.lookup_for(create)), 1)
+            self.assertEqual(output.read_text(), "theirs")
+
+    def test_refuses_a_dangling_symlink(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output, target = Path(tmp) / "catalog.json", Path(tmp) / "elsewhere.json"
+            output.symlink_to(target)
+            with self.assertRaises(SystemExit):
+                self.run_main(output, self.lookup_for())
+            self.assertFalse(target.exists())
+
+    def test_never_follows_a_symlink_created_during_lookups(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output, target = Path(tmp) / "catalog.json", Path(tmp) / "elsewhere.json"
+
+            def link():
+                if not output.is_symlink():
+                    output.symlink_to(target)
+
+            self.assertEqual(self.run_main(output, self.lookup_for(link)), 1)
+            self.assertFalse(target.exists())
 
 
 if __name__ == "__main__":
