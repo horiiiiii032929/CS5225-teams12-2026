@@ -1,0 +1,307 @@
+{
+  "version": 1,
+  "reviewed": "2026-11-02, #30 (provisional weights accepted by WK)",
+  "weight_basis": "assumed tiers 1-5 by expected flat-sharer demand; not measured demand data",
+  "destinations": [
+    {
+      "alias": "nusKentRidge",
+      "group": "university",
+      "weight": 5,
+      "query": "National University of Singapore",
+      "label": "NATIONAL UNIVERSITY OF SINGAPORE",
+      "address": "2 MEDICAL DRIVE NATIONAL UNIVERSITY OF SINGAPORE SINGAPORE 117593",
+      "stationKey": "KENT_RIDGE",
+      "receipt": "https://www.nus.edu.sg/"
+    },
+    {
+      "alias": "smuBras",
+      "group": "university",
+      "weight": 3,
+      "query": "Singapore Management University",
+      "label": "SINGAPORE MANAGEMENT UNIVERSITY (LI KA SHING LIBRARY)",
+      "address": "70 STAMFORD ROAD SINGAPORE MANAGEMENT UNIVERSITY (LI KA SHING LIBRARY) SINGAPORE 178901",
+      "stationKey": "BRAS_BASAH",
+      "receipt": "https://www.smu.edu.sg/"
+    },
+    {
+      "alias": "nypAngMoKio",
+      "group": "university",
+      "weight": 2,
+      "query": "Nanyang Polytechnic",
+      "label": "NANYANG POLYTECHNIC",
+      "address": "150 ANG MO KIO AVENUE 8 NANYANG POLYTECHNIC SINGAPORE 569815",
+      "stationKey": "YIO_CHU_KANG",
+      "receipt": "https://www.nyp.edu.sg/"
+    },
+    {
+      "alias": "tpTampines",
+      "group": "university",
+      "weight": 2,
+      "query": "Temasek Polytechnic",
+      "label": "TEMASEK POLYTECHNIC (11 SCHOOL OF ENGINEERING)",
+      "address": "21 TAMPINES AVENUE 1 TEMASEK POLYTECHNIC (11 SCHOOL OF ENGINEERING) SINGAPORE 529757",
+      "stationKey": "TAMPINES_WEST",
+      "receipt": "https://www.tp.edu.sg/"
+    },
+    {
+      "alias": "sutdChangi",
+      "group": "university",
+      "weight": 2,
+      "query": "Singapore University of Technology and Design",
+      "label": "SINGAPORE UNIVERSITY OF TECHNOLOGY AND DESIGN (BUILDING 2)",
+      "address": "8 SOMAPAH ROAD SINGAPORE UNIVERSITY OF TECHNOLOGY AND DESIGN (BUILDING 2) SINGAPORE 487372",
+      "stationKey": "UPPER_CHANGI",
+      "receipt": "https://www.sutd.edu.sg/"
+    },
+    {
+      "alias": "sitPunggol",
+      "group": "university",
+      "weight": 2,
+      "query": "Singapore Institute of Technology",
+      "label": "SINGAPORE INSTITUTE OF TECHNOLOGY",
+      "address": "13 NEW PUNGGOL ROAD SINGAPORE INSTITUTE OF TECHNOLOGY SINGAPORE 829979",
+      "stationKey": "PUNGGOL_COAST",
+      "receipt": "https://www.singaporetech.edu.sg/"
+    },
+    {
+      "alias": "npClementi",
+      "group": "university",
+      "weight": 2,
+      "query": "Ngee Ann Polytechnic",
+      "label": "NGEE ANN POLYTECHNIC (BLK 15)",
+      "address": "535 CLEMENTI ROAD NGEE ANN POLYTECHNIC (BLK 15) SINGAPORE 599489",
+      "stationKey": "BEAUTY_WORLD",
+      "receipt": "https://www.np.edu.sg/"
+    },
+    {
+      "alias": "spDover",
+      "group": "university",
+      "weight": 2,
+      "query": "Singapore Polytechnic",
+      "label": "SINGAPORE POLYTECHNIC",
+      "address": "500 DOVER ROAD SINGAPORE POLYTECHNIC SINGAPORE 139651",
+      "stationKey": "DOVER",
+      "receipt": "https://www.sp.edu.sg/"
+    },
+    {
+      "alias": "rafflesPlace",
+      "group": "cbd",
+      "weight": 5,
+      "query": "One Raffles Place",
+      "label": "ONE RAFFLES PLACE",
+      "address": "1 RAFFLES PLACE ONE RAFFLES PLACE SINGAPORE 048616",
+      "stationKey": "RAFFLES_PLACE",
+      "receipt": "https://en.wikipedia.org/wiki/One_Raffles_Place"
+    },
+    {
+      "alias": "mbfc",
+      "group": "cbd",
+      "weight": 5,
+      "query": "Marina Bay Financial Centre",
+      "label": "MARINA BAY FINANCIAL CENTRE",
+      "address": "MARINA BAY FINANCIAL CENTRE",
+      "stationKey": "DOWNTOWN",
+      "receipt": "https://www.mbfc.com.sg/"
+    },
+    {
+      "alias": "guocoTower",
+      "group": "cbd",
+      "weight": 3,
+      "query": "Guoco Tower",
+      "label": "GUOCO TOWER",
+      "address": "9 WALLICH STREET GUOCO TOWER SINGAPORE 078885",
+      "stationKey": "TANJONG_PAGAR",
+      "receipt": "https://www.guocotower.com/"
+    },
+    {
+      "alias": "suntecCity",
+      "group": "cbd",
+      "weight": 3,
+      "query": "Suntec City",
+      "label": "SUNTEC CITY",
+      "address": "SUNTEC CITY",
+      "stationKey": "PROMENADE",
+      "receipt": "https://www.suntecsingapore.com/"
+    },
+    {
+      "alias": "rafflesCity",
+      "group": "cbd",
+      "weight": 3,
+      "query": "Raffles City",
+      "label": "RAFFLES CITY SHOPPING CENTRE",
+      "address": "252 NORTH BRIDGE ROAD RAFFLES CITY SHOPPING CENTRE",
+      "stationKey": "CITY_HALL",
+      "receipt": "https://www.capitaland.com/sg/malls/rafflescity/en.html"
+    },
+    {
+      "alias": "ngeeAnnCity",
+      "group": "cbd",
+      "weight": 2,
+      "query": "Ngee Ann City",
+      "label": "NGEE ANN CITY",
+      "address": "391B ORCHARD ROAD NGEE ANN CITY SINGAPORE 238874",
+      "stationKey": "ORCHARD",
+      "receipt": "https://en.wikipedia.org/wiki/Ngee_Ann_City"
+    },
+    {
+      "alias": "bugisJunction",
+      "group": "cbd",
+      "weight": 2,
+      "query": "Bugis Junction",
+      "label": "BUGIS JUNCTION",
+      "address": "200 VICTORIA STREET BUGIS JUNCTION SINGAPORE 188021",
+      "stationKey": "BUGIS",
+      "receipt": "https://www.capitaland.com/sg/malls/bugisjunction/en.html"
+    },
+    {
+      "alias": "oneNorth",
+      "group": "businessPark",
+      "weight": 4,
+      "query": "Fusionopolis",
+      "label": "FUSIONOPOLIS",
+      "address": "FUSIONOPOLIS",
+      "stationKey": "ONE_NORTH",
+      "receipt": "https://en.wikipedia.org/wiki/One-north"
+    },
+    {
+      "alias": "biopolis",
+      "group": "businessPark",
+      "weight": 2,
+      "query": "Biopolis",
+      "label": "BIOPOLIS",
+      "address": "BIOPOLIS",
+      "stationKey": "BUONA_VISTA",
+      "receipt": "https://www.a-star.edu.sg/"
+    },
+    {
+      "alias": "mapletreeBC",
+      "group": "businessPark",
+      "weight": 3,
+      "query": "Mapletree Business City",
+      "label": "MAPLETREE BUSINESS CITY",
+      "address": "10 PASIR PANJANG ROAD MAPLETREE BUSINESS CITY SINGAPORE 117438",
+      "stationKey": "LABRADOR_PARK",
+      "receipt": "https://www.mapletree.com.sg/"
+    },
+    {
+      "alias": "changiBP",
+      "group": "businessPark",
+      "weight": 3,
+      "query": "Changi City Point",
+      "label": "CHANGI CITY POINT",
+      "address": "5 CHANGI BUSINESS PARK CENTRAL 1 CHANGI CITY POINT",
+      "stationKey": "EXPO",
+      "receipt": "https://www.changicitypoint.com.sg/"
+    },
+    {
+      "alias": "intlBP",
+      "group": "businessPark",
+      "weight": 2,
+      "query": "International Business Park",
+      "label": "INTERNATIONAL BUSINESS PARK",
+      "address": "31 INTERNATIONAL BUSINESS PARK INTERNATIONAL BUSINESS PARK SINGAPORE 609921",
+      "stationKey": "JURONG_EAST",
+      "receipt": "https://en.wikipedia.org/wiki/International_Business_Park"
+    },
+    {
+      "alias": "sciencePark",
+      "group": "businessPark",
+      "weight": 2,
+      "query": "Science Park Drive",
+      "label": "SCIENCE PARK DRIVE",
+      "address": "SCIENCE PARK DRIVE",
+      "stationKey": "KENT_RIDGE",
+      "receipt": "https://www.sciencepark.com.sg/"
+    },
+    {
+      "alias": "plq",
+      "group": "regionalCentre",
+      "weight": 3,
+      "query": "Paya Lebar Quarter",
+      "label": "PAYA LEBAR QUARTER",
+      "address": "10 PAYA LEBAR ROAD PAYA LEBAR QUARTER SINGAPORE 409057",
+      "stationKey": "PAYA_LEBAR",
+      "receipt": "https://www.payalebarquarter.com/"
+    },
+    {
+      "alias": "westgate",
+      "group": "regionalCentre",
+      "weight": 3,
+      "query": "Westgate",
+      "label": "WESTGATE",
+      "address": "3 GATEWAY DRIVE WESTGATE SINGAPORE 608532",
+      "stationKey": "JURONG_EAST",
+      "receipt": "https://www.capitaland.com/sg/malls/westgate/en.html"
+    },
+    {
+      "alias": "tampinesMall",
+      "group": "regionalCentre",
+      "weight": 2,
+      "query": "Tampines Mall",
+      "label": "TAMPINES MALL",
+      "address": "4 TAMPINES CENTRAL 5 TAMPINES MALL SINGAPORE 529510",
+      "stationKey": "TAMPINES",
+      "receipt": "https://www.capitaland.com/sg/malls/tampinesmall/en.html"
+    },
+    {
+      "alias": "causewayPoint",
+      "group": "regionalCentre",
+      "weight": 2,
+      "query": "Causeway Point",
+      "label": "CAUSEWAY POINT",
+      "address": "1 WOODLANDS SQUARE CAUSEWAY POINT SINGAPORE 738099",
+      "stationKey": "WOODLANDS",
+      "receipt": "https://en.wikipedia.org/wiki/Causeway_Point"
+    },
+    {
+      "alias": "nex",
+      "group": "regionalCentre",
+      "weight": 1,
+      "query": "NEX",
+      "label": "NEX",
+      "address": "23 SERANGOON CENTRAL NEX SINGAPORE 556083",
+      "stationKey": "SERANGOON",
+      "receipt": "https://www.nex.com.sg/"
+    },
+    {
+      "alias": "changiAirport",
+      "group": "majorEmployer",
+      "weight": 2,
+      "query": "Changi Airport Terminal 3",
+      "label": "CHANGI AIRPORT TERMINAL 3 BUILDING",
+      "address": "65 AIRPORT BOULEVARD CHANGI AIRPORT TERMINAL 3 BUILDING SINGAPORE 819663",
+      "stationKey": "CHANGI_AIRPORT",
+      "receipt": "https://www.changiairport.com/"
+    },
+    {
+      "alias": "sgh",
+      "group": "majorEmployer",
+      "weight": 2,
+      "query": "Singapore General Hospital",
+      "label": "SINGAPORE GENERAL HOSPITAL",
+      "address": "1 HOSPITAL CRESCENT SINGAPORE GENERAL HOSPITAL SINGAPORE 169608",
+      "stationKey": "OUTRAM_PARK",
+      "receipt": "https://www.sgh.com.sg/"
+    },
+    {
+      "alias": "nuh",
+      "group": "majorEmployer",
+      "weight": 2,
+      "query": "National University Hospital",
+      "label": "NATIONAL UNIVERSITY HOSPITAL",
+      "address": "3 LOWER KENT RIDGE ROAD NATIONAL UNIVERSITY HOSPITAL SINGAPORE 119073",
+      "stationKey": "KENT_RIDGE",
+      "receipt": "https://www.nuh.com.sg/"
+    },
+    {
+      "alias": "ttsh",
+      "group": "majorEmployer",
+      "weight": 2,
+      "query": "Tan Tock Seng Hospital",
+      "label": "TAN TOCK SENG HOSPITAL",
+      "address": "11 JALAN TAN TOCK SENG TAN TOCK SENG HOSPITAL SINGAPORE 308433",
+      "stationKey": "NOVENA",
+      "receipt": "https://en.wikipedia.org/wiki/Tan_Tock_Seng_Hospital"
+    }
+  ]
+}
