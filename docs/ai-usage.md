@@ -630,6 +630,29 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Tool: Codex, directed by Hikaru to finish queue review and merge verified work. The runbook's lookup pipeline now fails on curl errors and rejects public error/malformed bodies, while explicitly declining to treat HTTP 200 as credential-health proof. Its parser passed valid/error/malformed synthetic body probes. All 19 shell blocks parse; SQS shapes/enums and exact worker-log discovery were validated from local service models and synthetic inventory. No documented AWS command was executed.
 - Full integration check/test/build/synth, API-generation drift and E10 generator check passed on the runbook descendant: 438 API, 110 web, 20 CDK, four evaluation, 32 acceptance and ten summarizer tests (614 total). Successful Turbo task caches were reused where code was unchanged. Current-head CI and SHA guards are required before each merge; acceptance issues remain open for deployed/runtime/research receipts.
 
+## 30 October 2026 — WK #30 tooling publication
+
+- Tool: Codex, authorized by WK's “proceed” after the responsibility audit. Created a separate main316cd71-based publication branch, copied only the six existing owned load tooling/regression files and preserved the original checkout. Added `test:load` to the existing root test chain without removing either evaluation/acceptance discovery root or E2E summarizer coverage. Documented catalog/run/approval/evidence contracts in the existing evaluation index; no application/infrastructure/dependency/lockfile change or public catalog fabricated.
+- [#44 owner handback](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/44#issuecomment-6512786051) and [#43 cross-link](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/43#issuecomment-6512786352) posted/read back exactly. Acknowledge the subsequent #82/#83 corrections/reviews/resolutions, not an independent WK final-head review. Shared #29 execution still needs operator-confirmed full deployed SHA, successful fresh-credential receipt, same-build actual producer records and explicit shared-run approval. No shared completion forecast invented.
+- Independent local slices verified the existing JS runtime and Python evidence CLIs; no source integration defect reproduced or correction needed. Official k6v2.3.0 macOS arm64 zip SHA256 verified against GitHub release metadata: `b2417a3038edc5fe81dc178a889237724b595c5c9cfed875822008e46e862c7d`.
+- Actual k6 → current-main ASGI/Lambda resolver → native Moto, with synthetic persisted PLACE/rent/cache fixtures: W1 scale0.01 completes12 reads plus32 setup successes; W2 scale0.005 completes80 operations (8 create/16 join/32 save/24 read) plus98 setup successes. Both have zero drops/missing, k6/summarizer exit0. Strict lateness probe records13 successes/67 drops with complete evidence, not capacity; pending-cache setup starts no measured requests, k6 exits108 and summarizer exits1. Captured outputs omit capabilities; Python guards count zero external socket/DNS/provider attempts. Go-level sockets/DNS were not instrumented; k6 used literal loopback, remote-address deny ranges and disabled usage reporting. No OneMap/actual worker/cloud invoked.
+- Actual Python generator subprocesses confirm standard1200/16530 counts, W2 ramp1530/hold15000 and fixed operation mix. Summarizer subprocesses prove complete/mixed success-only percentiles and full planned hold-window throughput, interrupted-tail exit1, malformed/credential-bearing-row exit2 without marker echo or protected-output overwrite, and input/output symlink-alias refusal. These are synthetic contract probes, not benchmark artifacts.
+- Verification uses an explicit dummy-only environment, disabled AWS config/credential files/metadata, UV no-env/no-sync/offline and an OS sandbox denying nonloopback outbound traffic and credential-file reads. An automatically copied ignored `env` in the owned temporary worktree caused an initial formatter read attempt; the sandbox denied it, and the temporary copy was removed without reading contents. The original environment file was untouched. Smoke scripts/servers/binaries/data were cleaned; no cloud/shared workload, credential contents, provider/billing operation, workflow dispatch, deployment, merge, actual measurement or issue closure.
+- Final isolated checks passed: `pnpm format`, focused Ruff/ESLint for the new tooling, `pnpm check`, `pnpm test`, `pnpm build` and `pnpm synth` (no lookups; dummy account; nonloopback network denied). Test results:438 API +110 web +20 CDK +24 evaluation +32 acceptance +10 E2E summarizer +15 load protocol = **649 passed**; API/web/CDK suites executed, with one unchanged build dependency cached during test/build. Existing TanStack circular-import and CDK feature-flag notices remain non-fatal. No runtime/deployment result is inferred from these gates.
+
+## 31 October 2026 — #88 review-response corrections
+
+- Tool: Codex, authorized by WK's "proceed", addressing [Shyam's #88 review](https://github.com/horiiiiii032929/CS5225-teams12-2026/pull/88#pullrequestreview-5722073416) of `487070b`. Two delegated slices (JS runner/protocol; independent #89 review) and parent Python/docs work. Shyam's findings were code-inspection reports; each was reproduced or confirmed before change.
+- Changes: measured save/join pools accept a valid higher revision after an ambiguous write (setup stays strict); `empty` outcome for valid `complete` + `ranked: []` (setup still rejects); eval target gate rejects private/link-local/reserved/local addresses and hostnames (static, no DNS); eval requires VUs ≥ ceil(peak rate × timeout) + 1, generator defaults W1 16 / W2 256; summary adds planned-arrival latency and queue delay; a truncated final JSONL sample prefix yields exit 1 with `truncated_tail`. Setup stays fail-fast without retries; README documents fresh approval and full ceiling for any rerun.
+- Runtime proof (synthetic, loopback only): official k6 v2.3.0 → real resolver/Moto with real committed writes whose responses were dropped, and with pre-mutation 503s — later writes succeed, original failures retained, 44 requests each; empty setup search aborts before measured traffic. Summary CLI: 200 ms request + 30 s queue → 30,200 ms arrival latency; truncated tail exit 1; unsafe/malformed tails exit 2 without echo.
+- Gates (explicit dummy-only env, nonloopback network denied): format:check, lint, typecheck, 438 API, 110 web, 27 evaluation + acceptance, 10 E2E summarizer, 19 load protocol pass. CDK tests were not rerun: bundling needs network the sandbox denies, and infra is unchanged. No shared/provider/AWS access, credentials read, deployment or load run.
+
+## 2 November 2026 — #88 setup-budget correction
+
+- Codex addressed Shyam's re-review: share one read-only cohort per destination alias across VUs while retaining exclusive mutable join/save pools; classify a complete search with zero total pairs as invalid. The reduced read-group diversity is documented.
+- With synthetic 30-alias weights from the proposal, standard W2 at 256 VUs budgets 2,724 setup and 16,530 measured requests, 19,254 total; this is calculated, not measured throughput or an approved ceiling.
+- Verification: 21 Node protocol tests, 23 Python workload tests, targeted ESLint and Prettier passed. Official k6 against a loopback real resolver/Moto with synthetic records exercised four VUs, shared reads and mutable pools: two injected failures and 28 successes in each of two 30-request runs; an empty setup aborts. Search responses were synthetic. No shared service, OneMap, deployment or benchmark was exercised.
+
 ## 30 October 2026 — deployment verification and handoff record
 
 - Tool: Claude Code, directed by Shyam. It reviewed the `cdk diff` for `316cd71`, wrote guarded local scripts for Shyam to deploy and run the first token refresh, read back the stack, alarms, queues and worker and refresh logs, dispatched the `Deployed e2e` workflow and drafted this record. Shyam ran the deployment and stored the OneMap login; the assistant did not see or handle credentials.
@@ -642,6 +665,11 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Tool: Codex, directed by Mani to document the deployed E8 audit.
 - Contribution: added a reproducible read-only capture and a dated receipt covering deployed rent summaries and commute records.
 - Verification: queried the shared dev table with strongly consistent reads; no AWS data or deployment was changed.
+
+## 2 November 2026 — #88 main merge
+
+- Codex merged main `5b4e9a2` into the approved load-tooling branch, preserving both sides of the additive AI-usage conflict. No load-tooling behavior was changed by the conflict resolution.
+- Verification: 21 Node load protocol tests and 27 Python evaluation tests passed. No shared acceptance, deployment or load run was performed.
 
 ## 3 November 2026 — issue 28 rent failure protection
 
@@ -675,3 +703,15 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Contribution: added an "Observed shared-dev burst rates" section to `cost-model.md` carrying the three bursts with their provenance and WK's four restrictions, and amended open question 3 so `sustained_rps_per_node` and `target_peak_rps` are explicitly marked assumed until a separate authorized evaluation supplies them.
 - Note: the phrase WK objected to ("a lower bound on worker capacity") existed only in an issue comment and had not been written into the chapter, so nothing was retracted; the section states the rejected framing and why it was wrong, so it is not reintroduced later.
 - Verification: Prettier passed; no model input, figure or evidence file changed, so the published totals are unaffected. No AWS call, deployment or data change.
+
+## 3 November 2026 — #88 main merge
+
+- Codex merged main `e1a971c` into the load-tooling branch, preserving both sides of the additive AI-usage conflict. No load-tooling behavior was changed by the conflict resolution.
+- Verification: 21 Node load protocol tests and 33 Python evaluation tests passed. No shared acceptance, deployment or load run was performed.
+
+## 4 November 2026 — issue 45 quota wording and main merge
+
+- Tool: Claude Code, directed by Ming to clear the two blockers on #94: the main conflict and WK's 3 November quota restriction.
+- Contribution: merged main `e2d3780` into the branch, keeping both sides of the additive AI-usage conflict; added a third limit to the burst-rate section stating that a received or completed queue message does not establish one provider call, that C7's shared 250 calls/min budget is spent by `/places` lookups as well as worker routing, and that no same-window provider-call measurement exists, so the rates cannot establish quota compliance or headroom; recorded C7's shared 250/min budget in the quota paragraph next to OneMap's published 300/min, which the chapter had not stated before.
+- Findings it surfaced: the chapter cited only the published 300 calls/min and never the tighter 250/min guard the implementation actually enforces (`call_budget.py`), so a reader could not tell which figure the pipeline is held to.
+- Verification: Prettier passed on both files. No model input, figure or evidence file changed, so the published totals are unaffected. No AWS call, deployment or data change.
