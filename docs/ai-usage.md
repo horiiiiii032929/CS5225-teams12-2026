@@ -687,3 +687,9 @@ For future entries, record the requested issue, tool, contribution, checks actua
 
 - Codex merged main `e1a971c` into the load-tooling branch, preserving both sides of the additive AI-usage conflict. No load-tooling behavior was changed by the conflict resolution.
 - Verification: 21 Node load protocol tests and 33 Python evaluation tests passed. No shared acceptance, deployment or load run was performed.
+
+## 4 November 2026 — #72 team OneMap account and dev record
+
+- Tool: Claude Code, directed by Shyam to switch dev to the team's OneMap account and record the 4 November deployment.
+- Contribution: prepared the credential-storing refresh script that Shyam ran (the login was typed only into hidden prompts), checked the refresh logs, lookup and alarms, reviewed the 14:00–15:30 window afterwards from CloudWatch and wrote this record.
+- Verification: refresh logs and the expiry of the new token, a 200 lookup, alarm states and Lambda invocation metrics, all read-only. No login or token passed through the assistant.

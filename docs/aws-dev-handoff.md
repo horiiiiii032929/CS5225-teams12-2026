@@ -132,6 +132,16 @@ The first scheduled refresh then exposed a design fault. On 31 October at 06:17 
 
 Nobody invoked it by hand after the token expired at 23:08 SGT on 31 October, so there was no valid token until the scheduled run at 06:17 SGT on 1 November, about 7 hours later. That run stored a new token expiring on 4 November at 06:17 SGT, and the 18:17 SGT run returned the same token. `/api/places` returned 200 on 1 November at 19:37 SGT. The effect on users during the gap was not measured.
 
+## Deployment — 4 November 2026 (main `e2d3780`)
+
+Shyam redeployed `FlatSplit-dev` from repository main `e2d3780e28028574f8ee3dd990c10257be9f8029` in the morning, after a 3 November deploy had left a Lambda bundle that did not match main. A `cdk diff` against main afterwards reported no differences. The [`Deployed e2e` run 41759421820](https://github.com/horiiiiii032929/CS5225-teams12-2026/actions/runs/41759421820), with `require_complete=true`, recorded **PASS** for this revision.
+
+This was the first token expiry under the 15-minute refresh. The token expired at 06:17 SGT, and the scheduled run at 06:27 SGT stored a new one, so lookups had no valid token for about 10 minutes.
+
+At 17:37 SGT Shyam replaced the personal OneMap account in `OneMapCredentialsSecret` with the team's project account and ran step 2 of the runbook below. The forced refresh succeeded with a new token expiring on **7 November at 15:26 SGT**, and scheduled refreshes now log in with the team account. Afterwards `GET /api/places?q=kent%20ridge` returned 200 and all five dev alarms were `OK`. No login, key or token value is recorded here.
+
+The automated watch for the 14:00–15:30 SGT load window did not run because the operator's session credentials had expired. CloudWatch afterwards showed 2 API invocations and no commute-worker invocations in that window, an empty dead-letter queue and no alarm state changes, so no load run is recorded for it.
+
 ## OneMap token refresh runbook (#72)
 
 Since #72, the token in `OneMapTokenSecret` is kept valid by the `OneMapTokenRefresh` Lambda, which runs every 15 minutes on an EventBridge schedule. OneMap returns the same token until it expires, so a new token can only be fetched after expiry. If OneMap issues one on the first login after expiry, each expiry leaves a gap of up to about 30 minutes. How soon it does is unobserved; until it does, runs fail and `OneMapTokenRefreshFailing` stays raised, so the gap has no fixed bound. A scheduled run logs in with the account stored in `OneMapCredentialsSecret` only during the token's last 24 hours; a manual invocation always logs in. Deploys never invoke it. After the first deploy that adds it, or when the account or its password changes, the account holder runs these steps once from the README credential subshell:
