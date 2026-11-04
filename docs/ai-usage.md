@@ -687,3 +687,8 @@ For future entries, record the requested issue, tool, contribution, checks actua
 
 - Codex merged main `e1a971c` into the load-tooling branch, preserving both sides of the additive AI-usage conflict. No load-tooling behavior was changed by the conflict resolution.
 - Verification: 21 Node load protocol tests and 33 Python evaluation tests passed. No shared acceptance, deployment or load run was performed.
+
+## 4 November 2026 — #30 catalog resolver
+
+- Tool: Claude Code, directed by Shyam. It drafted the 30-destination proposal on #30, pinned each reviewed label, address and station after WK's review, and wrote `tools/load/resolve_catalog.py` with its tests and the README section.
+- Verification: the new unit tests, the full evaluation suite and a live resolution against the dev `/places` API passed. No load, eval deployment or routing work was run.
