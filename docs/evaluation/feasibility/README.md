@@ -76,6 +76,37 @@ python3 scripts/build_town_points.py       # regenerates data/towns.json
 
 Each script writes a timestamped summary and raw archive into `evidence/`. `measure_rate_limit.py` and the ad-hoc `scripts/adhoc/threshold.py` deliberately drive the API into 429 and consume shared quota — do not run them while someone else is testing.
 
+## 5 November 2026 — reviewed-destination coverage and snapping error (#19 / E8)
+
+[`evidence/coverage_20261105T093324Z.json`](evidence/coverage_20261105T093324Z.json), produced by `scripts/measure_route_coverage.py` **v1.1.0**, operator @lukerspace, OneMap user 27958. 1,050 calls, no retries and no rate limiting; the client's 250 calls/min guard was never hit.
+
+**What changed from the 14 October run.** Destinations no longer come from a hard-coded list of search queries. They come from #30's reviewed catalogue, [`tools/load/destinations.json`](../../../tools/load/destinations.json) (version 1, reviewed 2 November), where every entry carries a reviewed label, a full address and a pinned `stationKey`. Each destination is geocoded from its **address**, and the snapped station is required to be the reviewed one rather than whatever comes back nearest. That removes the defect #55 recorded: on 14 October, SIT resolved to DigiPen and Tampines Hub to an enabling-services hub, which is why that run could not count as a completed audit. The old behaviour is kept under `--legacy-queries` so the earlier artifacts stay reproducible.
+
+**Coverage — 27 towns × 30 destinations = 810 pairs.**
+
+| Result                         | Pairs    | Note                                                                         |
+| ------------------------------ | -------- | ---------------------------------------------------------------------------- |
+| Routed                         | **780**  | every one of the 26 routable towns is 30/30                                  |
+| Marked `unavailable`           | **30**   | all of them TENGAH, which has no rail service; "No route found" per pair     |
+| Errors                         | **0**    | the 30 upstream 404s are classified as unavailable, never as 0 minutes (D06) |
+| **Coverage of routable towns** | **100%** | 780 of 780                                                                   |
+
+Commute times across the 780 routed pairs: median 33.0 min, p95 62.3 min, max 82.4 min.
+
+**Station pinning held.** All 30 reviewed `stationKey` values appeared in their destination's nearest-station list, so no destination fell back to a guessed station (`stationPinMismatches` is empty). One label still differs from the reviewed one: `suntecCity` geocodes to `GOLDEN VILLAGE (GV SUNTEC CITY)` — the reviewed address resolves to a cinema inside the right complex, so the coordinates are usable but the label is not the reviewed venue name. That is the one residual instance of the #55 class of defect, down from several.
+
+**Snapping error — 90 comparisons (3 probe towns × 30 destinations).** Median absolute error **4.1 min**, maximum **16.8 min**. The signed numbers are the finding: **82 of 90 comparisons are negative**, mean −4.9 min, so representing a destination by its MRT station **systematically understates** the commute, because the walk from station to actual address is never counted. It scales with that walk:
+
+| Station-to-address distance | Comparisons | Median signed error | Worst |
+| --------------------------- | ----------- | ------------------- | ----- |
+| under 200 m                 | 45          | −2.4 min            | −4.8  |
+| 200–500 m                   | 27          | −6.5 min            | −16.8 |
+| 500 m and over              | 18          | −11.9 min           | −16.6 |
+
+Worst cases: Changi Airport Terminal 3 from ANG MO KIO (72.0 exact vs 55.2 snapped, −16.8) and Ngee Ann Polytechnic from three towns (−16.6, −15.9, −14.3). Eight comparisons go the other way by up to +5.6 min, where the station sits on a faster line than the address's own access path.
+
+**Limitations, stated rather than buried.** The three probe towns are the first three alphabetically (ANG MO KIO, BEDOK, BISHAN), so the snapping sample is north/east weighted and is not a random sample of origins. Routes use the client defaults — weekday 08:30, `date=10-13-2026`, TRANSIT, up to 3 itineraries with the shortest taken — so the figures are one departure time, not a daily profile. This run measures OneMap directly; it is not a measurement of the deployed worker, whose per-job records remain the operator's receipt.
+
 ## 14 October handoff corrections
 
 The current table includes all 27 HDB rental keys, including `CENTRAL` and the documented non-routable `TENGAH`. Historical measurements used `CENTRAL AREA`; interpret that label as the `CENTRAL` key without rewriting raw artifacts. The regeneration script now refuses fuzzy station matches and retains TENGAH's explicit unavailable reference instead of silently generating a 26-town table.

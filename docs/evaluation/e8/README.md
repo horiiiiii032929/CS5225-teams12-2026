@@ -4,7 +4,7 @@
 
 **Run date:** 13 October 2026 (Singapore time)
 
-**Status:** Completed for the source-level rent audit. A [31 October deployed spot-check](deployed-audit-2026-10-31.md) covers 129 rent summaries and all 27 town keys for one pinned destination; #19's multi-destination and exact-address commute acceptance remains pending.
+**Status:** Completed for the source-level rent audit. A [31 October deployed spot-check](deployed-audit-2026-10-31.md) covers 129 rent summaries and all 27 town keys for one pinned destination. #19's commute half is now measured: a [5 November reviewed-destination run](../feasibility/README.md#5-november-2026--reviewed-destination-coverage-and-snapping-error-19--e8) covers 27 towns × 30 reviewed destinations and 90 exact-address-versus-snapped-station comparisons. It awaits @saravanamani1999's review before E8 is closed.
 
 ## Question and scope
 
@@ -97,4 +97,4 @@ python3 tools/evaluation/e8_rent_audit.py \
 
 ## Remaining E8 work
 
-The deployed run confirms cached records for all 27 towns for one pinned destination, with 26 successful routes and one explicit unavailable result. It does not answer the multi-destination exact-address-versus-snapped-station question. That remains #19's responsibility and requires its reviewed route-coverage evidence to be linked before formal E8 closure.
+The deployed run confirms cached records for all 27 towns for one pinned destination, with 26 successful routes and one explicit unavailable result. It did not answer the multi-destination exact-address-versus-snapped-station question; the [5 November run](../feasibility/evidence/coverage_20261105T093324Z.json) now does, against #30's reviewed destinations rather than search queries: 780 of 780 routable pairs covered, the 30 TENGAH pairs marked unavailable, and a median absolute snapping error of 4.1 minutes with a maximum of 16.8 — understating the commute in 82 of 90 comparisons, because the walk from station to address is not counted. **What remains for formal closure:** @saravanamani1999's review of that evidence, and the deployed per-job/table reconciliation, which is an operator receipt rather than a measurement this audit can produce.
