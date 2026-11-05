@@ -709,9 +709,26 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Codex merged main `e1a971c` into the load-tooling branch, preserving both sides of the additive AI-usage conflict. No load-tooling behavior was changed by the conflict resolution.
 - Verification: 21 Node load protocol tests and 33 Python evaluation tests passed. No shared acceptance, deployment or load run was performed.
 
+## 4 November 2026 — #72 team OneMap account and dev record
+
+- Tool: Claude Code, directed by Shyam to switch dev to the team's OneMap account and record the 4 November deployment.
+- Contribution: prepared the credential-storing refresh script that Shyam ran (the login was typed only into hidden prompts), checked the refresh logs, lookup and alarms, reviewed the 14:00–15:30 window afterwards from CloudWatch and wrote this record.
+- Verification: refresh logs and the expiry of the new token, a 200 lookup, alarm states and Lambda invocation metrics, all read-only. No login or token passed through the assistant.
+
+## 4 November 2026 — #30 catalog resolver
+
+- Tool: Claude Code, directed by Shyam. It drafted the 30-destination proposal on #30, pinned each reviewed label, address and station after WK's review, and wrote `tools/load/resolve_catalog.py` with its tests and the README section.
+- Verification: the new unit tests, the full evaluation suite and a live resolution against the dev `/places` API passed. No load, eval deployment or routing work was run.
+
 ## 4 November 2026 — issue 45 quota wording and main merge
 
 - Tool: Claude Code, directed by Ming to clear the two blockers on #94: the main conflict and WK's 3 November quota restriction.
 - Contribution: merged main `e2d3780` into the branch, keeping both sides of the additive AI-usage conflict; added a third limit to the burst-rate section stating that a received or completed queue message does not establish one provider call, that C7's shared 250 calls/min budget is spent by `/places` lookups as well as worker routing, and that no same-window provider-call measurement exists, so the rates cannot establish quota compliance or headroom; recorded C7's shared 250/min budget in the quota paragraph next to OneMap's published 300/min, which the chapter had not stated before.
 - Findings it surfaced: the chapter cited only the published 300 calls/min and never the tighter 250/min guard the implementation actually enforces (`call_budget.py`), so a reader could not tell which figure the pipeline is held to.
 - Verification: Prettier passed on both files. No model input, figure or evidence file changed, so the published totals are unaffected. No AWS call, deployment or data change.
+
+## 5 November 2026 — PR review and merge integration
+
+- Tool: Codex, directed by Hikaru to review #94, #95 and #96 and merge those without blockers.
+- Contribution: reviewed the current changes and CI, requested corrections to #94's storage model and narrative percentage, approved #95, and merged its implementation. Integrated main into #96, retaining both additive AI-usage entries.
+- Verification: 41 offline evaluation tests and 21 Node load-protocol tests passed for #95. #94's numeric JSON and CSV reproduced exactly under Python 3.13; 33 offline evaluation tests passed, but the storage assumptions and narrative still need correction. No shared API, AWS deployment, load run or credential operation was performed.
