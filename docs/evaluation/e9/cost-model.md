@@ -1,7 +1,7 @@
 # FlatSplit hosting cost model: AWS versus on-premise
 
 **Issue:** [#45 — Compare AWS and on-premise hosting costs](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/45) · **Experiment:** E9 in [evaluation-plan.md](https://github.com/horiiiiii032929/CS5225-teams12-2026/blob/main/docs/evaluation-plan.md)
-**Draft:** 12 October 2026 · **Updated:** 3 November 2026 · **Owner:** Ming (@lukerspace) · **Reviewer:** Mani (@saravanamani1999) · **Status:** Partially measured — per-request operations and one shared-dev usage window measured; tagged bill and demand volumes remain open
+**Draft:** 12 October 2026 · **Updated:** 5 November 2026 · **Owner:** Ming (@lukerspace) · **Reviewer:** Mani (@saravanamani1999) · **Status:** Partially measured — per-request operations and one shared-dev usage window measured; tagged bill and demand volumes remain open
 **Repository path:** `docs/evaluation/e9/cost-model.md` (the original draft proposed `docs/evaluation/E9-cost/cost-model.md`; D-E5 now uses lowercase experiment IDs)
 
 The demand figures are assumptions. What each request _costs in AWS operations_ is no longer an assumption: on 20 October 2026 every DynamoDB, SQS and OneMap call was counted per request against the real Lambda resolver, and those counts replaced the design budgets the model used before (see [Measured per-request operations](#measured-per-request-operations-20-october-2026)). Issue #34's [3 November deployed receipt](deployed-usage-2026-11-03.md) adds one 124-hour shared-dev observation of durations, logs, queue traffic, table size, failures and rent coverage. It does not establish monthly demand or an actual tagged bill. The on-premise figures are an estimate built on stated assumptions, **not a quote** (required wording, evaluation-plan limitations).
@@ -46,7 +46,9 @@ The report's claim is about hosting _models_, so a bare "AWS versus a box" compa
 
 B is the honest middle column: it shows how much of the saving comes from AWS and how much comes from _not paying for idle capacity_.
 
-**D exists because C on its own is the wrong strawman.** Option C models _buying_ hardware, and no student team in a university would do that — they would ask for a VM. Beating a strawman is worth nothing in a report, so option D removes everything the institution pays for (hardware depreciation, electricity, room cooling, the business line with a static IP — **88% of option C**) and leaves operational effort exactly where it was.
+**D exists because C on its own is the wrong strawman.** Option C models _buying_ hardware, and no student team in a university would do that — they would ask for a VM. Beating a strawman is worth nothing in a report, so option D removes everything the institution pays for (hardware depreciation, electricity, room cooling, the business line with a static IP — **US$157.56/month, 64.7% of option C at quiet and typical demand, two nodes and likely effort**) and leaves operational effort exactly where it was.
+
+That share is **derived per scenario, not fixed**, and the model reports it rather than asserting it: option C grows with the node count the peak demands while option D does not, and option D keeps the whole operational-effort line, so the share moves with both. At the same two nodes it is 83.5% at low effort and 37.9% at high effort; in the burst scenario's three nodes it is US$188.93, or 68.7% at likely effort. A fixed percentage was published here until 5 November 2026 and was not reproducible from the model's own line items; `institutional_share()` in `model/cost_model.py` now computes it from options C and D, and the generated evidence quotes it with its scenario, node count and effort band attached.
 
 That is the point of including it. **D isolates people from hardware**, and what it shows is that the on-premise cost which survives institutional generosity is the human one. At likely effort, option D is US$85.94/month against option A's US$0.96 — a margin of ~90× rather than ~254×. The conclusion holds, honestly, with a smaller margin, which is a better result to publish than a larger margin against an opponent nobody would field.
 
@@ -78,7 +80,7 @@ Fixed facts behind the derivation, taken from the team's merged documents rather
 
 Two of those facts are now confirmed by the handler itself rather than by a document. A two-member search wrote 54 pair records (2 × 27) and sent exactly 52 SQS messages (2 × 26), reporting two pairs unavailable — one TENGAH pair per member station, which is the 27/26 routable split from the #2 data profile. And a first search reads 7 times, not the 8 budgeted in [api-contract.md](https://github.com/horiiiiii032929/CS5225-teams12-2026/blob/main/docs/api-contract.md) (A1/A6/A7), while each later result read costs exactly the 7 the contract predicted.
 
-**Assumptions that must still be replaced by measurements**, each marked `_source: assumed` in `model/workloads.json`: Lambda duration outside the lookup path (120 ms) and the worker (900 ms), cold-start share (5%), log volume per invocation (2 KB), RRU per read request (2.0), WRU per write (1.5), both cache hit ratios, the demand volumes themselves, and `sustained_rps_per_node` for options B and C. See `evidence/measurement-requests.md` (next to this file) for who owns each one.
+**Assumptions that must still be replaced by measurements**, each marked `_source: assumed` in `model/workloads.json`: Lambda duration outside the lookup path (120 ms), cold-start share (5%), RRU per read request (2.0), WRU per write (1.5), both cache hit ratios, the demand volumes themselves, and `sustained_rps_per_node` for options B and C. Three entries left this list on 3 November, when #34's deployed receipt measured the worker duration (990.307 ms, was an assumed 900 ms), log volume per invocation (595 B, was an assumed 2,048 B) and the per-item byte rate (437 B/item, replacing a flat 0.5 GB table); the stored-item stock they feed is no longer assumed either, since it is now read off the implemented group TTL and commute key shape. See `evidence/measurement-requests.md` (next to this file) for who owns each one.
 
 ## Measured per-request operations (20 and 26 October 2026)
 
@@ -142,18 +144,22 @@ Full assumptions in `model/onprem.json`. Sizing follows D-E2: one node is a `t4g
 
 Named but excluded, so the reader can judge the bias: room rent and physical security (assumed free on campus), hardware failure beyond the spares buffer, DDoS protection (CloudFront includes Shield Standard), the one-off time to build a deployment pipeline, and the cost of downtime — the single-box model has no SLA.
 
-## Comparison (model output, updated 3 November 2026)
+## Comparison (model output, updated 5 November 2026)
 
-Generated by `model/cost_model.py`; raw output in `evidence/cost_model_20261103T052836Z.{md,json,csv}`.
-The 27 October run (`evidence/cost_model_20261027T013441Z.*`) is the version these figures replace; see [The 3 November correction](#the-3-november-correction) for what moved and why.
-Earlier runs are kept: `evidence/cost_model_20261020T103456Z.*` is the run before transaction mutations and condition checks were counted apart, `evidence/cost_model_20261014T072020Z.*` is the assumption-only version these figures
-replace, and `evidence/cost_model_20261012T062840Z.*` is the one quoted in #45 (it assumed 26 towns).
+Generated by `model/cost_model.py`; raw output in `evidence/cost_model_20261105T035414Z.{md,json,csv}`.
+Every superseded run is kept, so a figure quoted in an earlier issue stays locatable. Newest first:
+
+- `cost_model_20261103T052836Z.*` — the run these figures replace. It used the same measured inputs; what is corrected here is that it derived the stored-item stock from a retention policy the stack does not implement, and published a fixed institutional-share percentage. Both are in [The 5 November corrections](#the-5-november-corrections).
+- `cost_model_20261027T013441Z.*` — the last run before #34's deployed receipt. What that receipt's measured inputs moved is in [The 3 November correction](#the-3-november-correction).
+- `cost_model_20261020T103456Z.*` — the run before transaction mutations and condition checks were counted apart.
+- `cost_model_20261014T072020Z.*` — the assumption-only version, before any per-request operation was counted.
+- `cost_model_20261012T062840Z.*` — the run quoted in #45 (it assumed 26 towns).
 
 | Option                                            |  Quiet US$/mo | Typical US$/mo | Bursty US$/mo | US$ per 1,000 searches (typical) |
 | ------------------------------------------------- | ------------: | -------------: | ------------: | -------------------------------: |
-| A. AWS serverless — **payable**                   |          0.82 |           0.96 |          2.10 |                             0.96 |
-| A. AWS serverless — list price, free tier removed |          5.10 |           5.71 |         10.47 |                             5.71 |
-| B. AWS always-on VM                               |         38.33 |          38.46 |         56.96 |                            38.46 |
+| A. AWS serverless — **payable**                   |          0.82 |           0.96 |          2.09 |                             0.96 |
+| A. AWS serverless — list price, free tier removed |          5.09 |           5.70 |         10.43 |                             5.70 |
+| B. AWS always-on VM                               |         38.31 |          38.44 |         56.92 |                            38.44 |
 | C. On-premise — likely effort                     |        243.50 |         243.50 |        274.87 |                           243.50 |
 | C. On-premise — effort band                       | 188.81–415.38 |  188.81–415.38 | 220.18–446.74 |                                — |
 | D. University VM — likely effort                  |         85.94 |          85.94 |         85.94 |                            85.94 |
@@ -161,7 +167,7 @@ replace, and `evidence/cost_model_20261012T062840Z.*` is the one quoted in #45 (
 
 Measuring the operation counts moved the serverless total by **+5% at typical demand and +13% in the burst**, all of it in DynamoDB: writes went from US$0.03 to US$0.07 typical and US$0.47 to US$0.71 bursty, reads from US$0.04 to US$0.06 and US$0.27 to US$0.33. Counting each transaction's condition check as the billed write it is added one more fixed write unit per search, which is the one cent between the 20 October bursty figure and this one. Nothing in the comparison's conclusion changes — the gap to option C is still roughly two orders of magnitude — which is itself the useful result: **the on-premise comparison was never sensitive to the per-request accounting**, so the remaining uncertainty that matters is `sustained_rps_per_node` on the on-premise side, not AWS usage.
 
-Free-tier allowances are listed per line item in the generated tables, never netted silently. At typical demand the free tier covers US$7.56 of US$8.83, so **the cloud-versus-on-premise conclusion does not depend on the free tier**: even at list price, option A is roughly 28× cheaper than option C.
+Free-tier allowances are listed per line item in the generated tables, never netted silently. At typical demand the free tier covers US$4.74 of US$5.70, so **the cloud-versus-on-premise conclusion does not depend on the free tier**: even at list price, option A is roughly 43× cheaper than option C. Both figures were left stale by the 3 November re-run and are corrected here; see [The 5 November corrections](#the-5-november-corrections).
 
 ### The 3 November correction
 
@@ -171,12 +177,12 @@ Issue #34's [deployed receipt](deployed-usage-2026-11-03.md) measured, for the f
 | ----------------------------------- | --------: | ---------: | ---------: | --------: | ------------------------------ |
 | `cloudwatch_custom_metrics`         |        12 |          2 |     −0.600 |     −0.60 | counted in the tree            |
 | `secrets_count`                     |         1 |          2 | **+0.400** | **+0.40** | counted in the tree            |
-| `ddb_table_size_gb` → per-item rate |    0.5 GB | 437 B/item |     −0.110 |     −0.12 | measured (#34)                 |
+| `ddb_table_size_gb` → per-item rate |    0.5 GB | 437 B/item |     −0.113 |     −0.09 | measured (#34)                 |
 | `log_bytes_per_invocation`          |     2,048 |        595 |     −0.000 | **−2.19** | measured (#34)                 |
 | `sqs_idle_poll_requests_per_month`  |   650,000 |   ~285,189 |     −0.000 |     −0.15 | projected from measured (#34)  |
 | `lambda_worker_duration_ms`         |       900 |    990.307 |     −0.000 |     −0.00 | measured (#34)                 |
 | `cloudwatch_alarms`                 |         6 |          5 |      0.000 |      0.00 | counted; inside free allowance |
-| **Combined**                        |           |            | **−0.310** | **−2.66** |                                |
+| **Combined**                        |           |            | **−0.313** | **−2.63** |                                |
 
 Four things in that table are worth carrying into the report.
 
@@ -188,7 +194,22 @@ Four things in that table are worth carrying into the report.
 
 **The storage line cannot change the conclusion, and the model says so.** DynamoDB storage sits inside the 25 GB always-free allowance at every item count the model produces, so the only payable part is PITR, under US$0.02/month in every scenario. The derivation is documented for completeness rather than for precision; `ddb_bytes_per_item_source` in `workloads.json` states this explicitly so that nobody later mistakes the item-stock model for a result.
 
-The derived stock is dominated by a **saturating cache**, not by user data: a `COMMUTE#` record is keyed by station and town, so the stock is bounded by the stations that exist (~170) × 27 towns × retained profile months, whatever the demand. At typical demand that is 55,080 of 80,641 items. Group and member records — the part that does scale with users — are 24,000. Three inputs in that derivation (`data_retention_months`, `commute_profile_months_retained`, `rent_snapshots_retained`) are **design decisions, not measurements**, and are labelled as such: nothing in the deployed stack enforces any retention policy today.
+The derived stock is dominated by a **saturating cache**, not by user data: a `COMMUTE#` record is keyed by station and town, so the stock is bounded by the stations that exist (~170) × 27 towns, whatever the demand. At typical demand that is 4,590 of 8,151 items; group and member records — the part that does scale with users — are 2,000, and the retained rent snapshots are 1,561. Of the inputs in that derivation, two are now **read off the implemented lifecycle** (`group_lifetime_days`, and the key shape behind `commute_profile_source`) and one remains a **design decision** (`rent_snapshots_retained`, which is correct because `RENT#` items carry no `ttl`). Two known undercounts are named rather than modelled: DynamoDB deletes an expired item within about 48 hours of its `ttl` rather than at it, and `GROUP#` revision, `PLACE#`, `STATION#` and `PLACELOOKUP#` items are omitted as immaterial.
+
+### The 5 November corrections
+
+@horiiiiii032929's review of `ede4223` raised two [P2] findings against the 3 November run. Both are confirmed in the code and corrected here; neither changes the comparison's conclusion, which is itself worth recording.
+
+**1. The stored-item stock described a retention policy the stack does not implement.** The 3 November derivation multiplied the group/member stock by twelve months and the commute cache by twelve retained profile months, and the chapter stated that no retention is enforced. Both are wrong about the deployed code:
+
+- `services/api/src/flatsplit_api/groups.py` sets `GROUP_LIFETIME = timedelta(days=30)`, writes that `ttl` onto the group record and copies it onto every member record; `infra/aws/src/data.ts` sets `timeToLiveAttribute: 'ttl'`. Group and member records are therefore **deleted about a month after creation**, so the steady-state stock is one month's arrivals, not a year's.
+- `services/api/src/flatsplit_api/commute_jobs.py` writes a pair with `put_item` to `{pk: COMMUTE#<station>, sk: TOWN#<town>}`. `routingProfileVersion` is an **attribute** of that item, not part of the key, so a newer profile **replaces** the previous record. Superseded profiles cannot accumulate.
+
+Typical demand falls from 80,641 items to **8,151**, and 0.0353 GB to 0.0036 GB. The payable effect is DynamoDB PITR, US$0.0080 → US$0.0008/month; the typical total stays US$0.96 and the bursty total moves US$2.10 → US$2.09. The twelve-month figure is kept as an explicitly separated hypothetical (`ddb_items_if_retained`, driven by `hypothetical_retention_months`) so that a retention change can be read off the model instead of assumed into it — it reproduces the pre-correction stock exactly, which is how the earlier published figures stay locatable.
+
+**2. The institutional share of option C was asserted as a fixed 88% and is not reproducible.** The two-node likely-effort totals are option C US$243.5022 and option D US$85.9375, so the removed infrastructure is US$157.5647, or **64.71% of option C** — not 88%. The claim also appeared in `cost_model.py`'s generated Markdown and in `onprem.json`. It is now derived by `institutional_share()` and always published with the scenario, node count and effort band that produced it, because the share genuinely moves: 83.45% at low effort, 37.93% at high effort, and 68.73% in the burst scenario's three nodes.
+
+Reconciling those two corrections also caught two figures that the 3 November re-run had left behind: the free tier covers US$4.74 of US$5.70 at typical demand (not US$7.56 of US$8.83), so option A at list price is about 43× cheaper than option C, not 28×.
 
 ### Observed shared-dev burst rates
 
@@ -216,7 +237,7 @@ What they are, then, is narrow but real: a dated, deployed observation that the 
 | ------------------------------------ | --------------------------------------------------------------------------------------------- | ------------------ |
 | A. AWS serverless, quiet (payable)   | **Secrets Manager** — two secrets at US$0.40 each, plus API calls                             | 0.80 of 0.82 (97%) |
 | A. AWS serverless, typical (payable) | **Secrets Manager** (0.81), then DynamoDB reads + writes + PITR (0.14)                        | 0.81 of 0.96 (84%) |
-| A. AWS serverless, bursty (payable)  | **DynamoDB** reads + writes + PITR (1.06) overtakes Secrets Manager (0.92)                    | 1.06 of 2.10 (50%) |
+| A. AWS serverless, bursty (payable)  | **DynamoDB** reads + writes + PITR (1.04) overtakes Secrets Manager (0.92)                    | 1.04 of 2.09 (50%) |
 | A. AWS serverless (list price)       | CloudWatch dashboard (US$3.00), then custom metrics (US$0.60)                                 | ~63% typical       |
 | B. AWS always-on VM                  | EC2 instance-hours, billed whether or not anyone searches                                     | ~80%               |
 | C. On-premise                        | Operational effort and the business internet line — **people and connectivity, not hardware** | ~58%               |
@@ -228,17 +249,17 @@ Compute is not the cost driver in any option at this scale. That is the finding 
 
 There is an irony there that belongs in the report rather than being quietly left out: the credential automation built in #72 and #89 — the thing that stops `/places` breaking every three days — is also the single largest line in the AWS bill. It is still the right engineering decision, because the alternative cost a ~7-hour outage on 31 October and several multi-day ones before that. But it is a concrete, measured example of the thing cloud-cost work keeps running into, which is that at small scale the bill is shaped by fixed per-resource charges and operational choices, not by usage.
 
-Only in the burst scenario does a usage-scaling line take over: DynamoDB reads, writes and PITR reach US$1.06 of US$2.10, because per-pair writes scale with demand while a secret does not.
+Only in the burst scenario does a usage-scaling line take over: DynamoDB reads, writes and PITR reach US$1.04 of US$2.09, because per-pair writes scale with demand while a secret does not.
 
 ### Sensitivity to demand
 
 | Demand (typical scaled)           | A. serverless payable | A. list price | C. on-premise | D. university VM | On-prem nodes |
 | --------------------------------- | --------------------: | ------------: | ------------: | ---------------: | ------------: |
 | idle — nobody uses it for a month |                  0.80 |          5.02 |        243.50 |            85.94 |             2 |
-| ×0.1                              |                  0.82 |          5.10 |        243.50 |            85.94 |             2 |
-| ×1 (1,000 searches)               |                  0.96 |          5.71 |        243.50 |            85.94 |             2 |
-| ×10                               |                  2.39 |         11.87 |        243.50 |            85.94 |             2 |
-| ×100 (100,000 searches)           |                 20.97 |         73.41 |        274.87 |            85.94 |             3 |
+| ×0.1                              |                  0.82 |          5.08 |        243.50 |            85.94 |             2 |
+| ×1 (1,000 searches)               |                  0.96 |          5.70 |        243.50 |            85.94 |             2 |
+| ×10                               |                  2.36 |         11.81 |        243.50 |            85.94 |             2 |
+| ×100 (100,000 searches)           |                 20.75 |         72.90 |        274.87 |            85.94 |             3 |
 
 Option D is flat at every demand level, and that is not a modelling shortcut — it is the consequence of the institution absorbing the capacity. Nothing in option D is sized by us, so nothing in it responds to demand. The honest reading is that option D trades a cost curve for a dependency: it never gets more expensive, and it also never guarantees it will still be there.
 
@@ -246,7 +267,7 @@ Option A tracks demand almost linearly and costs **US$0.80/month when idle**; op
 
 **The idle row is the decisive one for this application, and the correction strengthened it.** FlatSplit is seasonal — near-idle between semesters. An empty month costs US$0.80 on option A and US$243.50 on option C, a factor of about **304×** for doing nothing. That is an argument about the shape of the workload, not about AWS being cheap, and it is the argument the report should lead with. Note also that US$0.80 of that US$0.80 is the two secrets: the architecture's true idle cost, excluding credential storage, rounds to zero.
 
-The break-even is far beyond anything this project would reach. On-premise also steps up with demand, so both sides move: at ×500 of typical demand serverless list price is US$346.92 against on-premise US$400.33, and the two cross at roughly **×650** (×700: US$483.68 against US$463.06). Payable serverless has not crossed on-premise even at ×700 (US$331.92 against US$463.06). There is no crossover to report inside any plausible range for this application.
+The break-even is far beyond anything this project would reach. On-premise also steps up with demand, so both sides move: at ×500 of typical demand serverless list price is US$344.45 against on-premise US$400.33, and the two cross at roughly **×650** (US$446.28 against US$431.69; ×700: US$480.22 against US$463.06). Payable serverless has not crossed on-premise even at ×700 (US$330.38 against US$463.06). There is no crossover to report inside any plausible range for this application.
 
 **The constraint that bites first is not cost.** The bursty scenario implies **295,200 OneMap calls per month**: 187,200 routing jobs (6,000 searches × 3 stations × 26 routable towns × 40% miss) plus 108,000 from destination lookups (18,000 cold lookups × 6 measured calls). Routing dominates the burst, but at typical demand the ratio inverts: 21,600 lookup calls against 7,800 routing calls, because the commute cache is assumed 90% warm while a 24-hour lookup cache is not. OneMap publishes 300 calls/min, and the implementation holds itself to a tighter figure: C7's **shared 250 calls/min budget**, which worker routing and `/places` lookups draw from the same counter (`call_budget.py`). #3 did not establish a sustained safe rate; assess feasibility with the three-worker concurrency cap and measured drain/lookup latency, not a calls/min division, and never from worker jobs per minute, which is a different unit on a different path. Two measured facts now bound this: a cold lookup costs exactly six calls and a cached one costs zero, so the lookup cache hit ratio — an assumption nobody has measured yet — is the single biggest lever on OneMap quota, and it belongs in #3/#27's follow-up rather than in the cost model.
 

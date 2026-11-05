@@ -25,6 +25,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 EVIDENCE = HERE.parent / "evidence"
 GIB = 1024**3
+# A TTL of 30 days is read as one month's stock. The 1.4% against a 730-hour
+# month is immaterial: DynamoDB storage is inside the always-free allowance at
+# every item count this model produces (see ddb_bytes_per_item_source).
+DAYS_PER_MONTH = 30.0
 
 
 def load(name: str) -> dict:
@@ -146,22 +150,50 @@ def derive_usage(
     # is measured: #34's 3 November receipt read 292,216 bytes over about 668
     # items on the deployed table (~437 B/item).
     #
-    # Group and member records persist; a preference save updates the member
-    # record rather than adding one (measured: group_create / member_join /
-    # preference_save in measured_operations). PLACE# and PLACELOOKUP# carry a
-    # 24-hour logical expiry, so their steady-state stock is immaterial.
-    retention = shared["data_retention_months"]
-    group_items = (groups + members) * retention
+    # The stock follows the lifecycle the stack IMPLEMENTS, not a retention
+    # policy we would like to have:
+    #   * groups.py sets GROUP_LIFETIME = 30 days, writes that `ttl` onto the
+    #     group record and propagates it to every member record, and
+    #     infra/aws/src/data.ts enables DynamoDB TTL on `ttl`. Group and member
+    #     records therefore expire about a month after creation, so the
+    #     steady-state stock is one month's arrivals, not a year's.
+    #   * commute_jobs.py writes a pair with put_item to
+    #     {pk: COMMUTE#<station>, sk: TOWN#<town>}. routingProfileVersion is an
+    #     ATTRIBUTE of that item, not part of the key, so a newer profile
+    #     REPLACES the previous record instead of adding one. The stock is one
+    #     current item per station/town, whatever the profile history.
+    #   * RENT#<snapshot> items carry no ttl, so the retained snapshot stock
+    #     stands as stated: #28 keeps the previous sets as the last-good
+    #     fallback.
+    #   * a preference save updates the member record rather than adding one
+    #     (measured: group_create / member_join / preference_save), and PLACE#
+    #     and PLACELOOKUP# carry a 24-hour logical expiry, so their
+    #     steady-state stock is immaterial.
+    group_months = shared["group_lifetime_days"] / DAYS_PER_MONTH
+    group_items = (groups + members) * group_months
     # The commute cache saturates: a pair is keyed by station and town, so the
     # stock is bounded by the stations that exist, not by how many groups ask.
-    stations_seen = min(groups * retention * stations, facts["mrt_stations"])
-    commute_items = (
-        stations_seen * facts["towns"] * shared["commute_profile_months_retained"]
-    )
+    stations_seen = min(groups * group_months * stations, facts["mrt_stations"])
+    commute_items = stations_seen * facts["towns"]
     rent_items = shared["rent_snapshot_items"] * shared["rent_snapshots_retained"] + 1
     ddb_items = group_items + commute_items + rent_items
     # AWS bills DynamoDB storage in decimal GB, not GiB.
     ddb_table_size_gb = ddb_items * shared["ddb_bytes_per_item"] / 1e9
+
+    # A HYPOTHETICAL, kept separate and never priced: the stock if the group
+    # TTL were lengthened to a term-and-vacation year AND superseded commute
+    # profiles were keyed by routingProfileVersion so they accumulated. Neither
+    # is implemented. It is reported so that a reader can see what a retention
+    # change would do to the storage line instead of having one assumed for
+    # them -- and so that the figures published before this correction remain
+    # locatable rather than silently replaced.
+    hypo_months = shared["hypothetical_retention_months"]
+    hypo_stations = min(groups * hypo_months * stations, facts["mrt_stations"])
+    ddb_items_if_retained = (
+        (groups + members) * hypo_months
+        + hypo_stations * facts["towns"] * hypo_months
+        + rent_items
+    )
 
     return {
         "groups": groups,
@@ -193,7 +225,15 @@ def derive_usage(
         "cold_starts": cold_starts,
         "cloudwatch_log_gb": log_gb,
         "ddb_items": ddb_items,
+        "ddb_group_items": group_items,
+        "ddb_commute_items": commute_items,
+        "ddb_rent_items": rent_items,
         "ddb_table_size_gb": ddb_table_size_gb,
+        # Hypothetical only -- not an input to any priced line.
+        "ddb_items_if_retained": ddb_items_if_retained,
+        "ddb_table_size_gb_if_retained": ddb_items_if_retained
+        * shared["ddb_bytes_per_item"]
+        / 1e9,
     }
 
 
@@ -388,10 +428,17 @@ def effort_usd(o: dict, band: str = "likely") -> tuple[float, str]:
 def university_vm(o: dict, band: str = "likely") -> list[dict]:
     """Option D: the same handler on a university-provided VM.
 
-    Removes everything the institution pays for - hardware, power, cooling and
-    the business line, which are 88% of option C - and leaves operational
-    effort exactly where it was. Node count does not appear: the allocation is
-    not sized by us, which is itself a limitation rather than a saving.
+    Removes everything the institution pays for - hardware depreciation,
+    electricity, room cooling and the business line with a static IP - and
+    leaves operational effort exactly where it was. Node count does not appear:
+    the allocation is not sized by us, which is itself a limitation rather than
+    a saving.
+
+    What share of option C that removal is depends on the node count and the
+    effort band, so it is DERIVED per scenario by institutional_share() and
+    quoted with its scenario attached. It is never a fixed percentage: option C
+    scales with nodes while option D does not, and option D retains the whole
+    effort line, so the share falls as effort rises.
     """
     rate_fx = o["meta"]["sgd_per_usd"]
     uni = o["university_vm"]
@@ -447,6 +494,20 @@ def total(rows: list[dict], key: str = "net_usd") -> float:
     # Python documents fsum's accuracy as platform-dependent, so this is the
     # demonstrated claim, not universal decimal arithmetic.
     return math.fsum(r[key] for r in rows)
+
+
+def institutional_share(c_lines: list[dict], d_lines: list[dict]) -> tuple[float, float]:
+    """What option D removes from option C, in US$ and as a share of option C.
+
+    Derived, not asserted: a fixed percentage would be wrong, because option C
+    grows with the node count the peak demands while option D does not, and
+    because option D keeps the whole operational-effort line, so the share
+    shrinks as the effort band rises. Always report it with the scenario, node
+    count and effort band that produced it.
+    """
+    c_total, d_total = total(c_lines), total(d_lines)
+    removed = c_total - d_total
+    return removed, (removed / c_total if c_total else 0.0)
 
 
 def md_table(rows: list[dict], show_free: bool = True) -> str:
@@ -516,6 +577,7 @@ def main() -> None:
         c_low, c_high = onprem(op, nodes, "low"), onprem(op, nodes, "high")
         dd = university_vm(op)
         d_low, d_high = university_vm(op, "low"), university_vm(op, "high")
+        removed, share = institutional_share(c, dd)
         per_1k = lambda rows: total(rows) / u["searches"] * 1000 if u["searches"] else 0.0
 
         result["scenarios"][key] = {
@@ -536,7 +598,13 @@ def main() -> None:
             "university_vm": {"lines": dd, "payable_usd": round(total(dd), 2),
                               "payable_usd_low_effort": round(total(d_low), 2),
                               "payable_usd_high_effort": round(total(d_high), 2),
-                              "usd_per_1000_searches": round(per_1k(dd), 4)},
+                              "usd_per_1000_searches": round(per_1k(dd), 4),
+                              "institutionally_borne_usd": round(removed, 4),
+                              "institutionally_borne_share_of_c": round(share, 4),
+                              "institutionally_borne_share_of_c_low_effort":
+                                  round(institutional_share(c_low, d_low)[1], 4),
+                              "institutionally_borne_share_of_c_high_effort":
+                                  round(institutional_share(c_high, d_high)[1], 4)},
         }
 
         md += [
@@ -551,6 +619,18 @@ def main() -> None:
             f"{measured['places_lookup_cold']['onemap_calls']} measured calls each). "
             f"Commute cache hit ratio assumed {sc['commute_cache_hit_ratio']:.0%}, "
             f"lookup cache {sc['places_lookup_cache_hit_ratio']:.0%}.",
+            "",
+            f"Stored item stock, from the implemented lifecycle: "
+            f"{u['ddb_items']:,.0f} items = {u['ddb_group_items']:,.0f} group and "
+            f"member records (30-day GROUP_LIFETIME with DynamoDB TTL, so about one "
+            f"month's arrivals) + {u['ddb_commute_items']:,.0f} commute records (one "
+            f"current item per station/town; a newer routing profile replaces the "
+            f"record rather than accumulating) + {u['ddb_rent_items']:,.0f} retained "
+            f"rent snapshot items (no ttl). Hypothetical only, never priced: "
+            f"{u['ddb_items_if_retained']:,.0f} items if the group TTL were "
+            f"lengthened to {shared['hypothetical_retention_months']} months and "
+            f"superseded commute profiles were kept. Both sit inside the 25 GB "
+            f"always-free allowance, so only PITR is payable either way.",
             "",
             "### A. AWS serverless (deployed architecture)",
             "",
@@ -574,8 +654,14 @@ def main() -> None:
             "### D. University-hosted VM",
             "",
             "The same handler on a VM the institution already owns and powers. "
-            "Removes hardware, electricity, cooling and the business line - 88% of "
-            "option C - and leaves operational effort untouched.",
+            "Removes hardware depreciation, electricity, room cooling and the "
+            f"business line - US${removed:.2f}/month, {share:.1%} of option C at "
+            f"{nodes} nodes and likely effort - and leaves operational effort "
+            "untouched. That share is derived, not fixed: it is "
+            f"{institutional_share(c_low, d_low)[1]:.1%} at low effort and "
+            f"{institutional_share(c_high, d_high)[1]:.1%} at high effort, because "
+            "option D keeps the whole effort line, and it rises with the node "
+            "count option C has to buy for the peak.",
             "",
             md_table(dd, show_free=False),
             "",

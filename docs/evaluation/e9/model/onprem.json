@@ -66,7 +66,7 @@
     "meta": {
       "status": "PROVISIONAL estimate built on stated assumptions — NOT a quote.",
       "definition": "Option D: the same uvicorn-served handler on a VM provided by the university at no marginal cost to the team. Added 3 November 2026 because option C models BUYING hardware, which in an NUS context is the wrong strawman: the realistic on-premise alternative is a machine the institution already owns and powers.",
-      "what_it_removes": "Hardware capex and its depreciation, electricity, room cooling and the business internet line with a static IP — all borne by the university. In option C these are 88% of the total.",
+      "what_it_removes": "Hardware capex and its depreciation, electricity, room cooling and the business internet line with a static IP — all borne by the university. What share of option C that represents is DERIVED per scenario by cost_model.py's institutional_share() and published with its scenario attached, never asserted as a fixed percentage: option C scales with the node count the peak demands while option D does not, and option D retains the whole operational-effort line, so the share falls as the effort band rises. An earlier '88% of the total' here was not reproducible from the model's own line items and was corrected on 5 November 2026 (@horiiiiii032929's [P2] review of ede4223 on PR #94).",
       "what_it_does_not_remove": "Operational effort. OS patching, TLS renewal, log rotation, disk checks, restore drills and incident response are still ours, at the same ranged cost as option C. This is the point of including option D: it strips out the infrastructure cost and leaves the largest line untouched, so it isolates people from hardware."
     },
     "opex_sgd_per_month": {
