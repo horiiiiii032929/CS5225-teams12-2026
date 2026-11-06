@@ -103,7 +103,7 @@ Commute times across the 780 routed pairs: median 33.0 min, p95 62.3 min, max 82
 | 200–500 m                   | 27          | −6.5 min            | −16.8 |
 | 500 m and over              | 18          | −11.9 min           | −16.6 |
 
-Worst cases: Changi Airport Terminal 3 from ANG MO KIO (72.0 exact vs 55.2 snapped, −16.8) and Ngee Ann Polytechnic from three towns (−16.6, −15.9, −14.3). Eight comparisons go the other way by up to +5.6 min, where the station sits on a faster line than the address's own access path.
+Worst cases: Changi Airport Terminal 3 from ANG MO KIO (72.0 exact vs 55.2 snapped, −16.8) and Ngee Ann Polytechnic from three towns (−16.6, −15.9, −14.3). The remaining eight comparisons are positive, up to **+5.6 min**: `deltaMinutes` is `snappedMinutes - exactMinutes`, so there the snapped route is **slower** than the route to the exact address and the station estimate overstates that commute rather than understating it. Why it is slower is not established here — the run records the two durations only, so attributing it to the lines or access paths involved would need a per-itinerary comparison this measurement does not make.
 
 **Limitations, stated rather than buried.** The three probe towns are the first three alphabetically (ANG MO KIO, BEDOK, BISHAN), so the snapping sample is north/east weighted and is not a random sample of origins. Routes use the client defaults — weekday 08:30, `date=10-13-2026`, TRANSIT, up to 3 itineraries with the shortest taken — so the figures are one departure time, not a daily profile. This run measures OneMap directly; it is not a measurement of the deployed worker, whose per-job records remain the operator's receipt.
 
