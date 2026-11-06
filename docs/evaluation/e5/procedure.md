@@ -156,6 +156,29 @@ Leg 4 needs `dynamodb` read, which the drill role denies, so it belongs to whoev
 covers an unreadable counter, an unreachable OneMap and a malformed routing plan, so the attempt count
 without leg 1 for the same `jobId` shows that a retry happened, not which path caused it.
 
+### The correlation keys, measured rather than assumed
+
+`scripts/test_retry_legs.py` runs the real `commute_worker.handler` against Moto with `urlopen`
+stubbed, pre-fills the window counter to `WORKER_CALLS`, and delivers the same message twice. All four
+legs reproduce — and two of them do not correlate the way the bar above assumes:
+
+|                                             | Finding                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Leg 1 carries no `jobId`**                | It is emitted from `call_budget.reserve`, which never sees the job. Legs 1 and 2 can only be tied together by **`function_request_id`**, the Lambda invocation. Legs 2 and 3 then tie by `jobId`.                                                                                                                                               |
+| **`routingError` cannot identify the path** | A budget exhaustion logs `ROUTING_UNAVAILABLE`, which is `RoutingRetryable.code` — shared with throttling, 5xx, transport failures and unreadable bodies. So neither the attempt count nor the error code distinguishes budget exhaustion from any other transient cause. **Only leg 1's message does**, reached through `function_request_id`. |
+
+So the chain is: leg 1 → `function_request_id` → leg 2 → `jobId` → leg 3 → the pair key → leg 4. Reading it
+by `jobId` alone, as originally proposed, would have silently dropped leg 1 and left a retry whose cause
+was unidentified — which is exactly what @wkkuu said an attempt count cannot establish.
+
+The harness also confirmed the retry stores `attempts: 2` and that 1,802 s is retained as
+30.033… minutes rather than rounded, which is the #74 fractional-duration correction behaving as
+intended on the recovery path.
+
+It is a Moto run with no real worker, no real queue and no real OneMap call, so it establishes the log
+shapes and the correlation keys, nothing about the deployed system. Its value is that the reading method
+is fixed and tested before any logs exist to read.
+
 **If any leg is missing, the metric is reported as unmeasured.** That includes the likely outcome — a
 clean one-invocation-per-message drain — which would mean the guard went untested on AWS again. A
 partial chain is not presented as recovery. A budget-exhausted job that exhausts its three receives and
