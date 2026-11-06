@@ -14,17 +14,17 @@ When a commute job cannot succeed, does it stop, become visible, and leave its p
 
 ## What this procedure can and cannot establish
 
-Pre-registered deliberately, because E5's metric list in the [evaluation plan](../../evaluation-plan.md) is wider than a queue-only drill can reach. The plan's workload **W4** is "W3 with 30% injected transient routing failures, then 100% for 5 minutes, then restored", plus permanent 400/403/404, routing 401 and 429 handling. Injecting a *transient routing* failure means making OneMap appear to fail to the deployed worker. Nothing in the deployed stack offers a fault switch, and the drill operator has queue access plus alarm and log reads — not the ability to intercept the worker's upstream calls. **W4 as specified cannot be run on `eval` by this route at all.**
+Pre-registered deliberately, because E5's metric list in the [evaluation plan](../../evaluation-plan.md) is wider than a queue-only drill can reach. The plan's workload **W4** is "W3 with 30% injected transient routing failures, then 100% for 5 minutes, then restored", plus permanent 400/403/404, routing 401 and 429 handling. Injecting a _transient routing_ failure means making OneMap appear to fail to the deployed worker. Nothing in the deployed stack offers a fault switch, and the drill operator has queue access plus alarm and log reads — not the ability to intercept the worker's upstream calls. **W4 as specified cannot be run on `eval` by this route at all.**
 
-| E5 metric | This drill | Where it actually comes from |
-| --- | --- | --- |
-| DLQ and attempt bounds | **Yes** — Phase A | new `eval` evidence |
-| Alarm delay | **Yes** — Phase A, from alarm history | new `eval` evidence |
-| Retries on permanent errors (expect 0) | **Yes** — Phase B | new `eval` evidence |
-| Redrive recovery | **Mechanism only** — Phase C | partial; see Phase C |
-| Jobs recovered by retry | **No** | not measured anywhere yet. The 26 October Moto drain had 0 redeliveries, and its `retry_exhaustion` scenario exhausts rather than recovers. State as unmeasured. |
-| Token-warning alarm | **No** | invalidating the token breaks the stage for everyone and `eval` shares the team OneMap account with `dev`. Cite #72's observed post-expiry gap instead; do not provoke it. |
-| Honest unavailable / retry UI | **No** | #26's UI work, with Lucy and Hikaru. Phase B supplies the *record* behind such a surface, not the surface. |
+| E5 metric                              | This drill                            | Where it actually comes from                                                                                                                                               |
+| -------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DLQ and attempt bounds                 | **Yes** — Phase A                     | new `eval` evidence                                                                                                                                                        |
+| Alarm delay                            | **Yes** — Phase A, from alarm history | new `eval` evidence                                                                                                                                                        |
+| Retries on permanent errors (expect 0) | **Yes** — Phase B                     | new `eval` evidence                                                                                                                                                        |
+| Redrive recovery                       | **Mechanism only** — Phase C          | partial; see Phase C                                                                                                                                                       |
+| Jobs recovered by retry                | **No**                                | not measured anywhere yet. The 26 October Moto drain had 0 redeliveries, and its `retry_exhaustion` scenario exhausts rather than recovers. State as unmeasured.           |
+| Token-warning alarm                    | **No**                                | invalidating the token breaks the stage for everyone and `eval` shares the team OneMap account with `dev`. Cite #72's observed post-expiry gap instead; do not provoke it. |
+| Honest unavailable / retry UI          | **No**                                | #26's UI work, with Lucy and Hikaru. Phase B supplies the _record_ behind such a surface, not the surface.                                                                 |
 
 So the drill supplies three of E5's seven metrics as deployed evidence, one as a mechanism, and leaves three explicitly unmeasured. **E5 must not be reported as complete after this session.** The report should say which parts rest on AWS, which on the Moto harness in [`../worker-queue/`](../worker-queue/README.md), and which on nothing.
 
@@ -48,7 +48,7 @@ Inject one message whose body is valid JSON with `schemaVersion: 0`, carrying a 
 
 - no OneMap call is made and **no provider quota is spent** — this matters because the 250/min budget is shared with #30's load work and with `/places`;
 - no cache item is addressed, so no real pair can be overwritten;
-- the message fails identically on every receive, which is what makes it a *permanent* failure rather than a slow one.
+- the message fails identically on every receive, which is what makes it a _permanent_ failure rather than a slow one.
 
 Observe, with timestamps: the source queue depth, the three receives at the 180-second visibility timeout, the message's arrival in the DLQ, and the `CommuteDlqNotEmpty` transition in alarm history. Then read the DLQ message **under a 60-second inspection lease** — receive it, read it, do not delete it — and record its `ApproximateReceiveCount`, `SentTimestamp` and body, per §4 of the [runbook](../../data-refresh-runbook.md).
 
@@ -128,7 +128,7 @@ implementation rather than from a run.
 
 What it cannot establish: Moto is not AWS, there is no real worker, no real OneMap call and no real
 alarm evaluation, so the measured alarm delay, the Phase-B terminal record and the log entries all
-still require the eval session. The rehearsal proves the *procedure* is executable; it measures
+still require the eval session. The rehearsal proves the _procedure_ is executable; it measures
 nothing about the deployed system. This is the same boundary the
 [worker-queue harness](../worker-queue/README.md) states for its own runs.
 
