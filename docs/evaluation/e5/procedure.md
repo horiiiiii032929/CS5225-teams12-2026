@@ -105,7 +105,7 @@ Under `docs/evaluation/e5/raw/<YYYY-MM-DD>/`, per convention D-E5 (lowercase exp
 3. `describe-alarms` before and after, and `describe-alarm-history` covering the window, for all five alarms.
 4. The DLQ message as read under the inspection lease, with its receive count.
 5. The worker log events matching each marker.
-6. The Phase-B record as read back, showing `status`, `attempts`, `retryAfter` and the absence of `minutes`.
+6. The Phase-B terminal log line — `A newer claim or result owns this pair; terminal write skipped`, with `attempts: 1`, the `routingError` code and the pair keys — together with the source-queue depth showing no redelivery. **There is no record to read back**: the fenced write is refused, and the drill role denies `dynamodb` entirely. If someone with table read access confirms that nothing exists at `COMMUTE#DRILL27` / `TOWN#DRILL`, retain that confirmation; otherwise retain the note that it is unchecked.
 7. The post-cleanup depths and **the time they were checked**, which is what #30 needs.
 8. The recorded stage revision, the operator, and the session's start and end.
 

@@ -9,7 +9,7 @@
 #   3    Phase A: capture alarm transitions       (read-only)
 #   4    Phase A: inspect the DLQ msg, 60s lease  (read-only, no delete)
 #   5    worker log lines for the drill           (read-only)
-#   1b   Phase B: inject the rejected job         (writes 1 msg; worker writes 1 item)
+#   1b   Phase B: inject the rejected job         (writes 1 msg; the terminal write is refused)
 #   6    cleanup: delete OUR messages, confirm empty
 #   7    Phase C OPTIONAL: redrive (mechanism only; re-run 6 after)
 #   8    build the receipt from the evidence      (offline, no AWS)
@@ -89,15 +89,20 @@ case "${1:-}" in
   ;;
 1b)
   SRC=$(cat "$EV/src_url.txt"); MARK=$(cat "$MARK_F")
-  # Keyable, so it addresses a pair, but RoutingRejected fires inside _point()
+  # Keyable, so it names a pair, but RoutingRejected fires inside _point()
   # before any OneMap HTTP call. The worker takes the RoutingUnroutable branch:
-  # terminal unavailable, attempts 1, retryAfter +86400s, no retry, msg deleted.
+  # attempts 1, no retry, msg deleted. The terminal write is FENCED and REFUSED -
+  # _write requires an API-created pending claim, which a message sent straight to
+  # the queue has not got - so NO item is created. The evidence is the
+  # 'terminal write skipped' log line (step 5) plus the queue state, not a record.
   BODY=$("$HERE"/mkbody.py rejected "$MARK" "$REVISION")
   echo "$BODY" > "$EV/injected_body_phaseB.json"
   say "Phase B: injecting permanently-rejected job (expect attempts=1, no retry, DLQ unchanged)"
   aws sqs send-message --queue-url "$SRC" --message-body "$BODY" | tee "$EV/injected_receipt_phaseB.json"
-  say "Phase B sent. Terminal record lands on COMMUTE#DRILL27 / TOWN#DRILL."
-  say "Reading it needs dynamodb:GetItem, not in this grant - that is Mani's step under #33."
+  say "Phase B sent. NO record lands: _write is fenced on an API-created pending claim."
+  say "Expect in step 5: 'A newer claim or result owns this pair; terminal write skipped'"
+  say "  with attempts=1 and routingError set. Nothing to clean up in the table."
+  say "Absence at COMMUTE#DRILL27 / TOWN#DRILL stays UNCHECKED unless someone with table read confirms it."
   ;;
 2)
   SRC=$(cat "$EV/src_url.txt"); DLQ=$(cat "$EV/dlq_url.txt")
@@ -136,9 +141,13 @@ case "${1:-}" in
   LG=$(aws logs describe-log-groups --log-group-name-prefix "$WORKER_LOGS" \
     --query 'logGroups[0].logGroupName' --output text)
   say "worker log group: $LG"
+  # BOTH terms are required. Phase A logs 'Unusable commute job'; Phase B logs
+  # 'A newer claim or result owns this pair; terminal write skipped', which does
+  # NOT contain 'commute job'. Filtering on that alone would drop Phase B's only
+  # evidence. '?a ?b' is CloudWatch's OR over text terms.
   aws logs filter-log-events --log-group-name "$LG" \
     --start-time "$(( ($(date +%s) - 7200) * 1000 ))" \
-    --filter-pattern '"commute job"' \
+    --filter-pattern '?"commute job" ?"terminal write skipped"' \
     --query 'events[].{at:timestamp,msg:message}' | tee "$EV/worker_logs.json"
   ;;
 6)

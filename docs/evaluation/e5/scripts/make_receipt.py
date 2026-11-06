@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Turn the drill evidence directory into the #27 receipt body. Offline, no AWS."""
-import json, os, sys
+import datetime, json, os, sys
 
 ev = sys.argv[1]
 REV = "e2d3780e28028574f8ee3dd990c10257be9f8029"
@@ -16,6 +16,25 @@ def rd(name, as_json=True):
         return json.loads(text)
     except Exception:
         return text
+
+def worker_events():
+    """Step 5's capture, split by phase. Returns (phase_a, phase_b) event lists."""
+    ev_log = rd("worker_logs.json")
+    if not isinstance(ev_log, list):
+        return [], []
+    a = [e for e in ev_log if "Unusable commute job" in (e.get("msg") or "")]
+    b = [e for e in ev_log if "terminal write skipped" in (e.get("msg") or "")]
+    return a, b
+
+
+def iso(ms):
+    try:
+        return datetime.datetime.fromtimestamp(int(ms) / 1000, datetime.UTC).strftime(
+            "%Y-%m-%dT%H:%M:%S.%fZ"
+        )
+    except Exception:
+        return str(ms)
+
 
 out = ["## #27 eval drill receipt", ""]
 out.append("**Marker:** `%s`" % (rd("marker.txt", False) or "?"))
@@ -40,6 +59,17 @@ if isinstance(msg, dict) and msg.get("Messages"):
             "- `ApproximateReceiveCount`: **%s**" % a.get("ApproximateReceiveCount"),
             "- `SentTimestamp`: %s" % a.get("SentTimestamp"),
             "- `ApproximateFirstReceiveTimestamp`: %s" % a.get("ApproximateFirstReceiveTimestamp"), ""]
+pa, pb = worker_events()
+if pa:
+    out += ["Worker log entries carrying the marker, one per delivery **to the worker**. This count,",
+            "not the `ApproximateReceiveCount` above, is the pass condition: the 60-second inspection",
+            "lease increments that attribute itself.", "",
+            "- `Unusable commute job` entries: **%d**" % len(pa)]
+    out += ["  - %s" % iso(e.get("at")) for e in pa]
+    out += [""]
+elif rd("worker_logs.json") is not None:
+    out += ["**No `Unusable commute job` entry was captured**, so the three-delivery pass condition",
+            "is unestablished from the log. Recorded as such rather than inferred from the queue.", ""]
 hist = rd("alarm_history.txt", False)
 if hist:
     out += ["Alarm transitions. The stack's SNS topic has no subscribers, so each one is read",
@@ -55,6 +85,14 @@ if bodyb:
             "claim, so the worker logs `A newer claim or result owns this pair; terminal write",
             "skipped` and **no item is created**. That log line plus the queue state is the",
             "zero-retry evidence; there is no record to read back and nothing to clean up.", ""]
+if pb:
+    out += ["Observed, from the same step-5 capture:", ""]
+    for e in pb:
+        out += ["```", "%s  %s" % (iso(e.get("at")), (e.get("msg") or "").strip()), "```", ""]
+elif rd("worker_logs.json") is not None:
+    out += ["**The `terminal write skipped` line was not captured**, which leaves Phase B with no",
+            "evidence at all: the refused write means there is no record to fall back on. Check the",
+            "step-5 filter before concluding anything about retries on permanent errors.", ""]
 
 out += ["### Cleanup", ""]
 log = rd("drill.log", False) or ""
