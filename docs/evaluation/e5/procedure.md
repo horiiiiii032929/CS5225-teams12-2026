@@ -118,6 +118,53 @@ Screenshots are listed in the plan's evidence column. CLI output with timestamps
 3. **Nothing to delete from the table.** Phase B's fenced write is refused, so no item is created — see Phase B. If someone with table read access confirms the absence of `COMMUTE#DRILL27` / `TOWN#DRILL`, record that; otherwise record it as unchecked.
 4. All five alarms are confirmed back to `OK`, or the reason one is not is recorded.
 
+## Post-run observation — recovery by retry, only if the run supplies it
+
+Not a phase of the drill, and nothing here is injected. E5's "jobs recovered by retry" is unmeasured
+everywhere, and the worker has a transient failure path that is not OneMap: `call_budget.py` counts
+worker routing calls in a 60-second window at `pk: RATE#ONEMAP`, `sk: WINDOW#<floor(epoch/60)>`, under
+`attribute_not_exists(#calls) OR #calls < :ceiling`, with `WORKER_CALLS` of 200. A full window logs
+`OneMap call budget reached for this window` and raises `BudgetExhausted`, which `routing.py` turns into
+`RoutingRetryable`, and `_process()` returns the message to the queue.
+
+**Whether it fires at all depends on upstream latency**, which is the same variable @wkkuu's #74 review
+identified. At `maxConcurrency: 3` with roughly 1-second uncached replies, three workers reach about
+165–183 calls/min and cannot exhaust their own 200 share. At the measured 154 ms cached p50, three busy
+workers imply roughly 1,100 calls/min and would exhaust it repeatedly. So the guard may or may not be
+exercised by any given run.
+
+**It does not promise recovery, and an earlier draft of this section wrongly implied that it does.**
+A 180-second visibility timeout guarantees the redelivery lands in a _different_ window, not an
+_available_ one — another in-flight worker can have filled it — and an available budget says nothing
+about whether the route then returns an itinerary. `_process()` retries only while
+`attempts < max_receives`, and `max_receives` is 3, so a job that meets a full window has two further
+chances and then exhausts into a terminal `unavailable` with `TRANSIENT_RETRY_SECONDS`. The design
+bounds the retry; it does not guarantee the pair recovers. Correction due to @wkkuu on #35.
+
+### The four legs, and the rule for a missing one
+
+@wkkuu set this bar and it is stricter than the original proposal. All four correlate on one `jobId`:
+
+1. `OneMap call budget reached for this window`, with `onemapWindow` and `onemapCeiling`;
+2. `Routing failed; returning the job to the queue` for that `jobId`, with `routingError` and `attempts`, timestamped;
+3. a later `Commute pair resolved` for that `jobId`, with `attempts` incremented, timestamped;
+4. the persisted record for that pair.
+
+Leg 4 needs `dynamodb` read, which the drill role denies, so it belongs to whoever holds table access.
+
+**An `attempts >= 2` result on its own does not establish why a job retried.** `RoutingRetryable` also
+covers an unreadable counter, an unreachable OneMap and a malformed routing plan, so the attempt count
+without leg 1 for the same `jobId` shows that a retry happened, not which path caused it.
+
+**If any leg is missing, the metric is reported as unmeasured.** That includes the likely outcome — a
+clean one-invocation-per-message drain — which would mean the guard went untested on AWS again. A
+partial chain is not presented as recovery. A budget-exhausted job that exhausts its three receives and
+ends `unavailable` is also a result and is recorded as one.
+
+**Deliberately inducing this is not authorized and is not planned.** Pre-filling the window counter was
+proposed on #35 and refused by @wkkuu; it would need its own reviewed plan, authorization, budget,
+isolation, monitoring and cleanup, and none is sought before 8 November.
+
 ## Rehearsal, 6 November
 
 The whole procedure was rehearsed end to end against a Moto server before any eval access existed,
