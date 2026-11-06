@@ -10,18 +10,26 @@ actual stack outputs and record its deployed revision before using a procedure. 
 how you find out what the deployed stack is actually doing.
 
 Shared deployment, from `docs/aws-dev-handoff.md`: account `553455762180`,
-region `ap-southeast-1`, stack `FlatSplit-dev`. Confirm the account before
+region `ap-southeast-1`, stack `FlatSplit-dev`. The isolated evaluation stage
+is `FlatSplit-eval` in the same account and region. Confirm the account before
 every command in this file.
 
 ```bash
 aws sts get-caller-identity --query Account --output text   # expect 553455762180
 ```
 
+**Pick the stack once.** Every command below resolves its names from `$STACK`,
+so set it before the first one and nothing else in this file needs editing:
+
+```bash
+STACK=${STACK:-FlatSplit-dev}   # FlatSplit-eval for the evaluation stage
+```
+
 Resolve names from the stack rather than pasting them, because they change on
 redeploy:
 
 ```bash
-aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+aws cloudformation describe-stacks --stack-name "$STACK" \
   --query 'Stacks[0].Outputs[].{K:OutputKey,V:OutputValue}' --output table
 ```
 
@@ -37,11 +45,11 @@ aws cloudformation describe-stacks --stack-name FlatSplit-dev \
 Shorthand used below:
 
 ```bash
-TABLE=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+TABLE=$(aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='TableName'].OutputValue" --output text)
-QUEUE=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+QUEUE=$(aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='CommuteQueueUrl'].OutputValue" --output text)
-BUCKET=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+BUCKET=$(aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='RentRawBucketName'].OutputValue" --output text)
 SINCE=$(python3 -c 'from datetime import datetime,timedelta,timezone; print((datetime.now(timezone.utc)-timedelta(hours=1)).isoformat())')
 UNTIL=$(python3 -c 'from datetime import datetime,timezone; print(datetime.now(timezone.utc).isoformat())')
@@ -127,7 +135,7 @@ Only someone holding the OneMap account can mint one; that is Shyam as of
 28 October. **Never paste a token into an issue, a PR or this file.**
 
 ```bash
-SECRET=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+SECRET=$(aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='OneMapTokenSecret'].OutputValue" --output text)
 aws secretsmanager put-secret-value --secret-id "$SECRET" \
   --secret-string "file://$HOME/onemap-token.txt"   # do not expand the token into argv
@@ -137,7 +145,7 @@ Then wait out the 900-second cache and verify with a real lookup — not
 `/api/health`, which never touches OneMap:
 
 ```bash
-API=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+API=$(aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)
 set -o pipefail
 curl --fail-with-body --silent --show-error "$API/places?q=kent%20ridge" \
@@ -354,7 +362,7 @@ Read `status`, `jobId`, `attempts`, `routingProfileVersion`, and
 one week. Discover its exact physical name from this stack:
 
 ```bash
-LOGS=$(aws cloudformation describe-stack-resources --stack-name FlatSplit-dev \
+LOGS=$(aws cloudformation describe-stack-resources --stack-name "$STACK" \
   --query "StackResources[?ResourceType=='AWS::Logs::LogGroup' && contains(LogicalResourceId, 'CommuteWorkerLogs')].PhysicalResourceId | [0]" --output text)
 aws logs filter-log-events --log-group-name "$LOGS" \
   --start-time "$(( ($(date +%s) - 3600) * 1000 ))" \
@@ -416,7 +424,7 @@ The monthly ingestion Lambda (`RentIngestionFunctionName`) downloads the HDB
 export, validates it, and writes to the raw bucket. Invoke it by hand:
 
 ```bash
-FN=$(aws cloudformation describe-stacks --stack-name FlatSplit-dev \
+FN=$(aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='RentIngestionFunctionName'].OutputValue" --output text)
 aws lambda invoke --function-name "$FN" --payload '{}' /dev/stdout
 ```
