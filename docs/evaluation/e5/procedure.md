@@ -151,11 +151,23 @@ worker routing calls in a 60-second window at `pk: RATE#ONEMAP`, `sk: WINDOW#<fl
 `OneMap call budget reached for this window` and raises `BudgetExhausted`, which `routing.py` turns into
 `RoutingRetryable`, and `_process()` returns the message to the queue.
 
-**Whether it fires at all depends on upstream latency**, which is the same variable @wkkuu's #74 review
-identified. At `maxConcurrency: 3` with roughly 1-second uncached replies, three workers reach about
-165–183 calls/min and cannot exhaust their own 200 share. At the measured 154 ms cached p50, three busy
-workers imply roughly 1,100 calls/min and would exhaust it repeatedly. So the guard may or may not be
-exercised by any given run.
+**Whether it fires at all depends on upstream latency and on saturation.** An earlier draft of this
+paragraph claimed that three concurrent workers "cannot exhaust their own 200 share". **That claim is
+withdrawn; the 6 November warm-up measures it false.** Read from
+`FlatSplit-eval-ApiCommuteWorkerLogsA37837F9-YOtZw0L8oT3N` over 19:40–20:00 SGT, 3,513 events: 702
+invocations carrying one message each, across **3 log streams with 3 `INIT_START`**, 702
+`Routing call succeeded` spanning 19:47:39–19:53:16. Mean **125.0 calls/min**, per-minute buckets
+42/129/122/125/116/133/35, **peak rolling 60-second window 136 calls/min**. Invocation duration p50
+**834 ms**, p90 1275 ms, p99 1790 ms, max 3479 ms.
+
+Three containers at one routing call per invocation and a p50 of 834 ms compute to roughly **216
+calls/min, which is above the 200 ceiling**; hitting 200/min with three containers needs only 900 ms per
+call, and the p50 is faster than that. The warm-up peaked at 136/min **because the workers were not
+saturated**, not because the guard is unreachable. The accurate statement is that the limiter sits about
+1.5x above observed peak throughput and **below** saturated three-way throughput, so a sustained backlog
+could reach it, and no run so far has produced one. Note also that the three containers are **observed,
+not read from configuration** — the drill role is denied `lambda:ListEventSourceMappings`, so the
+concurrency cap itself is not verified here.
 
 **It does not promise recovery, and an earlier draft of this section wrongly implied that it does.**
 A 180-second visibility timeout guarantees the redelivery lands in a _different_ window, not an
