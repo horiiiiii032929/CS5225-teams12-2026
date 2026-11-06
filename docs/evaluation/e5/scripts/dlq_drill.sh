@@ -25,6 +25,8 @@ export AWS_DEFAULT_REGION=$AWS_REGION
 SRC_NAME=${DRILL_SRC_NAME:-FlatSplit-eval-ApiCommuteJobs7487AB1D-GfmtprOp2wv4}
 DLQ_NAME=${DRILL_DLQ_NAME:-FlatSplit-eval-ApiCommuteDlq5A1C45AD-n4LpNoZb1ix1}
 WORKER=${DRILL_WORKER:-FlatSplit-eval-ApiCommuteWorkerDCCDFB3E-q5NINW3MSCpw}
+# The worker does NOT log to /aws/lambda/<function>. Operator-confirmed name:
+WORKER_LOGS=${DRILL_WORKER_LOGS:-FlatSplit-eval-ApiCommuteWorkerLogsA37837F9-YOtZw0L8oT3N}
 REVISION=e2d3780e28028574f8ee3dd990c10257be9f8029
 ALARMS=(
   FlatSplit-eval-CommuteAlarmsCommuteDlqNotEmptyF7769442-pqGC0L7DfpRz
@@ -131,7 +133,7 @@ case "${1:-}" in
   say "inspected without consuming; the lease returns it in 60s"
   ;;
 5)
-  LG=$(aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/$WORKER" \
+  LG=$(aws logs describe-log-groups --log-group-name-prefix "$WORKER_LOGS" \
     --query 'logGroups[0].logGroupName' --output text)
   say "worker log group: $LG"
   aws logs filter-log-events --log-group-name "$LG" \

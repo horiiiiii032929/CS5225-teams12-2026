@@ -49,11 +49,12 @@ out += ["### Phase B - permanently rejected job", ""]
 bodyb = rd("injected_body_phaseB.json")
 if bodyb:
     out += ["```json", json.dumps(bodyb, indent=2), "```", "",
-            "Expected: exactly one receive, `attempts: 1`, terminal `unavailable`, `retryAfter`",
-            "about 86,400 s ahead, **no** `minutes` field, and the DLQ depth unchanged.", "",
-            "Reading that record back on `COMMUTE#DRILL27` / `TOWN#DRILL` needs `dynamodb:GetItem`,",
-            "which this drill's grant deliberately does not include - it is @saravanamani1999's",
-            "step under #33.", ""]
+            "Expected: exactly one delivery, `attempts: 1`, the message deleted rather than",
+            "redelivered, and the DLQ depth unchanged. The terminal write is **refused** by",
+            "`_write`'s `jobId`/`pending` fence, because only the API's enqueue creates that",
+            "claim, so the worker logs `A newer claim or result owns this pair; terminal write",
+            "skipped` and **no item is created**. That log line plus the queue state is the",
+            "zero-retry evidence; there is no record to read back and nothing to clean up.", ""]
 
 out += ["### Cleanup", ""]
 log = rd("drill.log", False) or ""

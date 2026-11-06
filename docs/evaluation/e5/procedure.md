@@ -32,7 +32,7 @@ So the drill supplies three of E5's seven metrics as deployed evidence, one as a
 
 Do not start until all of the following hold:
 
-1. **Working access**, not a resource list: either an assumable role scoped to the two `eval` commute queues with alarm and log reads, or an operator-led witnessed session. A verbal authorization plus queue names did not give the drill operator account access on 5 November.
+1. **Working access.** Granted 6 November: role `FlatSplit-eval-Drill27` in `553455762180`, trusting only `arn:aws:iam::897729133025:user/ming`, sessions capped at one hour, assumed through the `flatsplit-drill` CLI profile. IAM's policy simulator confirms `SendMessage`, `DeleteMessage` and `FilterLogEvents` allowed and `PurgeQueue`, every dev queue, `dynamodb:PutItem` and `lambda:InvokeFunction` denied. A resource list alone did not give access on 5 November; this does.
 2. The `eval` DLQ is **empty**, confirmed by a reading taken at the start of the session. An earlier reading is not a current check (@wkkuu, [#30](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/30#issuecomment-6661549506)). If it is not empty, stop: something else is in there and must not be purged.
 3. All five `eval` alarms are `OK` at the start, recorded with their `StateUpdatedTimestamp`.
 4. The stage's deployed revision is recorded as a full SHA. The stack publishes no source-revision output (#34), so this comes from the operator's deploy record, not from CloudFormation's update timestamp.
@@ -64,23 +64,29 @@ Observe, with timestamps: the source queue depth, the three receives at the 180-
 - No pair record is created or changed by this phase. Nothing in the payload addresses one.
 - No OneMap call is attributable to the drill in the same window.
 
-## Phase B — a permanently rejected job closes its pair without retrying
+## Phase B — a permanently rejected job stops without retrying, and writes nothing
 
 Covers E5's "retries on permanent errors (expect 0)", which Phase A cannot: an unkeyable message has no pair to close.
 
-Inject one message that **is** keyable — valid `schemaVersion: 1`, `jobId`, `stationKey` and `town` — but whose coordinates are unusable. `route()` raises `RoutingRejected`, a subclass of `RoutingUnroutable`, from `_point()` **before any HTTP call**, so this also spends no quota. `_process()` then takes the `RoutingUnroutable` branch: it writes a terminal `unavailable` with `attempts: 1` and `retryAfter` 86,400 s ahead, and returns `False`, so the message is deleted rather than redelivered.
+Inject one message that **is** keyable — valid `schemaVersion: 1`, `jobId`, `stationKey` and `town` — but whose coordinates are unusable. `route()` raises `RoutingRejected`, a subclass of `RoutingUnroutable`, from `_point()` **before any HTTP call**, so this also spends no quota. `_process()` then takes the `RoutingUnroutable` branch and returns `False`, so the message is deleted rather than redelivered.
 
-Use a **synthetic key that collides with nothing real** — `stationKey: DRILL27`, `town: DRILL`, giving `COMMUTE#DRILL27` / `TOWN#DRILL`. This is the one step that writes to the `eval` table, and the write is performed by the worker's own role, not the operator's. It must be agreed with the operator in advance and listed in the cleanup.
+**The terminal write is refused, and that is the correct behaviour rather than a flaw in the drill.** @shyamgj1900 established this while building the role, and the implementation confirms it: `CommuteResults._write` guards every completion with `ConditionExpression="#jobId = :jobId AND #status = :pending"`, and its own docstring says why — "`update_item` creates a missing item, so the condition also stops a claim that was rolled back after a failed send from being resurrected by its own in-flight message." Only the API's enqueue creates that pending claim. A message sent straight to the queue for `COMMUTE#DRILL27` / `TOWN#DRILL` therefore fails the condition, `store_unavailable()` returns `False`, and `_terminal()` logs **`A newer claim or result owns this pair; terminal write skipped`** with `attempts: 1` and `routingError` set.
+
+So the zero-retry evidence is **that log line plus the queue state**, not a table record. Two consequences, both improvements:
+
+- **Nothing is written to the eval table at all**, so there is nothing to clean up and no table-write authorisation is needed. The earlier version of this procedure claimed a `status: unavailable` record with `retryAfter`; that was wrong.
+- The drill demonstrates the fence as well as the retry policy: a job with no claim cannot manufacture a result for a pair nobody asked about.
+
+The synthetic `stationKey: DRILL27` / `town: DRILL` is kept anyway, so that nothing in the log or the payload can be mistaken for a real pair.
 
 ### Phase-B pass conditions
 
-- Exactly **one** receive. `attempts: 1` on the record and one worker invocation: a permanent error consumed no retries.
-- The pair record carries `status: unavailable` and an error code, and **no `minutes` field**. An unavailable route is never a zero-minute result.
-- `retryAfter` is an epoch second roughly 86,400 s ahead, not a duration and not `0`.
-- The DLQ depth is unchanged by this phase: a pair the worker could account for does not reach the DLQ.
-- The **source** queue returns to zero only once the worker has consumed the Phase-B message.
-  If the cleanup step reports a source depth of 1, check whether Phase B is still in flight
-  before treating it as a leftover.
+- Exactly **one** delivery to the worker: one invocation and `attempts: 1` in the log entry. A permanent error consumed no retries.
+- The worker logs `A newer claim or result owns this pair; terminal write skipped`, carrying `attempts: 1`, the `routingError` code from `RoutingRejected`, and the drill marker.
+- The message is **deleted, not redelivered**: the source queue does not return it after the visibility timeout.
+- The DLQ depth is unchanged by this phase. A message the worker could account for does not reach the DLQ.
+- **No item exists** at `COMMUTE#DRILL27` / `TOWN#DRILL` afterwards. The drill operator cannot check this — the role denies `dynamodb` entirely — so it is either confirmed by whoever holds table read access or recorded as unchecked.
+- The **source** queue returns to zero only once the worker has consumed the Phase-B message. If the cleanup step reports a source depth of 1, check whether Phase B is still in flight before treating it as a leftover.
 
 ## Phase C — redrive moves a dead-lettered message, and why that is not recovery
 
@@ -109,7 +115,7 @@ Screenshots are listed in the plan's evidence column. CLI output with timestamps
 
 1. The operator deletes **their own drill messages by receipt handle**, never with `purge-queue`. A purge would also destroy anything a teammate has in that queue. The grant requested for this drill deliberately omits `sqs:PurgeQueue`.
 2. The DLQ is confirmed empty afterwards, and that confirmation is posted on #30 **with the time it was checked**, because #30's load run shares the stage.
-3. Phase B's synthetic record `COMMUTE#DRILL27` / `TOWN#DRILL` is deleted, or explicitly left and recorded, by whoever holds table write access. The drill operator is not asking for it.
+3. **Nothing to delete from the table.** Phase B's fenced write is refused, so no item is created — see Phase B. If someone with table read access confirms the absence of `COMMUTE#DRILL27` / `TOWN#DRILL`, record that; otherwise record it as unchecked.
 4. All five alarms are confirmed back to `OK`, or the reason one is not is recorded.
 
 ## Rehearsal, 6 November
@@ -129,11 +135,13 @@ implementation rather than from a run.
 What it cannot establish: Moto is not AWS, there is no real worker, no real OneMap call and no real
 alarm evaluation, so the measured alarm delay, the Phase-B terminal record and the log entries all
 still require the eval session. The rehearsal proves the _procedure_ is executable; it measures
-nothing about the deployed system. This is the same boundary the
+nothing about the deployed system. **It also missed Phase B's refused write entirely**,
+because no worker ran in it — @shyamgj1900 found that by reading the implementation while building
+the role, which is the kind of thing a harness without the real consumer cannot surface. This is the same boundary the
 [worker-queue harness](../worker-queue/README.md) states for its own runs.
 
 ## Current blockers
 
-- **Working `eval` access.** Resource details were published on 5 November; account access was not. See [#27](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/27#issuecomment-6660526283).
-- **A witnessed slot before the 8 November implementation finish**, with the #33 walkthrough by a teammate who is not the runbook's author in the same session.
-- **Operator agreement on Phase B's synthetic write**, which is the only part of this drill that changes table state.
+- **Resolved 6 November:** eval access, as the role above. Phase B's table write turned out not to exist, so the authorisation it would have needed is moot.
+- **Sequencing.** The drill runs only after @wkkuu posts that the #30 load run has finished, so a DLQ alarm cannot land inside his window. The operator deletes the role once the receipt is posted, and no later than 8 November.
+- **Still open: the #33 walkthrough** by a teammate who is not the runbook's author, in or near the same session. @saravanamani1999's eval access is unconfirmed.
