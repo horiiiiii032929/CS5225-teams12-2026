@@ -16,15 +16,15 @@ When a commute job cannot succeed, does it stop, become visible, and leave its p
 
 Pre-registered deliberately, because E5's metric list in the [evaluation plan](../../evaluation-plan.md) is wider than a queue-only drill can reach. The plan's workload **W4** is "W3 with 30% injected transient routing failures, then 100% for 5 minutes, then restored", plus permanent 400/403/404, routing 401 and 429 handling. Injecting a _transient routing_ failure means making OneMap appear to fail to the deployed worker. Nothing in the deployed stack offers a fault switch, and the drill operator has queue access plus alarm and log reads — not the ability to intercept the worker's upstream calls. **W4 as specified cannot be run on `eval` by this route at all.**
 
-| E5 metric                              | This drill                            | Where it actually comes from                                                                                                                                               |
-| -------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DLQ and attempt bounds                 | **Yes** — Phase A                     | new `eval` evidence                                                                                                                                                        |
-| Alarm delay                            | **Yes** — Phase A, from alarm history | new `eval` evidence                                                                                                                                                        |
-| Retries on permanent errors (expect 0) | **Yes** — Phase B                     | new `eval` evidence                                                                                                                                                        |
-| Redrive recovery                       | **Mechanism only** — Phase C          | partial; see Phase C                                                                                                                                                       |
-| Jobs recovered by retry                | **No**                                | not measured anywhere yet. The 26 October Moto drain had 0 redeliveries, and its `retry_exhaustion` scenario exhausts rather than recovers. State as unmeasured.           |
-| Token-warning alarm                    | **No**                                | invalidating the token breaks the stage for everyone and `eval` shares the team OneMap account with `dev`. Cite #72's observed post-expiry gap instead; do not provoke it. |
-| Honest unavailable / retry UI          | **No**                                | #26's UI work, with Lucy and Hikaru. Phase B supplies the _record_ behind such a surface, not the surface.                                                                 |
+| E5 metric                              | This drill                            | Where it actually comes from                                                                                                                                                                                                                                                                                            |
+| -------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DLQ and attempt bounds                 | **Yes** — Phase A                     | new `eval` evidence                                                                                                                                                                                                                                                                                                     |
+| Alarm delay                            | **Yes** — Phase A, from alarm history | new `eval` evidence                                                                                                                                                                                                                                                                                                     |
+| Retries on permanent errors (expect 0) | **Yes** — Phase B                     | new `eval` evidence                                                                                                                                                                                                                                                                                                     |
+| Redrive recovery                       | **Mechanism only** — Phase C          | partial; see Phase C                                                                                                                                                                                                                                                                                                    |
+| Jobs recovered by retry                | **No**                                | not measured anywhere. The 26 October Moto drain had 0 redeliveries, and its `retry_exhaustion` scenario exhausts rather than recovers. The 6 November W1/W2 run cannot supply it either: the warm-up cached all 729 catalog pairs, so no commute job is enqueued and the worker is never invoked. State as unmeasured. |
+| Token-warning alarm                    | **No**                                | invalidating the token breaks the stage for everyone and `eval` shares the team OneMap account with `dev`. Cite #72's observed post-expiry gap instead; do not provoke it.                                                                                                                                              |
+| Honest unavailable / retry UI          | **No**                                | #26's UI work, with Lucy and Hikaru. Phase B supplies the _record_ behind such a surface, not the surface.                                                                                                                                                                                                              |
 
 So the drill supplies three of E5's seven metrics as deployed evidence, one as a mechanism, and leaves three explicitly unmeasured. **E5 must not be reported as complete after this session.** The report should say which parts rest on AWS, which on the Moto harness in [`../worker-queue/`](../worker-queue/README.md), and which on nothing.
 
@@ -118,9 +118,33 @@ Screenshots are listed in the plan's evidence column. CLI output with timestamps
 3. **Nothing to delete from the table.** Phase B's fenced write is refused, so no item is created — see Phase B. If someone with table read access confirms the absence of `COMMUTE#DRILL27` / `TOWN#DRILL`, record that; otherwise record it as unchecked.
 4. All five alarms are confirmed back to `OK`, or the reason one is not is recorded.
 
-## Post-run observation — recovery by retry, only if the run supplies it
+## Post-run observation — recovery by retry, which the 6 November run cannot supply
 
-Not a phase of the drill, and nothing here is injected. E5's "jobs recovered by retry" is unmeasured
+Not a phase of the drill, and nothing here is injected.
+
+**Closed for the 6 November W1/W2 run, by construction.** The 19:47–19:53 SGT warm-up resolved all
+**729** pairs of the pinned catalog — 27 stations x 27 towns — leaving 702 `ok` and 27 `unavailable`
+(`TOWN#TENGAH`, `NON_ROUTABLE_TOWN`, `attempts: 0`). `CommuteJobs.ensure` returns a cached `ok` without
+enqueueing; a `NON_ROUTABLE_TOWN` record is returned untouched by a read, and even by
+`SearchService.repeat`, which is the only caller passing `retry_unavailable=True`, because the enqueue
+also requires `point.routable is not False` and `retryAfter <= now` and that record has `routable`
+`False` with `retryAfter` `253402300799`. The monthly profile `pt-v1:2026-11` does not roll over until
+1 December. So W1/W2 enqueues **zero** commute jobs, the worker is **never invoked**,
+`call_budget.reserve` is **never called**, and leg 1 below cannot exist. The observation to record for
+that run is the **absence**: zero worker invocations in the window. The metric is reported as
+unmeasured, and this is known before the run rather than concluded from an empty log.
+
+The method below is retained because it is tested and because any later run with cache misses could
+reach it. For the 6 November run it is not expected to yield anything.
+
+**What the warm-up did establish, kept separate from recovery.** 702 routing calls over 19:47:39–19:53:16
+is about **125 calls/min sustained** against a `WORKER_CALLS` ceiling of 200 per 60-second window, with
+702 `Routing call succeeded`, all `attempts: 1`, and no budget refusals. The guard was therefore **not
+reached** at that rate — a measurement of headroom, not of recovery. Separately, the 27 `unavailable`
+records are deployed evidence that a permanently non-routable destination yields an honest record with a
+reason code and no travel time at **zero OneMap calls and zero queue traffic**; their `attempts: 0` means
+the worker never saw them, so they are **not** evidence about the worker's handling of a permanent error,
+which rests on Phase B alone. E5's "jobs recovered by retry" is unmeasured
 everywhere, and the worker has a transient failure path that is not OneMap: `call_budget.py` counts
 worker routing calls in a 60-second window at `pk: RATE#ONEMAP`, `sk: WINDOW#<floor(epoch/60)>`, under
 `attribute_not_exists(#calls) OR #calls < :ceiling`, with `WORKER_CALLS` of 200. A full window logs
