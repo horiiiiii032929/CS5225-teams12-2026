@@ -20,6 +20,16 @@
     python3 scripts/measure_route_coverage.py --full           # 全部鎮 × 全部目的地
     python3 scripts/measure_route_coverage.py --towns 5 --dests 3
     python3 scripts/measure_route_coverage.py --full --legacy-queries   # v1.0.0 的清單
+
+結束碼（v1.2.0 起，Mani 在 #97 的 [P2]）：
+
+    0  計畫要量的工作全部產生了觀測
+    1  量測不完整 —— 有目的地沒解析成功，或有吸附比較失敗。證據仍然會寫出
+       來並保留（D-E5），報告裡的 `completeness` 區塊記下計畫數、完成數與
+       每一筆失敗。別把非零結束碼當成「這次沒有證據」。
+
+覆蓋率那一輪標成 `unavailable` 或 `error` 的配對**不算**不完整：它們是有觀測
+結果的配對，各自記在 `pairs` 裡。
 """
 
 import argparse
@@ -36,7 +46,7 @@ from onemap import OneMapClient, TOWNS, TOWN_COORDS  # noqa: E402
 from onemap.config import load_token  # noqa: E402
 from onemap.errors import NoRouteFound, OneMapError  # noqa: E402
 
-SCRIPT_VERSION = "1.1.0"
+SCRIPT_VERSION = "1.2.0"
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[4]
 REVIEWED_CATALOG = REPO_ROOT / "tools/load/destinations.json"
@@ -81,18 +91,41 @@ def haversine_m(lat1, lon1, lat2, lon2):
 
 
 def resolve_destinations(client, names):
-    """每個目的地取得「精確座標」和「吸附後的地鐵站座標」。"""
-    out = []
+    """每個目的地取得「精確座標」和「吸附後的地鐵站座標」。
+
+    回傳 `(resolved, failures)`。解析不出來的目的地**不是靜靜跳過**：它會進
+    `failures`，讓報告能把「計畫幾個」和「實際量到幾個」分開呈現（Mani 在
+    #97 的 [P2]）。否則一次暫時性的 OneMap 失敗會產出看起來乾淨、實際上少
+    算配對的證據。
+    """
+    out, failures = [], []
     for name in names:
-        res = client.search(name)
+        try:
+            res = client.search(name)
+        except OneMapError as exc:
+            print(f"  ✗ {name}: 搜尋失敗 {type(exc).__name__}: {exc}")
+            failures.append({"destination": name, "stage": "geocode",
+                             "errorType": type(exc).__name__, "detail": str(exc)})
+            continue
         if not res["results"]:
             print(f"  ✗ {name}: 查無地點")
+            failures.append({"destination": name, "stage": "geocode",
+                             "errorType": "NoResults", "detail": "查無地點"})
             continue
         top = res["results"][0]
         lat, lon = float(top["LATITUDE"]), float(top["LONGITUDE"])
-        stations, _ = client.nearest_mrt(lat, lon, radius_m=2000)
+        try:
+            stations, _ = client.nearest_mrt(lat, lon, radius_m=2000)
+        except OneMapError as exc:
+            print(f"  ✗ {name}: 最近站查詢失敗 {type(exc).__name__}: {exc}")
+            failures.append({"destination": name, "stage": "nearest-station",
+                             "errorType": type(exc).__name__, "detail": str(exc)})
+            continue
         if not stations:
             print(f"  ✗ {name}: 2km 內沒有地鐵站")
+            failures.append({"destination": name, "stage": "nearest-station",
+                             "errorType": "NoStationInRadius",
+                             "detail": "2km 內沒有地鐵站"})
             continue
         st = stations[0]
         walk = haversine_m(lat, lon, st["lat"], st["lon"])
@@ -105,7 +138,7 @@ def resolve_destinations(client, names):
         })
         print(f"  ✓ {name[:38]:38s} → {st['stationKey']:16s} "
               f"{st['codes']}  直線 {walk:.0f}m")
-    return out
+    return out, failures
 
 
 def load_reviewed_catalog(path):
@@ -123,19 +156,40 @@ def resolve_reviewed(client, entries):
     可能輸入的「查詢字串」當目的地，回傳的第一筆未必是想去的地方。這裡改用
     審閱過的完整地址，並且**要求**最近站清單裡出現審過的 stationKey；
     找不到就照實記 `stationPinned: false`，讓分歧看得見而不是被吃掉。
+
+    同樣回傳 `(resolved, failures)`：地理編碼或最近站查詢失敗的目的地會被
+    記下來，不會從分母裡消失。
     """
-    out = []
+    out, failures = [], []
     for entry in entries:
         address = entry["address"]
-        res = client.search(address)
+        alias = entry["alias"]
+        try:
+            res = client.search(address)
+        except OneMapError as exc:
+            print(f"  ✗ {alias}: 地址搜尋失敗 {type(exc).__name__}: {exc}")
+            failures.append({"destination": alias, "stage": "geocode",
+                             "errorType": type(exc).__name__, "detail": str(exc)})
+            continue
         if not res["results"]:
-            print(f"  ✗ {entry['alias']}: 地址查無結果")
+            print(f"  ✗ {alias}: 地址查無結果")
+            failures.append({"destination": alias, "stage": "geocode",
+                             "errorType": "NoResults", "detail": "地址查無結果"})
             continue
         top = res["results"][0]
         lat, lon = float(top["LATITUDE"]), float(top["LONGITUDE"])
-        stations, _ = client.nearest_mrt(lat, lon, radius_m=2500)
+        try:
+            stations, _ = client.nearest_mrt(lat, lon, radius_m=2500)
+        except OneMapError as exc:
+            print(f"  ✗ {alias}: 最近站查詢失敗 {type(exc).__name__}: {exc}")
+            failures.append({"destination": alias, "stage": "nearest-station",
+                             "errorType": type(exc).__name__, "detail": str(exc)})
+            continue
         if not stations:
-            print(f"  ✗ {entry['alias']}: 2.5km 內沒有地鐵站")
+            print(f"  ✗ {alias}: 2.5km 內沒有地鐵站")
+            failures.append({"destination": alias, "stage": "nearest-station",
+                             "errorType": "NoStationInRadius",
+                             "detail": "2.5km 內沒有地鐵站"})
             continue
         pinned = next(
             (s for s in stations if s["stationKey"] == entry["stationKey"]), None
@@ -159,7 +213,7 @@ def resolve_reviewed(client, entries):
         flag = "" if pinned else f"  ⚠ 審定站 {entry['stationKey']} 不在最近站清單"
         print(f"  ✓ {entry['alias'][:22]:22s} → {st['stationKey']:16s} "
               f"{st['codes']}  直線 {walk:.0f}m{flag}")
-    return out
+    return out, failures
 
 
 def main():
@@ -188,9 +242,16 @@ def main():
         catalog, entries = load_reviewed_catalog(args.catalog)
         if not args.full:
             entries = entries[:args.dests]
+        catalog_path = pathlib.Path(args.catalog)
+        try:
+            # 倉庫內的檔案記相對路徑；operator 給的絕對路徑原樣記下，
+            # 不要因為它不在倉庫裡就讓整支腳本在量測前拋錯。
+            catalog_name = str(catalog_path.relative_to(REPO_ROOT))
+        except ValueError:
+            catalog_name = str(catalog_path)
         source = {
             "kind": "reviewed-catalog",
-            "file": str(pathlib.Path(args.catalog).relative_to(REPO_ROOT)),
+            "file": catalog_name,
             "version": catalog.get("version"),
             "reviewed": catalog.get("reviewed"),
         }
@@ -203,9 +264,12 @@ def main():
 
     print("[1] 解析目的地並吸附到地鐵站")
     if args.legacy_queries:
-        dests = resolve_destinations(client, dest_names)
+        dests, dest_failures = resolve_destinations(client, dest_names)
     else:
-        dests = resolve_reviewed(client, entries)
+        dests, dest_failures = resolve_reviewed(client, entries)
+    if dest_failures:
+        print(f"  ⚠ {len(dest_failures)}/{planned} 個目的地沒有解析成功，"
+              f"這次量測不完整")
 
     print(f"\n[2] 計算 {len(towns)*len(dests)} 組通勤（吸附站為終點）")
     pairs, unavailable, errors = [], [], []
@@ -235,7 +299,7 @@ def main():
 
     probe_towns = towns[:max(1, args.snap_towns)]
     print(f"\n[3] 吸附站 vs 精確地址的誤差（實驗 E8），起點 {len(probe_towns)} 鎮")
-    deltas = []
+    deltas, snap_failures = [], []
     for probe_town in probe_towns:
         for dest in dests:
             try:
@@ -256,10 +320,28 @@ def main():
             except OneMapError as exc:
                 print(f"  {probe_town:14s} {dest['name'][:30]:30s} "
                       f"{type(exc).__name__}: {exc}")
+                snap_failures.append({
+                    "fromTown": probe_town, "destination": dest["name"],
+                    "stationKey": dest["stationKey"],
+                    "errorType": type(exc).__name__, "detail": str(exc),
+                })
 
     total = len(pairs)
     ok_n = sum(1 for p in pairs if p["status"] == "ok")
     abs_deltas = [abs(d["deltaMinutes"]) for d in deltas]
+
+    # 計畫 vs 完成。`planned` 是命令列與目錄決定的目的地數，所以少解析一個
+    # 目的地會讓 totalPairs 自己縮小 —— 以前這件事只印在畫面上，證據裡看不
+    # 出來。現在兩邊都寫進 artifact，不一致就把整次量測標成不完整。
+    planned_pairs = len(towns) * planned
+    planned_snaps = len(probe_towns) * planned
+    complete = (
+        not dest_failures
+        and not snap_failures
+        and total == planned_pairs
+        and len(deltas) == planned_snaps
+    )
+
     report = {
         "script": "measure_route_coverage.py", "version": SCRIPT_VERSION,
         "issue": 19, "experiment": "E8",
@@ -278,6 +360,23 @@ def main():
             "unavailable": len(unavailable), "errors": len(errors),
             "coveragePct": round(ok_n / total * 100, 1) if total else 0.0,
             "unavailablePairs": unavailable,
+        },
+        "completeness": {
+            "complete": complete,
+            "plannedDestinations": planned,
+            "resolvedDestinations": len(dests),
+            "destinationFailures": dest_failures,
+            "plannedPairs": planned_pairs,
+            "completedPairs": total,
+            "plannedSnapComparisons": planned_snaps,
+            "completedSnapComparisons": len(deltas),
+            "snapComparisonFailures": snap_failures,
+            "note": (
+                "覆蓋率那一輪的 unavailable 與 error 是有觀測結果的配對，"
+                "各自記在 pairs 裡，不算缺資料。complete 只在『計畫要量的工作"
+                "完全沒有產生觀測』時為 false：目的地解析失敗、吸附比較失敗，"
+                "或任一計畫數與完成數不符。"
+            ),
         },
         "snapError": {
             "rows": deltas,
@@ -300,6 +399,20 @@ def main():
         print(f"吸附誤差：中位數 {report['snapError']['medianAbsMinutes']} min，"
               f"最大 {report['snapError']['maxAbsMinutes']} min")
     print(f"證據：{path}")
+
+    if not complete:
+        print("\n*** 這次量測不完整，不可當成完成的稽核 ***")
+        print(f"  目的地：計畫 {planned}，解析成功 {len(dests)}")
+        for f in dest_failures:
+            print(f"    ✗ {f['destination']}  {f['stage']}  "
+                  f"{f['errorType']}: {f['detail']}")
+        print(f"  配對：計畫 {planned_pairs}，完成 {total}")
+        print(f"  吸附比較：計畫 {planned_snaps}，完成 {len(deltas)}")
+        for f in snap_failures:
+            print(f"    ✗ {f['fromTown']} → {f['destination']}  "
+                  f"{f['errorType']}: {f['detail']}")
+        print("  證據已保留（D-E5：原始輸出不刪不改），結束碼 1。")
+        return 1
     return 0
 
 
