@@ -26,6 +26,7 @@ Conventions:
 | OneMap feasibility and source-level commute coverage | [feasibility/](feasibility/)       | Reviewed archive, with discrepancies and candidate-selection limitations                 |
 | #15 commute-worker routing, verified live            | [worker-routing/](worker-routing/) | Module verified against live OneMap on 20 Oct                                            |
 | #15 queue drain, concurrency and deduplication       | [worker-queue/](worker-queue/)     | Measured off a real queue on 26 Oct; emulated AWS, replayed OneMap                       |
+| E5 failure, alarm and dead-letter recovery           | [e5/](e5/)                         | Drill measured on `eval` 7 Nov; three of seven metrics, rest unmeasured                  |
 | E6 bad-file/PITR recovery                            | [e6/](e6/)                         | Procedure; not run                                                                       |
 | E8 rent and commute audit                            | [e8/](e8/)                         | Rent audit, 810-pair reviewed coverage, and the 7 Nov deployed reconciliation of all 810 |
 | E9 hosting costs                                     | [e9/](e9/)                         | Shared-dev usage measured; tagged bill and account type remain pending                   |

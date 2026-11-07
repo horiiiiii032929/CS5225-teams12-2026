@@ -1,0 +1,1 @@
+{"schemaVersion": 0, "drill": "drill-27-20261107T034815Z", "issue": 27, "note": "Synthetic unkeyable payload for the #27 DLQ drill. Never re-drive.", "operator": "lukerspace", "revision": "e2d3780e28028574f8ee3dd990c10257be9f8029"}

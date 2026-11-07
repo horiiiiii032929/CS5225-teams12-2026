@@ -1,0 +1,39 @@
+[2026-11-07T03:47:42Z / 11:47:42 SGT] source  0	0   (visible / in-flight)
+[2026-11-07T03:47:43Z / 11:47:43 SGT] dlq     0	0   (visible / in-flight)
+[2026-11-07T03:47:44Z / 11:47:44 SGT] DLQ confirmed empty at the start of the session, so step 6 can only touch our own messages.
+[2026-11-07T03:47:46Z / 11:47:46 SGT] pre-state recorded in /Users/hsieh/cs5225-drill-evidence
+[2026-11-07T03:48:16Z / 11:48:16 SGT] Phase A: injecting marker drill-27-20261107T034815Z
+[2026-11-07T03:48:17Z / 11:48:17 SGT] injected. 3 receives x 180s visibility => expect the DLQ in ~6-9 min.
+[2026-11-07T03:48:28Z / 11:48:28 SGT] watching for up to 15 minutes
+[2026-11-07T03:57:53Z / 11:57:53 SGT] LANDED IN DLQ at 2026-11-07T03:57:53Z
+[2026-11-07T04:00:03Z / 12:00:03 SGT] inspected without consuming; the lease returns it in 60s
+[2026-11-07T04:00:13Z / 12:00:13 SGT] Phase B: injecting permanently-rejected job (expect attempts=1, no retry, DLQ unchanged)
+[2026-11-07T04:00:14Z / 12:00:14 SGT] Phase B sent. NO record lands: _write is fenced on an API-created pending claim.
+[2026-11-07T04:00:14Z / 12:00:14 SGT] Expect in step 5: 'A newer claim or result owns this pair; terminal write skipped'
+[2026-11-07T04:00:14Z / 12:00:14 SGT]   with attempts=1 and routingError set. Nothing to clean up in the table.
+[2026-11-07T04:00:14Z / 12:00:14 SGT] Absence at COMMUTE#DRILL27 / TOWN#DRILL stays UNCHECKED unless someone with table read confirms it.
+[2026-11-07T04:00:26Z / 12:00:26 SGT] worker log group: FlatSplit-eval-ApiCommuteWorkerLogsA37837F9-YOtZw0L8oT3N
+[2026-11-07T04:00:56Z / 12:00:56 SGT] cleanup: deleting ONLY messages carrying marker drill-27-20261107T034815Z
+[2026-11-07T04:01:09Z / 12:01:09 SGT] deleted our drill message
+[2026-11-07T04:01:32Z / 12:01:32 SGT] final DLQ depth (visible / in-flight): 0	1
+[2026-11-07T04:01:33Z / 12:01:33 SGT] final source depth: 0	0
+[2026-11-07T04:01:33Z / 12:01:33 SGT] DLQ-empty check time above is the timestamp to quote on #30.
+[12:01:46 SGT] dlq=0	0  src=0	0
+BOTH QUEUES CONFIRMED EMPTY at 12:01:46 SGT
+[12:02:19 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:02:40 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:03:01 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:03:22 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:03:43 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:04:04 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:04:25 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:04:46 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:05:07 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:05:27 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:05:48 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:06:09 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:06:30 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:06:51 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:07:12 SGT] ALARM	2026-11-07T11:59:32.200000+08:00
+[12:07:33 SGT] OK	2026-11-07T12:07:32.199000+08:00
+BACK TO OK
