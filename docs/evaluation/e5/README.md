@@ -14,6 +14,8 @@
 | Session                                   | 11:47:42 → 12:01:46 SGT, marker `drill-27-20261107T034815Z`                                                                                                                   |
 | Issue threads                             | [#27](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/27) (drill), [#30](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/30) (stage coordination) |
 
+**One deviation from D-E5, recorded here because D-E5 says raw output is never edited.** Exactly one field in one raw file was replaced before it was committed: `ReceiptHandle` in [`raw/2026-11-07/dlq_message.json`](raw/2026-11-07/dlq_message.json) reads `<redacted: single-use delete token, message already deleted>`. A receipt handle is a single-use delete token for one specific message; that message was deleted at 12:01:46 SGT and the handle expired with its visibility lease, so it grants nothing now. It was replaced so that no deletion token for any queue sits in this tree at all. No other field in that file and no other file in `raw/2026-11-07/` was altered. Flagged by @shyamgj1900 in his review of #98.
+
 Pre-state: both queues `0/0`, all five alarms `OK`, DLQ confirmed empty before anything was sent. The deployed queue configuration matched what the procedure assumed — `VisibilityTimeout` 180 s, `maxReceiveCount` 3 to the DLQ, source retention 345,600 s, DLQ retention 1,209,600 s.
 
 ## Phase A — a permanently unkeyable job reaches the DLQ and raises the alarm
