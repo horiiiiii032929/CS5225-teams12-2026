@@ -111,6 +111,23 @@ Worst cases: Changi Airport Terminal 3 from ANG MO KIO (72.0 exact vs 55.2 snapp
 
 The artifact above was produced by v1.1.0 and has no `completeness` block. It is retrospectively verifiable as complete from its own contents — 810 pairs is exactly 27 towns × 30 destinations, 90 comparisons is exactly 3 probe towns × 30 destinations, `errors` is 0 and `stationPinMismatches` is empty — and `tools/evaluation/tests/test_route_coverage.py` asserts that, so a later edit to the file would fail the suite. The raw output is not regenerated to add the new fields.
 
+## 7 November 2026 — deployed reconciliation of the same 810 pairs (#19)
+
+Reported by @shyamgj1900 on [#19](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/19#issuecomment-6704556686) as an operator reading, not produced by anything in this directory. A strongly consistent scan of `FlatSplit-eval` at revision `e2d3780`, 7 November 16:34 SGT, against the 810 pairs above. The table held **729** `COMMUTE#<station> / TOWN#<town>` items — 27 stations x 27 towns — all written by the 6 November warm-up between 19:47:35 and 19:53:16 SGT, profile `pt-v1:2026-11`, routing date 2026-11-09 08:30, source `onemap:routingsvc/route?routeType=pt`. 729 items serve 810 pairs because the 30 reviewed destinations pin onto 27 distinct stations.
+
+| Check                                | Result                                                        |
+| ------------------------------------ | ------------------------------------------------------------- |
+| Pairs with a deployed record         | **810 / 810**, none missing                                   |
+| Status agreement with this run       | **810 / 810** — 780 `ok`/`ok`, 30 `unavailable`/`unavailable` |
+| Travel time, deployed minus this run | mean +0.06, median 0.00, median abs 0.03, p95 abs 0.05 min    |
+| Within 2 minutes                     | **760 / 780**                                                 |
+
+**The 30 unavailables agree on the outcome and differ on the mechanism.** All of them are TENGAH. This run got OneMap's "No route found" per pair, 30 upstream 404s. The deployed records are `NON_ROUTABLE_TOWN` with `attempts: 0` and no `minutes`: the deployed path classifies the town as non-routable **at enqueue and never asks OneMap at all**. Same honest result, one fewer provider call.
+
+**One disclosed limitation: multi-line interchanges.** All 20 of the pairs more than 2 minutes apart are the single destination pinned to `OUTRAM_PARK`, and they differ by almost exactly **±5.7 min** with the sign following the line — **+5.7** for towns reached on the East-West line (Bedok, Clementi, Jurong East, Tampines and others) and **−5.7** for North-East line towns (Hougang, Punggol, Sengkang, Serangoon, Kallang/Whampoa). Shyam reads that as this run and the deployed station table using **different points inside the Outram Park interchange** — its EW, NE and TE platforms are far enough apart to be separate boarding points — rather than a routing or caching fault, and the symmetry of the figure supports that over a timing or data difference. Neither dataset records itineraries, so **the cause is not established here**; what is established is the size. For a station serving more than one line, the choice of point inside the interchange can move a modelled commute by about one interchange transfer, in either direction. Outram Park is the only such destination in this catalogue, so the effect is bounded at one of 30 destinations in this run and is not corrected in the figures above.
+
+Shyam's working files, his copy of this run's evidence and the raw table scan are on the operator machine rather than in this tree. They can be committed under `docs/evaluation/feasibility/` if @saravanamani1999 wants the scan itself kept, in which case it needs its own dated directory under D-E5 rather than being folded into the 5 November artifact.
+
 ## 14 October handoff corrections
 
 The current table includes all 27 HDB rental keys, including `CENTRAL` and the documented non-routable `TENGAH`. Historical measurements used `CENTRAL AREA`; interpret that label as the `CENTRAL` key without rewriting raw artifacts. The regeneration script now refuses fuzzy station matches and retains TENGAH's explicit unavailable reference instead of silently generating a 26-town table.
