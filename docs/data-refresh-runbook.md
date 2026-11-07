@@ -23,6 +23,7 @@ so set it before the first one and nothing else in this file needs editing:
 
 ```bash
 STACK=${STACK:-FlatSplit-dev}   # FlatSplit-eval for the evaluation stage
+STAGE=${STACK#FlatSplit-}       # the metric namespace is FlatSplit/<stage>
 ```
 
 Resolve names from the stack rather than pasting them, because they change on
@@ -108,14 +109,15 @@ outside; the log tells them apart.
 ```bash
 # Traffic-driven warning metric. Missing data is not proof of token health.
 aws cloudwatch get-metric-statistics \
-  --namespace FlatSplit/dev --metric-name OneMapTokenWarning \
+  --namespace "FlatSplit/$STAGE" --metric-name OneMapTokenWarning \
   --start-time "$SINCE" \
   --end-time "$UNTIL" \
   --period 300 --statistics Sum
 ```
 
 API and worker log-group filters match `$.onemapTokenWarning = true` and
-publish `FlatSplit/dev` / `OneMapTokenWarning`. They require log traffic: no
+publish `FlatSplit/<stage>` / `OneMapTokenWarning` (`alarms.ts` builds the
+namespace from the stage, so it is `FlatSplit/eval` on the evaluation stack). They require log traffic: no
 datapoint during an idle period is not evidence of a valid credential. The
 scheduled refresh and its `OneMapTokenRefreshFailing` alarm cover refresh
 failures during idle periods. Confirm both filters exist in the deployed stack.
@@ -130,6 +132,15 @@ aws cloudwatch describe-alarms --alarm-name-prefix FlatSplit \
 ```
 
 ### Installing a new token
+
+**Skip this subsection on a walkthrough.** `put-secret-value` is a write to the
+live token, and since #72 the token is renewed by the scheduled refresh Lambda,
+so a manual install during a rehearsal would replace a working credential for
+every stage reader and prove nothing. Read [Is the token
+healthy?](#is-the-token-healthy) instead, which is read-only. This subsection is
+for a real outage where the scheduled refresh has failed, and the two checks
+below it — the 900-second cache wait and the `/places` lookup — only mean
+anything after an actual install.
 
 Only someone holding the OneMap account can mint one; that is Shyam as of
 28 October. **Never paste a token into an issue, a PR or this file.**
