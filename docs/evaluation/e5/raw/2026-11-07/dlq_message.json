@@ -1,0 +1,17 @@
+{
+    "Messages": [
+        {
+            "MessageId": "e998033b-e2c7-4069-acc2-c11a2e2abd4f",
+            "ReceiptHandle": "<redacted: single-use delete token, message already deleted>",
+            "MD5OfBody": "60b4113f237c94dfc08b9167e758d080",
+            "Body": "{\"schemaVersion\": 0, \"drill\": \"drill-27-20261107T034815Z\", \"issue\": 27, \"note\": \"Synthetic unkeyable payload for the #27 DLQ drill. Never re-drive.\", \"operator\": \"lukerspace\", \"revision\": \"e2d3780e28028574f8ee3dd990c10257be9f8029\"}",
+            "Attributes": {
+                "SenderId": "AROAYBXEIXMCK2K75K6GE:botocore-session-1794023252",
+                "ApproximateFirstReceiveTimestamp": "1794023297072",
+                "ApproximateReceiveCount": "4",
+                "SentTimestamp": "1794023297063",
+                "DeadLetterQueueSourceArn": "arn:aws:sqs:ap-southeast-1:553455762180:FlatSplit-eval-ApiCommuteJobs7487AB1D-GfmtprOp2wv4"
+            }
+        }
+    ]
+}

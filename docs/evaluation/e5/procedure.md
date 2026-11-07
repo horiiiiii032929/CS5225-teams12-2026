@@ -59,7 +59,16 @@ Observe, with timestamps: the source queue depth, the three receives at the 180-
   **not** from the `ApproximateReceiveCount` read off the DLQ message: §4's inspection lease
   increments that count itself, and the rehearsal below read 4 for a message delivered three
   times. A pass condition read off the inspection would fail on its own artifact.
-- `CommuteDlqNotEmpty` moves `OK → ALARM`, and the delay between the DLQ arrival and the transition is recorded as the **measured alarm delay**, with the 5-minute Maximum period stated as its floor.
+- `CommuteDlqNotEmpty` moves `OK → ALARM`, and the delay between the DLQ arrival and the
+  transition is recorded as the **measured alarm delay**. An earlier version of this line called
+  the alarm's 300-second `Maximum` period a **floor** on that delay. It is not, and the
+  7 November run measured 99–110 seconds, which refutes it. Do not replace it with a different
+  rule: that run's two transitions do not follow the same one — the raise came 92 seconds after
+  its evaluation window closed, while the clear came **before** its window closed. Record the
+  measured delay, the alarm's period and statistic, and where in the window the arrival fell,
+  and state plainly that one drill does not establish how the alarm evaluates. The alarm's
+  windows are anchored on its own schedule, not clock-aligned; read the breaching datapoint's
+  timestamp out of `StateReason` rather than assuming.
 - The worker log group carries one `Unusable commute job` entry per receive, matching the marker.
 - No pair record is created or changed by this phase. Nothing in the payload addresses one.
 - No OneMap call is attributable to the drill in the same window.

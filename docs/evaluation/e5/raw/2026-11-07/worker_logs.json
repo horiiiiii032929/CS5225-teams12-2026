@@ -1,0 +1,18 @@
+[
+    {
+        "at": 1794023298982,
+        "msg": "{\"level\":\"ERROR\",\"location\":\"_process:203\",\"message\":\"Unusable commute job\",\"timestamp\":\"2026-11-07 03:48:18,981+0000\",\"service\":\"flatsplit-commute-worker\",\"cold_start\":true,\"function_name\":\"FlatSplit-eval-ApiCommuteWorkerDCCDFB3E-q5NINW3MSCpw\",\"function_memory_size\":\"256\",\"function_arn\":\"arn:aws:lambda:ap-southeast-1:553455762180:function:FlatSplit-eval-ApiCommuteWorkerDCCDFB3E-q5NINW3MSCpw\",\"function_request_id\":\"57d26b37-3f1b-57a5-ad2d-085f9eab73a2\",\"reason\":\"Unsupported payload version 0.\",\"xray_trace_id\":\"1-6aee9f81-1ffdf83d6244fe5533af8108\"}\n"
+    },
+    {
+        "at": 1794023477120,
+        "msg": "{\"level\":\"ERROR\",\"location\":\"_process:203\",\"message\":\"Unusable commute job\",\"timestamp\":\"2026-11-07 03:51:17,119+0000\",\"service\":\"flatsplit-commute-worker\",\"cold_start\":false,\"function_name\":\"FlatSplit-eval-ApiCommuteWorkerDCCDFB3E-q5NINW3MSCpw\",\"function_memory_size\":\"256\",\"function_arn\":\"arn:aws:lambda:ap-southeast-1:553455762180:function:FlatSplit-eval-ApiCommuteWorkerDCCDFB3E-q5NINW3MSCpw\",\"function_request_id\":\"e56643c6-7f4d-5ec4-9aca-20aedd21395a\",\"reason\":\"Unsupported payload version 0.\",\"xray_trace_id\":\"1-6aeea035-6e2a3426076aeb834b7773c3\"}\n"
+    },
+    {
+        "at": 1794023657112,
+        "msg": "{\"level\":\"ERROR\",\"location\":\"_process:203\",\"message\":\"Unusable commute job\",\"timestamp\":\"2026-11-07 03:54:17,111+0000\",\"service\":\"flatsplit-commute-worker\",\"cold_start\":false,\"function_name\":\"FlatSplit-eval-ApiCommuteWorkerDCCDFB3E-q5NINW3MSCpw\",\"function_memory_size\":\"256\",\"function_arn\":\"arn:aws:lambda:ap-southeast-1:553455762180:function:FlatSplit-eval-ApiCommuteWorkerDCCDFB3E-q5NINW3MSCpw\",\"function_request_id\":\"2c4d0aea-5753-51c9-ad4e-6982f473b217\",\"reason\":\"Unsupported payload version 0.\",\"xray_trace_id\":\"1-6aeea0e9-09baffe71dd0050c502711b6\"}\n"
+    },
+    {
+        "at": 1794024016263,
+        "msg": "{\"level\":\"WARNING\",\"location\":\"_terminal:184\",\"message\":\"A newer claim or result owns this pair; terminal write skipped\",\"timestamp\":\"2026-11-07 04:00:16,263+0000\",\"service\":\"flatsplit-commute-worker\",\"cold_start\":true,\"function_name\":\"FlatSplit-eval-ApiCommuteWorkerDCCDFB3E-q5NINW3MSCpw\",\"function_memory_size\":\"256\",\"function_arn\":\"arn:aws:lambda:ap-southeast-1:553455762180:function:FlatSplit-eval-ApiCommuteWorkerDCCDFB3E-q5NINW3MSCpw\",\"function_request_id\":\"fc9ec3e9-5fea-5fc7-90b6-a081fb97b2e4\",\"jobId\":\"128035d3-bb1b-4a5f-bb1b-c6239faa5f02\",\"stationKey\":\"DRILL27\",\"town\":\"DRILL\",\"attempts\":1,\"routingError\":\"INVALID_ROUTE_REQUEST\",\"reason\":\"The job's lat is not a number.\",\"xray_trace_id\":\"1-6aeea24e-f755a65ed8ecd341fa51e6a4\"}\n"
+    }
+]

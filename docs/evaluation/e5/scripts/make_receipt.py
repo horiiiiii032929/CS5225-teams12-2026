@@ -97,7 +97,8 @@ elif rd("worker_logs.json") is not None:
 out += ["### Cleanup", ""]
 log = rd("drill.log", False) or ""
 for line in log.splitlines():
-    if any(k in line for k in ("deleted", "final ", "DLQ-empty", "WARNING")):
+    if any(k in line for k in ("deleted", "final ", "DLQ-empty", "WARNING",
+                               "CONFIRMED", "BACK TO OK")):
         out.append("- %s" % line)
 
 out += ["", "### What this establishes, and what it does not", "",
