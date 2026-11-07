@@ -25,6 +25,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 EVIDENCE = HERE.parent / "evidence"
 GIB = 1024**3
+# A TTL of 30 days is read as one month's stock. The 1.4% against a 730-hour
+# month is immaterial: DynamoDB storage is inside the always-free allowance at
+# every item count this model produces (see ddb_bytes_per_item_source).
+DAYS_PER_MONTH = 30.0
 
 
 def load(name: str) -> dict:
@@ -74,17 +78,35 @@ def derive_usage(
 
     lambda_api_invocations = api_requests
     lambda_worker_invocations = jobs
-    lambda_other = shared["monthly_ingest_runs"]
+    # Scheduled work, which is demand-INDEPENDENT and was previously incomplete:
+    # the token refresh was missing altogether and the rent ingestion was costed
+    # at the API's memory for a flat five seconds (@saravanamani1999's review of
+    # bd371a8 on PR #94). Both now use the deployed memory and the measured mean
+    # duration from #34's receipt, which applied those same memory sizes itself.
+    ingest_runs = shared["monthly_ingest_runs"]
+    token_refresh_runs = shared["token_refresh_runs_per_month"]
+    lambda_other = ingest_runs + token_refresh_runs
     lambda_invocations = lambda_api_invocations + lambda_worker_invocations + lambda_other
 
-    mem_gb = shared["lambda_memory_mb"] / 1024
-    gb_seconds = mem_gb * (
+    # GB-seconds per function at the memory each one is DEPLOYED with. The HTTP
+    # handler and the commute worker are both 256 MiB (infra/aws/src/api.ts), the
+    # rent ingestion is 1,024 MiB (infra/aws/src/rent-ingestion.ts) and the token
+    # refresh is 128 MiB (api.ts), so one blanket memory figure cannot price all
+    # four.
+    app_mem_gb = shared["lambda_memory_mb"] / 1024
+    ingest_mem_gb = shared["ingest_memory_mb"] / 1024
+    token_mem_gb = shared["token_refresh_memory_mb"] / 1024
+    gb_seconds_app = app_mem_gb * (
         (api_requests - places) * shared["lambda_api_duration_ms"] / 1000
         + places_cold * shared["lambda_places_cold_duration_ms"] / 1000
         + places_warm * shared["lambda_places_warm_duration_ms"] / 1000
         + lambda_worker_invocations * shared["lambda_worker_duration_ms"] / 1000
-        + lambda_other * 5.0
     )
+    gb_seconds_scheduled = (
+        ingest_mem_gb * ingest_runs * shared["ingest_duration_ms"] / 1000
+        + token_mem_gb * token_refresh_runs * shared["token_refresh_duration_ms"] / 1000
+    )
+    gb_seconds = gb_seconds_app + gb_seconds_scheduled
 
     # Per-request DynamoDB counts are measured; see workloads.json measured_operations.
     cold, warm = measured["places_lookup_cold"], measured["places_lookup_warm"]
@@ -141,6 +163,72 @@ def derive_usage(
     log_gb = lambda_invocations * shared["log_bytes_per_invocation"] / GIB
     onemap_lookup_calls = places_cold * cold["onemap_calls"]
 
+    # Stored items are a stock, not a monthly flow, so storage is derived from
+    # what accumulates rather than from a flat table-size guess. The byte rate
+    # is measured: #34's 3 November receipt read 292,216 bytes over about 668
+    # items on the deployed table (~437 B/item).
+    #
+    # The stock follows the lifecycle the stack IMPLEMENTS, not a retention
+    # policy we would like to have:
+    #   * groups.py sets GROUP_LIFETIME = 30 days, writes that `ttl` onto the
+    #     group record and propagates it to every member record, and
+    #     infra/aws/src/data.ts enables DynamoDB TTL on `ttl`. Group and member
+    #     records therefore expire about a month after creation, so the
+    #     steady-state stock is one month's arrivals, not a year's.
+    #   * commute_jobs.py writes a pair with put_item to
+    #     {pk: COMMUTE#<station>, sk: TOWN#<town>}. routingProfileVersion is an
+    #     ATTRIBUTE of that item, not part of the key, so a newer profile
+    #     REPLACES the previous record instead of adding one. The stock is one
+    #     current item per station/town, whatever the profile history.
+    #   * RENT#<snapshot> items carry no ttl, so the retained snapshot stock
+    #     stands as stated: #28 keeps the previous sets as the last-good
+    #     fallback.
+    #   * a preference save updates the member record rather than adding one
+    #     (measured: group_create / member_join / preference_save), and PLACE#
+    #     and PLACELOOKUP# carry a 24-hour logical expiry, so their
+    #     steady-state stock is immaterial.
+    group_months = shared["group_lifetime_days"] / DAYS_PER_MONTH
+    group_items = (groups + members) * group_months
+    # NAME# and SEARCH# were missing from this stock (@saravanamani1999's review
+    # of bd371a8 on PR #94). Both are real items on the same table:
+    #   * groups.py::_reservation writes {pk: GROUP#<id>, sk: NAME#<nameKey>}
+    #     for every member, carrying that member's own `ttl`, so there is exactly
+    #     one per member and it expires with them. A rename writes the new
+    #     reservation and deletes the old one in the same transaction, so renames
+    #     do not accumulate.
+    #   * searches.py writes {pk: GROUP#<id>, sk: SEARCH#<createdAt>#<searchId>}
+    #     once per search, with `ttl` taken from the GROUP's expiry rather than
+    #     the search's own time. A search therefore lives at most as long as the
+    #     remainder of its group's month, so one month's arrivals is an UPPER
+    #     BOUND on the steady-state stock, not an estimate of it.
+    name_items = members * group_months
+    search_items = searches * group_months
+    # The commute cache saturates: a pair is keyed by station and town, so the
+    # stock is bounded by the stations that exist, not by how many groups ask.
+    stations_seen = min(groups * group_months * stations, facts["mrt_stations"])
+    commute_items = stations_seen * facts["towns"]
+    rent_items = shared["rent_snapshot_items"] * shared["rent_snapshots_retained"] + 1
+    ddb_items = (
+        group_items + name_items + search_items + commute_items + rent_items
+    )
+    # AWS bills DynamoDB storage in decimal GB, not GiB.
+    ddb_table_size_gb = ddb_items * shared["ddb_bytes_per_item"] / 1e9
+
+    # A HYPOTHETICAL, kept separate and never priced: the stock if the group
+    # TTL were lengthened to a term-and-vacation year AND superseded commute
+    # profiles were keyed by routingProfileVersion so they accumulated. Neither
+    # is implemented. It is reported so that a reader can see what a retention
+    # change would do to the storage line instead of having one assumed for
+    # them -- and so that the figures published before this correction remain
+    # locatable rather than silently replaced.
+    hypo_months = shared["hypothetical_retention_months"]
+    hypo_stations = min(groups * hypo_months * stations, facts["mrt_stations"])
+    ddb_items_if_retained = (
+        (groups + members + members + searches) * hypo_months
+        + hypo_stations * facts["towns"] * hypo_months
+        + rent_items
+    )
+
     return {
         "groups": groups,
         "members": members,
@@ -160,6 +248,10 @@ def derive_usage(
         "onemap_calls": jobs + onemap_lookup_calls,
         "lambda_invocations": lambda_invocations,
         "lambda_gb_seconds": gb_seconds,
+        "lambda_gb_seconds_app": gb_seconds_app,
+        "lambda_gb_seconds_scheduled": gb_seconds_scheduled,
+        "lambda_ingest_runs": ingest_runs,
+        "lambda_token_refresh_runs": token_refresh_runs,
         "ddb_read_requests": ddb_read_requests,
         "ddb_rru": ddb_read_requests * shared["ddb_rru_per_read_request"],
         "ddb_writes": ddb_writes,
@@ -170,6 +262,18 @@ def derive_usage(
         "sqs_requests": sqs_requests,
         "cold_starts": cold_starts,
         "cloudwatch_log_gb": log_gb,
+        "ddb_items": ddb_items,
+        "ddb_group_items": group_items,
+        "ddb_name_items": name_items,
+        "ddb_search_items": search_items,
+        "ddb_commute_items": commute_items,
+        "ddb_rent_items": rent_items,
+        "ddb_table_size_gb": ddb_table_size_gb,
+        # Hypothetical only -- not an input to any priced line.
+        "ddb_items_if_retained": ddb_items_if_retained,
+        "ddb_table_size_gb_if_retained": ddb_items_if_retained
+        * shared["ddb_bytes_per_item"]
+        / 1e9,
     }
 
 
@@ -202,7 +306,7 @@ def aws_serverless(u: dict, p: dict, shared: dict) -> list[dict]:
     ))
     out.append(line(
         "Lambda compute (arm64)",
-        f"{u['lambda_gb_seconds']:,.0f} GB-s @256 MB",
+        f"{u['lambda_gb_seconds']:,.0f} GB-s (256/1024/128 MB per function)",
         u["lambda_gb_seconds"] * L["arm64_gb_second"],
         min(u["lambda_gb_seconds"], L["free_gb_seconds_per_month"]) * L["arm64_gb_second"],
         "always free",
@@ -224,15 +328,15 @@ def aws_serverless(u: dict, p: dict, shared: dict) -> list[dict]:
         f"{u['ddb_wru']:,.0f} WRU",
         u["ddb_wru"] * D["write_request_unit"],
     ))
-    size = shared["ddb_table_size_gb"]
+    size = u["ddb_table_size_gb"]
     out.append(line(
         "DynamoDB storage",
-        f"{size} GB",
+        f"{size:.4f} GB ({u['ddb_items']:,.0f} items)",
         size * D["storage_gb_month"],
         min(size, D["free_storage_gb"]) * D["storage_gb_month"],
         "25 GB always free",
     ))
-    out.append(line("DynamoDB PITR", f"{size} GB", size * D["pitr_gb_month"]))
+    out.append(line("DynamoDB PITR", f"{size:.4f} GB", size * D["pitr_gb_month"]))
     s3_gb = shared["web_build_size_mb"] / 1024 + shared["s3_raw_rent_gb"]
     out.append(line(
         "S3 storage (web build + raw rent files)",
@@ -332,7 +436,7 @@ def aws_vm(u: dict, p: dict, shared: dict, nodes: int) -> list[dict]:
              billable_out * E["data_transfer_out_gb"]),
         line("DynamoDB (same data layer)", f"{u['ddb_rru']:,.0f} RRU + {u['ddb_wru']:,.0f} WRU",
              u["ddb_rru"] * D["read_request_unit"] + u["ddb_wru"] * D["write_request_unit"]
-             + shared["ddb_table_size_gb"] * (D["storage_gb_month"] + D["pitr_gb_month"])),
+             + u["ddb_table_size_gb"] * (D["storage_gb_month"] + D["pitr_gb_month"])),
         line("S3 (backups + raw files)", f"{shared['s3_raw_rent_gb'] * 2:.2f} GB",
              shared["s3_raw_rent_gb"] * 2 * S3["storage_gb_month"]),
         line("CloudWatch (agent logs, alarms, dashboard)", "same observability set",
@@ -345,7 +449,52 @@ def aws_vm(u: dict, p: dict, shared: dict, nodes: int) -> list[dict]:
 # --------------------------------------------------------------------------
 # option C: on-premise
 # --------------------------------------------------------------------------
-def onprem(o: dict, nodes: int) -> list[dict]:
+def effort_usd(o: dict, band: str = "likely") -> tuple[float, str]:
+    """Operational effort for one month, as a band rather than a point.
+
+    Effort is the largest single line in option C and the only line in option
+    D, and it is an assumption about people. A point estimate would hide that,
+    so the model carries low/likely/high and reports the band.
+    """
+    eff = o["operational_effort"]
+    hours, rate = eff["hours_per_month"], eff["rate_sgd_per_hour"]
+    if band == "low":
+        hours, rate = eff["hours_per_month_low"], eff["rate_sgd_per_hour_low"]
+    elif band == "high":
+        hours, rate = eff["hours_per_month_high"], eff["rate_sgd_per_hour_high"]
+    return hours * rate, f"{hours} h/month @ S${rate}/h ({band})"
+
+
+def university_vm(o: dict, band: str = "likely") -> list[dict]:
+    """Option D: the same handler on a university-provided VM.
+
+    Removes everything the institution pays for - hardware depreciation,
+    electricity, room cooling and the business line with a static IP - and
+    leaves operational effort exactly where it was. Node count does not appear:
+    the allocation is not sized by us, which is itself a limitation rather than
+    a saving.
+
+    What share of option C that removal is depends on the node count and the
+    effort band, so it is DERIVED per scenario by institutional_share() and
+    quoted with its scenario attached. It is never a fixed percentage: option C
+    scales with nodes while option D does not, and option D retains the whole
+    effort line, so the share falls as effort rises.
+    """
+    rate_fx = o["meta"]["sgd_per_usd"]
+    uni = o["university_vm"]
+    op = uni["opex_sgd_per_month"]
+    effort_sgd, effort_driver = effort_usd(o, band)
+    return [
+        line("VM allocation", "provided by the university; assumed free to the team",
+             op["vm_allocation"] / rate_fx),
+        line("Offsite backup", "nightly dumps to object storage",
+             op["offsite_backup"] / rate_fx),
+        line("Domain + TLS", "Let's Encrypt = 0", op["domain_and_tls"] / rate_fx),
+        line("Operational effort", effort_driver, effort_sgd / rate_fx),
+    ]
+
+
+def onprem(o: dict, nodes: int, band: str = "likely") -> list[dict]:
     rate = o["meta"]["sgd_per_usd"]
     months = o["meta"]["depreciation_months"]
     cap = o["capex_sgd"]
@@ -358,8 +507,7 @@ def onprem(o: dict, nodes: int) -> list[dict]:
     kwh = avg_w * nodes * 730 / 1000 * pw["pue"]
     elec_sgd = kwh * o["meta"]["electricity_sgd_per_kwh"]
     op = o["opex_sgd_per_month"]
-    eff = o["operational_effort"]
-    effort_sgd = eff["hours_per_month"] * eff["rate_sgd_per_hour"]
+    effort_sgd, effort_driver = effort_usd(o, band)
     rows = [
         line(f"Hardware depreciation ({nodes} node(s) + UPS/switch/disks, {months} mo)",
              f"S${capex_sgd:,.0f} capex", capex_sgd / months / rate),
@@ -369,8 +517,7 @@ def onprem(o: dict, nodes: int) -> list[dict]:
         line("Business internet + static IP", "assumption", op["internet_business_fibre_static_ip"] / rate),
         line("Offsite backup", "nightly dumps to object storage", op["offsite_backup"] / rate),
         line("Domain + TLS", "Let's Encrypt = 0", op["domain_and_tls"] / rate),
-        line("Operational effort",
-             f"{eff['hours_per_month']} h/month @ S${eff['rate_sgd_per_hour']}/h", effort_sgd / rate),
+        line("Operational effort", effort_driver, effort_sgd / rate),
     ]
     return rows
 
@@ -387,6 +534,20 @@ def total(rows: list[dict], key: str = "net_usd") -> float:
     # Python documents fsum's accuracy as platform-dependent, so this is the
     # demonstrated claim, not universal decimal arithmetic.
     return math.fsum(r[key] for r in rows)
+
+
+def institutional_share(c_lines: list[dict], d_lines: list[dict]) -> tuple[float, float]:
+    """What option D removes from option C, in US$ and as a share of option C.
+
+    Derived, not asserted: a fixed percentage would be wrong, because option C
+    grows with the node count the peak demands while option D does not, and
+    because option D keeps the whole operational-effort line, so the share
+    shrinks as the effort band rises. Always report it with the scenario, node
+    count and effort band that produced it.
+    """
+    c_total, d_total = total(c_lines), total(d_lines)
+    removed = c_total - d_total
+    return removed, (removed / c_total if c_total else 0.0)
 
 
 def md_table(rows: list[dict], show_free: bool = True) -> str:
@@ -435,8 +596,9 @@ def main() -> None:
         "",
         f"Demand scale factor: **x{args.scale}**. Status: **partially measured** "
         "(per-request operation counts measured 20 and 27 October 2026; demand, Lambda "
-        "duration for non-lookup routes, cold-start share and log volume still "
-        "assumed, and still owned by #30 and #34).",
+        "duration for non-lookup routes and cold-start share still assumed, and "
+        "still owned by #30. Log volume per invocation was measured at 595 B by "
+        "#34 on 3 November and is no longer assumed).",
         "",
         f"Prices: {prices['meta']['source']}",
         "",
@@ -453,6 +615,10 @@ def main() -> None:
         a = aws_serverless(u, prices, shared)
         b = aws_vm(u, prices, shared, nodes)
         c = onprem(op, nodes)
+        c_low, c_high = onprem(op, nodes, "low"), onprem(op, nodes, "high")
+        dd = university_vm(op)
+        d_low, d_high = university_vm(op, "low"), university_vm(op, "high")
+        removed, share = institutional_share(c, dd)
         per_1k = lambda rows: total(rows) / u["searches"] * 1000 if u["searches"] else 0.0
 
         result["scenarios"][key] = {
@@ -467,7 +633,19 @@ def main() -> None:
             "aws_always_on_vm": {"lines": b, "payable_usd": round(total(b), 2),
                                  "usd_per_1000_searches": round(per_1k(b), 4)},
             "on_premise": {"lines": c, "payable_usd": round(total(c), 2),
+                           "payable_usd_low_effort": round(total(c_low), 2),
+                           "payable_usd_high_effort": round(total(c_high), 2),
                            "usd_per_1000_searches": round(per_1k(c), 4)},
+            "university_vm": {"lines": dd, "payable_usd": round(total(dd), 2),
+                              "payable_usd_low_effort": round(total(d_low), 2),
+                              "payable_usd_high_effort": round(total(d_high), 2),
+                              "usd_per_1000_searches": round(per_1k(dd), 4),
+                              "institutionally_borne_usd": round(removed, 4),
+                              "institutionally_borne_share_of_c": round(share, 4),
+                              "institutionally_borne_share_of_c_low_effort":
+                                  round(institutional_share(c_low, d_low)[1], 4),
+                              "institutionally_borne_share_of_c_high_effort":
+                                  round(institutional_share(c_high, d_high)[1], 4)},
         }
 
         md += [
@@ -482,6 +660,30 @@ def main() -> None:
             f"{measured['places_lookup_cold']['onemap_calls']} measured calls each). "
             f"Commute cache hit ratio assumed {sc['commute_cache_hit_ratio']:.0%}, "
             f"lookup cache {sc['places_lookup_cache_hit_ratio']:.0%}.",
+            "",
+            f"Stored item stock, from the implemented lifecycle: "
+            f"{u['ddb_items']:,.0f} items = {u['ddb_group_items']:,.0f} group and "
+            f"member records (30-day GROUP_LIFETIME with DynamoDB TTL, so about one "
+            f"month's arrivals) + {u['ddb_name_items']:,.0f} NAME# reservations (one "
+            f"per member, expiring with them) + {u['ddb_search_items']:,.0f} SEARCH# "
+            f"records (one per search, expiring with the GROUP, so this is an upper "
+            f"bound) + {u['ddb_commute_items']:,.0f} commute records (one "
+            f"current item per station/town; a newer routing profile replaces the "
+            f"record rather than accumulating) + {u['ddb_rent_items']:,.0f} retained "
+            f"rent snapshot items (no ttl). Hypothetical only, never priced: "
+            f"{u['ddb_items_if_retained']:,.0f} items if the group TTL were "
+            f"lengthened to {shared['hypothetical_retention_months']} months and "
+            f"superseded commute profiles were kept. Both sit inside the 25 GB "
+            f"always-free allowance, so only PITR is payable either way.",
+            "",
+            f"Scheduled work, demand-independent: "
+            f"{u['lambda_token_refresh_runs']:,.0f} token-refresh invocations "
+            f"(every 15 minutes, 128 MiB, {shared['token_refresh_duration_ms']:,.0f} ms "
+            f"measured mean) and {u['lambda_ingest_runs']:,.0f} rent ingestion run "
+            f"(monthly, 1,024 MiB, {shared['ingest_duration_ms']:,.0f} ms measured "
+            f"mean) together account for "
+            f"{u['lambda_gb_seconds_scheduled']:,.0f} of the "
+            f"{u['lambda_gb_seconds']:,.0f} Lambda GB-seconds.",
             "",
             "### A. AWS serverless (deployed architecture)",
             "",
@@ -498,6 +700,28 @@ def main() -> None:
             "",
             md_table(c, show_free=False),
             "",
+            f"Operational effort is ranged, so option C is **US${total(c_low):.2f} - "
+            f"US${total(c_high):.2f}/month** with US${total(c):.2f} as the likely point. "
+            "Every other line is unchanged across the band.",
+            "",
+            "### D. University-hosted VM",
+            "",
+            "The same handler on a VM the institution already owns and powers. "
+            "Removes hardware depreciation, electricity, room cooling and the "
+            f"business line - US${removed:.2f}/month, {share:.1%} of option C at "
+            f"{nodes} nodes and likely effort - and leaves operational effort "
+            "untouched. That share is derived, not fixed: it is "
+            f"{institutional_share(c_low, d_low)[1]:.1%} at low effort and "
+            f"{institutional_share(c_high, d_high)[1]:.1%} at high effort, because "
+            "option D keeps the whole effort line, and it rises with the node "
+            "count option C has to buy for the peak.",
+            "",
+            md_table(dd, show_free=False),
+            "",
+            f"Ranged the same way: **US${total(d_low):.2f} - US${total(d_high):.2f}/month**, "
+            f"likely US${total(dd):.2f}. Public reachability through a campus network is "
+            "an unpriced administrative dependency; see onprem.json university_vm.",
+            "",
             "### Comparison",
             "",
             "| Option | US$/month | US$ per 1,000 searches |",
@@ -506,14 +730,17 @@ def main() -> None:
             f"| A. AWS serverless (list price, no free tier) | {total(a, 'gross_usd'):.2f} | "
             f"{total(a, 'gross_usd') / u['searches'] * 1000 if u['searches'] else 0:.3f} |",
             f"| B. AWS always-on VM | {total(b):.2f} | {per_1k(b):.3f} |",
-            f"| C. On-premise | {total(c):.2f} | {per_1k(c):.3f} |",
+            f"| C. On-premise (likely effort) | {total(c):.2f} | {per_1k(c):.3f} |",
+            f"| C. On-premise (effort band) | {total(c_low):.2f} - {total(c_high):.2f} | |",
+            f"| D. University VM (likely effort) | {total(dd):.2f} | {per_1k(dd):.3f} |",
+            f"| D. University VM (effort band) | {total(d_low):.2f} - {total(d_high):.2f} | |",
             "",
         ]
 
     # ---- sensitivity to demand on the typical scenario ----
     md += ["## Sensitivity to demand (typical scenario scaled)", "",
-           "| Demand | AWS serverless payable | AWS serverless list price | On-premise | Nodes |",
-           "|---|---:|---:|---:|---:|"]
+           "| Demand | AWS serverless payable | AWS serverless list price | On-premise | University VM | Nodes |",
+           "|---|---:|---:|---:|---:|---:|"]
     sens = []
     for f in (0.0, 0.1, 1.0, 10.0, 100.0):
         sc = wl["scenarios"]["typical"]
@@ -528,12 +755,19 @@ def main() -> None:
         peak_rps = max(2, math.ceil(u["api_requests"] / (30 * 24 * 3600) * 20))
         nodes = math.ceil(peak_rps / cap["sustained_rps_per_node"]) + cap["redundancy_nodes"]
         a, c = aws_serverless(u, prices, shared), onprem(op, nodes)
+        dd = university_vm(op)
         sens.append({"scale": f, "aws_payable_usd": round(total(a), 2),
                      "aws_list_usd": round(total(a, "gross_usd"), 2),
-                     "onprem_usd": round(total(c), 2), "nodes": nodes,
-                     "searches": round(u["searches"])})
+                     "onprem_usd": round(total(c), 2),
+                     "onprem_usd_low_effort": round(total(onprem(op, nodes, "low")), 2),
+                     "onprem_usd_high_effort": round(total(onprem(op, nodes, "high")), 2),
+                     "university_vm_usd": round(total(dd), 2),
+                     "university_vm_usd_low_effort": round(total(university_vm(op, "low")), 2),
+                     "university_vm_usd_high_effort": round(total(university_vm(op, "high")), 2),
+                     "nodes": nodes, "searches": round(u["searches"])})
         label = "idle (no users)" if f == 0 else f"x{f:g}"
-        md.append(f"| {label} | {total(a):.2f} | {total(a, 'gross_usd'):.2f} | {total(c):.2f} | {nodes} |")
+        md.append(f"| {label} | {total(a):.2f} | {total(a, 'gross_usd'):.2f} | "
+                  f"{total(c):.2f} | {total(dd):.2f} | {nodes} |")
     result["sensitivity"] = sens
     md += ["", "Idle row: no users at all for a month — the serverless cost that remains is "
                "Secrets Manager, CloudWatch and DynamoDB PITR, not compute.", ""]
@@ -546,7 +780,7 @@ def main() -> None:
 
     csv_rows = ["scenario,option,line_item,driver,list_price_usd,free_tier_usd,payable_usd"]
     for key, s in result["scenarios"].items():
-        for opt in ("aws_serverless", "aws_always_on_vm", "on_premise"):
+        for opt in ("aws_serverless", "aws_always_on_vm", "on_premise", "university_vm"):
             for r in s[opt]["lines"]:
                 item = r["service"].replace(",", ";")
                 drv = r["driver"].replace(",", ";")
@@ -559,7 +793,12 @@ def main() -> None:
         print(f"  {s['label']}: serverless payable US${s['aws_serverless']['payable_usd']:.2f}/mo "
               f"(list US${s['aws_serverless']['list_price_usd']:.2f}), "
               f"VM US${s['aws_always_on_vm']['payable_usd']:.2f}, "
-              f"on-prem US${s['on_premise']['payable_usd']:.2f}")
+              f"on-prem US${s['on_premise']['payable_usd']:.2f} "
+              f"(band {s['on_premise']['payable_usd_low_effort']:.2f}-"
+              f"{s['on_premise']['payable_usd_high_effort']:.2f}), "
+              f"uni-VM US${s['university_vm']['payable_usd']:.2f} "
+              f"(band {s['university_vm']['payable_usd_low_effort']:.2f}-"
+              f"{s['university_vm']['payable_usd_high_effort']:.2f})")
     if args.echo:
         print()
         print(md_text)
