@@ -1,0 +1,25 @@
+[
+  {
+    "name": "2-suggestions-0",
+    "options": [
+      "DSO (KENT RIDGE) BUILDING · 27 MEDICAL DRIVE DSO (KENT RIDGE) BUILDING SINGAPORE 117510",
+      "KENT RIDGE HILL RESIDENCES · 50 SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 118167",
+      "KENT RIDGE HILL RESIDENCES · 66A SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 117327"
+    ]
+  },
+  {
+    "name": "2-suggestions-1",
+    "options": [
+      "DSO (KENT RIDGE) BUILDING · 27 MEDICAL DRIVE DSO (KENT RIDGE) BUILDING SINGAPORE 117510",
+      "KENT RIDGE HILL RESIDENCES · 50 SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 118167",
+      "KENT RIDGE HILL RESIDENCES · 66A SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 117327"
+    ]
+  },
+  {
+    "name": "controlled-route-retry",
+    "before": "Find your middle ground\n\nOne shortlist. Everyone’s limits respected.\n\nRoutes unavailable\n\nEvery flatmate’s budget and commute limit is a hard requirement.\n\nWe couldn’t calculate your group’s routes.\n\nYour group inputs are saved. You can retry without re-entering anyone’s preferences.\n\nRanked neighbourhoods\n\nServer ranking: balanced. Lower rent, shorter average commutes and a smaller commute gap are the trade-offs. Every included town must meet each member’s limits.\n\nRanking weights: rent 35%, average commute 35%, commute gap 30%. A score is a comparison aid, not a probability.\n\nWhy 2 towns were excluded\n\nRent coverage: 2025-11/2026-10. Source: HDB rental approvals (data.gov.sg). Flat type: 3-ROOM.\n\nPublic transport, weekday 08:30 departure; station-to-station.\n\nResults last checked: 08/11/2026, 1:23:48 am. This is the response check time, not the age of the underlying data. The API does not supply rent publication or individual route update timestamps.\n\nRent is an estimate split equally across the group, excluding bills; it is not an available listing or a guaranteed price.\n\nAll routes were unavailable\n27 routes could not be calculated. Affected towns are excluded. Search again to retry when the service allows; unknown times are never treated as zero.\nWhat you can do next\n\nYour group inputs are saved. No preferences have been changed.\n\nSome towns lack reliable rent evidence for your group’s flat type. Changing budgets will not fix missing or uncertain data. Try again after the rental data is refreshed.\n\nSome route durations are unknown. Try searching again later; retries may have to wait for the routing service. A higher commute limit does not make an unavailable route valid.\n\nRent evidence too uncertain: 1 town\nRent data missing: 1 town\nRoute unavailable: 1 town\n\nA town can have more than one reason for exclusion. Changing one limit does not guarantee a match.\n\nSee why each town was excluded\nRetry route calculations",
+    "postCount": 1,
+    "after": "Find your middle ground\n\nOne shortlist. Everyone’s limits respected.\n\nNeeds attention\n\nEvery flatmate’s budget and commute limit is a hard requirement.\n\nCould not start the search\nThe service or rental data is temporarily unavailable. Refresh your group to confirm its saved inputs before retrying.\nWe couldn’t calculate your group’s routes.\n\nYour group inputs are saved. You can retry without re-entering anyone’s preferences.\n\nRanked neighbourhoods\n\nServer ranking: balanced. Lower rent, shorter average commutes and a smaller commute gap are the trade-offs. Every included town must meet each member’s limits.\n\nRanking weights: rent 35%, average commute 35%, commute gap 30%. A score is a comparison aid, not a probability.\n\nWhy 2 towns were excluded\n\nRent coverage: 2025-11/2026-10. Source: HDB rental approvals (data.gov.sg). Flat type: 3-ROOM.\n\nPublic transport, weekday 08:30 departure; station-to-station.\n\nResults last checked: 08/11/2026, 1:23:48 am. This is the response check time, not the age of the underlying data. The API does not supply rent publication or individual route update timestamps.\n\nRent is an estimate split equally across the group, excluding bills; it is not an available listing or a guaranteed price.\n\nAll routes were unavailable\n27 routes could not be calculated. Affected towns are excluded. Search again to retry when the service allows; unknown times are never treated as zero.\nWhat you can do next\n\nYour group inputs are saved. No preferences have been changed.\n\nSome towns lack reliable rent evidence for your group’s flat type. Changing budgets will not fix missing or uncertain data. Try again after the rental data is refreshed.\n\nSome route durations are unknown. Try searching again later; retries may have to wait for the routing service. A higher commute limit does not make an unavailable route valid.\n\nRent evidence too uncertain: 1 town\nRent data missing: 1 town\nRoute unavailable: 1 town\n\nA town can have more than one reason for exclusion. Changing one limit does not guarantee a match.\n\nSee why each town was excluded\nRetry route calculations",
+    "note": "Synthetic response transformation; POST intercepted as 503, never forwarded. No backend retry eligibility or provider recovery observed."
+  }
+]

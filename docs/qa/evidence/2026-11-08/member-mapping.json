@@ -1,0 +1,35 @@
+[
+  {
+    "name": "2-suggestions-0",
+    "options": [
+      "NATIONAL UNIVERSITY OF SINGAPORE · 2 MEDICAL DRIVE NATIONAL UNIVERSITY OF SINGAPORE SINGAPORE 117593",
+      "NATIONAL UNIVERSITY OF SINGAPORE (INSTITUTE OF SYSTEM SCIENCE) · 25 HENG MUI KENG TERRACE NATIONAL UNIVERSITY OF SINGAPORE (INSTITUTE OF SYSTEM SCIENCE) SINGAPORE 119615"
+    ]
+  },
+  {
+    "name": "2-suggestions-1",
+    "options": [
+      "SINGAPORE MANAGEMENT UNIVERSITY (ADMIN BLDG) · 81 VICTORIA STREET SINGAPORE MANAGEMENT UNIVERSITY (ADMIN BLDG) SINGAPORE 188065",
+      "SINGAPORE MANAGEMENT UNIVERSITY (ADMIN BUILDING) · 81 VICTORIA STREET SINGAPORE MANAGEMENT UNIVERSITY (ADMIN BUILDING) SINGAPORE 188065",
+      "SINGAPORE MANAGEMENT UNIVERSITY (LEE KONG CHIAN SCH OF BUSINESS) · 50 STAMFORD ROAD SINGAPORE MANAGEMENT UNIVERSITY (LEE KONG CHIAN SCH OF BUSINESS) SINGAPORE 178899"
+    ]
+  },
+  {
+    "name": "real-api-member-mapping",
+    "town": "Serangoon",
+    "expected": [
+      {
+        "name": "Alex",
+        "minutes": 28,
+        "limit": 120
+      },
+      {
+        "name": "Jamie",
+        "minutes": 23,
+        "limit": 120
+      }
+    ],
+    "rows": ["Alex\t28 min\t120 min", "Jamie\t23 min\t120 min"],
+    "match": true
+  }
+]

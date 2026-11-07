@@ -1,0 +1,68 @@
+[
+  {
+    "name": "2-suggestions-0",
+    "options": [
+      "DSO (KENT RIDGE) BUILDING · 27 MEDICAL DRIVE DSO (KENT RIDGE) BUILDING SINGAPORE 117510",
+      "KENT RIDGE HILL RESIDENCES · 50 SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 118167",
+      "KENT RIDGE HILL RESIDENCES · 66A SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 117327"
+    ]
+  },
+  {
+    "name": "2-suggestions-1",
+    "options": [
+      "DSO (KENT RIDGE) BUILDING · 27 MEDICAL DRIVE DSO (KENT RIDGE) BUILDING SINGAPORE 117510",
+      "KENT RIDGE HILL RESIDENCES · 50 SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 118167",
+      "KENT RIDGE HILL RESIDENCES · 66A SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 117327"
+    ]
+  },
+  {
+    "name": "2-mobile-map",
+    "pins": 25,
+    "firstPin": "Show Jurong East on map, rank 1",
+    "detailChanged": true,
+    "spacePressed": "true",
+    "enterPressed": "true",
+    "focus": {
+      "tag": "BUTTON",
+      "outline": "none",
+      "outlineWidth": "3px",
+      "boxShadow": "none"
+    },
+    "overflow": false,
+    "violations": [],
+    "detail": "Rank 2 · Selected town\n\nQueenstown\n\nMap reference: QUEENSTOWN MRT STATION (EW19).\n\nMonthly rent / person\nS$1,513\nLongest commute\n13 min\nCommute gap\n0 min\nEach flatmate’s commute in Queenstown\nFlatmate\tCommute\tTheir limit\nAlex\t13 min\t120 min\nJamie\t13 min\t120 min\n\nWhole-flat estimate: S$3,025, split equally; bills excluded. Times are rounded up for display; the search uses the original values.\n\nRent source: HDB rental approvals (data.gov.sg). Period: 2025-11/2026-10. Public transport, weekday 08:30 departure; station-to-station. Route calculation date unavailable.",
+    "errors": []
+  },
+  {
+    "name": "2-desktop-map",
+    "pins": 25,
+    "firstPin": "Show Jurong East on map, rank 1",
+    "detailChanged": true,
+    "spacePressed": "true",
+    "enterPressed": "true",
+    "focus": {
+      "tag": "BUTTON",
+      "outline": "none",
+      "outlineWidth": "3px",
+      "boxShadow": "none"
+    },
+    "overflow": false,
+    "violations": [],
+    "detail": "Rank 2 · Selected town\n\nQueenstown\n\nMap reference: QUEENSTOWN MRT STATION (EW19).\n\nMonthly rent / person\nS$1,513\nLongest commute\n13 min\nCommute gap\n0 min\nEach flatmate’s commute in Queenstown\nFlatmate\tCommute\tTheir limit\nAlex\t13 min\t120 min\nJamie\t13 min\t120 min\n\nWhole-flat estimate: S$3,025, split equally; bills excluded. Times are rounded up for display; the search uses the original values.\n\nRent source: HDB rental approvals (data.gov.sg). Period: 2025-11/2026-10. Public transport, weekday 08:30 departure; station-to-station. Route calculation date unavailable.",
+    "errors": []
+  },
+  {
+    "name": "lost-save-server-commit",
+    "status": 200
+  },
+  {
+    "name": "local-fix-lost-save-confirmed",
+    "text": true,
+    "intercepted": true
+  },
+  {
+    "name": "local-fix-failed-confirmation",
+    "message": "Your preferences\nFirst name\nWhere do you travel to most days?\n\nType at least 3 characters, then choose one of the results. Your group can see these preferences.\n\nSelected: DSO (KENT RIDGE) BUILDING · 27 MEDICAL DRIVE DSO (KENT RIDGE) BUILDING SINGAPORE 117510\n\nYour monthly rent budget (SGD)\n\nPer person, excluding utilities. We won’t recommend areas above your limit.\n\nLongest comfortable commute (minutes)\nCould not confirm your preferences were saved\nRefresh your group to check the saved preferences before trying again.\nCancel\nSave my preferences",
+    "budget": "400"
+  }
+]

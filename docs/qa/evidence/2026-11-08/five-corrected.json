@@ -1,0 +1,78 @@
+[
+  {
+    "name": "5-suggestions-0",
+    "options": [
+      "DSO (KENT RIDGE) BUILDING · 27 MEDICAL DRIVE DSO (KENT RIDGE) BUILDING SINGAPORE 117510",
+      "KENT RIDGE HILL RESIDENCES · 50 SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 118167",
+      "KENT RIDGE HILL RESIDENCES · 66A SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 117327"
+    ]
+  },
+  {
+    "name": "5-suggestions-1",
+    "options": [
+      "DSO (KENT RIDGE) BUILDING · 27 MEDICAL DRIVE DSO (KENT RIDGE) BUILDING SINGAPORE 117510",
+      "KENT RIDGE HILL RESIDENCES · 50 SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 118167",
+      "KENT RIDGE HILL RESIDENCES · 66A SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 117327"
+    ]
+  },
+  {
+    "name": "5-suggestions-2",
+    "options": [
+      "DSO (KENT RIDGE) BUILDING · 27 MEDICAL DRIVE DSO (KENT RIDGE) BUILDING SINGAPORE 117510",
+      "KENT RIDGE HILL RESIDENCES · 50 SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 118167",
+      "KENT RIDGE HILL RESIDENCES · 66A SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 117327"
+    ]
+  },
+  {
+    "name": "5-suggestions-3",
+    "options": [
+      "DSO (KENT RIDGE) BUILDING · 27 MEDICAL DRIVE DSO (KENT RIDGE) BUILDING SINGAPORE 117510",
+      "KENT RIDGE HILL RESIDENCES · 50 SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 118167",
+      "KENT RIDGE HILL RESIDENCES · 66A SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 117327"
+    ]
+  },
+  {
+    "name": "5-suggestions-4",
+    "options": [
+      "DSO (KENT RIDGE) BUILDING · 27 MEDICAL DRIVE DSO (KENT RIDGE) BUILDING SINGAPORE 117510",
+      "KENT RIDGE HILL RESIDENCES · 50 SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 118167",
+      "KENT RIDGE HILL RESIDENCES · 66A SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 117327"
+    ]
+  },
+  {
+    "name": "5-mobile-map",
+    "pins": 24,
+    "firstPin": "Show Clementi on map, rank 1",
+    "detailChanged": true,
+    "spacePressed": "true",
+    "enterPressed": "true",
+    "focus": {
+      "tag": "BUTTON",
+      "outline": "none",
+      "outlineWidth": "3px",
+      "boxShadow": "none"
+    },
+    "overflow": false,
+    "violations": [],
+    "detail": "Rank 2 · Selected town\n\nJurong East\n\nMap reference: JURONG EAST MRT STATION (EW24 / NS1).\n\nMonthly rent / person\nS$760\nLongest commute\n18 min\nCommute gap\n0 min\nEach flatmate’s commute in Jurong East\nFlatmate\tCommute\tTheir limit\nAlex\t18 min\t120 min\nJamie\t18 min\t120 min\nSam\t18 min\t120 min\nDee\t18 min\t120 min\nFin\t18 min\t120 min\n\nWhole-flat estimate: S$3,800, split equally; bills excluded. Times are rounded up for display; the search uses the original values.\n\nRent source: HDB rental approvals (data.gov.sg). Period: 2025-11/2026-10. Public transport, weekday 08:30 departure; station-to-station. Route calculation date unavailable.",
+    "errors": []
+  },
+  {
+    "name": "5-desktop-map",
+    "pins": 24,
+    "firstPin": "Show Clementi on map, rank 1",
+    "detailChanged": true,
+    "spacePressed": "true",
+    "enterPressed": "true",
+    "focus": {
+      "tag": "BUTTON",
+      "outline": "none",
+      "outlineWidth": "3px",
+      "boxShadow": "none"
+    },
+    "overflow": false,
+    "violations": [],
+    "detail": "Rank 2 · Selected town\n\nJurong East\n\nMap reference: JURONG EAST MRT STATION (EW24 / NS1).\n\nMonthly rent / person\nS$760\nLongest commute\n18 min\nCommute gap\n0 min\nEach flatmate’s commute in Jurong East\nFlatmate\tCommute\tTheir limit\nAlex\t18 min\t120 min\nJamie\t18 min\t120 min\nSam\t18 min\t120 min\nDee\t18 min\t120 min\nFin\t18 min\t120 min\n\nWhole-flat estimate: S$3,800, split equally; bills excluded. Times are rounded up for display; the search uses the original values.\n\nRent source: HDB rental approvals (data.gov.sg). Period: 2025-11/2026-10. Public transport, weekday 08:30 departure; station-to-station. Route calculation date unavailable.",
+    "errors": []
+  }
+]
