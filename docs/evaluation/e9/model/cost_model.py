@@ -78,17 +78,35 @@ def derive_usage(
 
     lambda_api_invocations = api_requests
     lambda_worker_invocations = jobs
-    lambda_other = shared["monthly_ingest_runs"]
+    # Scheduled work, which is demand-INDEPENDENT and was previously incomplete:
+    # the token refresh was missing altogether and the rent ingestion was costed
+    # at the API's memory for a flat five seconds (@saravanamani1999's review of
+    # bd371a8 on PR #94). Both now use the deployed memory and the measured mean
+    # duration from #34's receipt, which applied those same memory sizes itself.
+    ingest_runs = shared["monthly_ingest_runs"]
+    token_refresh_runs = shared["token_refresh_runs_per_month"]
+    lambda_other = ingest_runs + token_refresh_runs
     lambda_invocations = lambda_api_invocations + lambda_worker_invocations + lambda_other
 
-    mem_gb = shared["lambda_memory_mb"] / 1024
-    gb_seconds = mem_gb * (
+    # GB-seconds per function at the memory each one is DEPLOYED with. The HTTP
+    # handler and the commute worker are both 256 MiB (infra/aws/src/api.ts), the
+    # rent ingestion is 1,024 MiB (infra/aws/src/rent-ingestion.ts) and the token
+    # refresh is 128 MiB (api.ts), so one blanket memory figure cannot price all
+    # four.
+    app_mem_gb = shared["lambda_memory_mb"] / 1024
+    ingest_mem_gb = shared["ingest_memory_mb"] / 1024
+    token_mem_gb = shared["token_refresh_memory_mb"] / 1024
+    gb_seconds_app = app_mem_gb * (
         (api_requests - places) * shared["lambda_api_duration_ms"] / 1000
         + places_cold * shared["lambda_places_cold_duration_ms"] / 1000
         + places_warm * shared["lambda_places_warm_duration_ms"] / 1000
         + lambda_worker_invocations * shared["lambda_worker_duration_ms"] / 1000
-        + lambda_other * 5.0
     )
+    gb_seconds_scheduled = (
+        ingest_mem_gb * ingest_runs * shared["ingest_duration_ms"] / 1000
+        + token_mem_gb * token_refresh_runs * shared["token_refresh_duration_ms"] / 1000
+    )
+    gb_seconds = gb_seconds_app + gb_seconds_scheduled
 
     # Per-request DynamoDB counts are measured; see workloads.json measured_operations.
     cold, warm = measured["places_lookup_cold"], measured["places_lookup_warm"]
@@ -171,12 +189,28 @@ def derive_usage(
     #     steady-state stock is immaterial.
     group_months = shared["group_lifetime_days"] / DAYS_PER_MONTH
     group_items = (groups + members) * group_months
+    # NAME# and SEARCH# were missing from this stock (@saravanamani1999's review
+    # of bd371a8 on PR #94). Both are real items on the same table:
+    #   * groups.py::_reservation writes {pk: GROUP#<id>, sk: NAME#<nameKey>}
+    #     for every member, carrying that member's own `ttl`, so there is exactly
+    #     one per member and it expires with them. A rename writes the new
+    #     reservation and deletes the old one in the same transaction, so renames
+    #     do not accumulate.
+    #   * searches.py writes {pk: GROUP#<id>, sk: SEARCH#<createdAt>#<searchId>}
+    #     once per search, with `ttl` taken from the GROUP's expiry rather than
+    #     the search's own time. A search therefore lives at most as long as the
+    #     remainder of its group's month, so one month's arrivals is an UPPER
+    #     BOUND on the steady-state stock, not an estimate of it.
+    name_items = members * group_months
+    search_items = searches * group_months
     # The commute cache saturates: a pair is keyed by station and town, so the
     # stock is bounded by the stations that exist, not by how many groups ask.
     stations_seen = min(groups * group_months * stations, facts["mrt_stations"])
     commute_items = stations_seen * facts["towns"]
     rent_items = shared["rent_snapshot_items"] * shared["rent_snapshots_retained"] + 1
-    ddb_items = group_items + commute_items + rent_items
+    ddb_items = (
+        group_items + name_items + search_items + commute_items + rent_items
+    )
     # AWS bills DynamoDB storage in decimal GB, not GiB.
     ddb_table_size_gb = ddb_items * shared["ddb_bytes_per_item"] / 1e9
 
@@ -190,7 +224,7 @@ def derive_usage(
     hypo_months = shared["hypothetical_retention_months"]
     hypo_stations = min(groups * hypo_months * stations, facts["mrt_stations"])
     ddb_items_if_retained = (
-        (groups + members) * hypo_months
+        (groups + members + members + searches) * hypo_months
         + hypo_stations * facts["towns"] * hypo_months
         + rent_items
     )
@@ -214,6 +248,10 @@ def derive_usage(
         "onemap_calls": jobs + onemap_lookup_calls,
         "lambda_invocations": lambda_invocations,
         "lambda_gb_seconds": gb_seconds,
+        "lambda_gb_seconds_app": gb_seconds_app,
+        "lambda_gb_seconds_scheduled": gb_seconds_scheduled,
+        "lambda_ingest_runs": ingest_runs,
+        "lambda_token_refresh_runs": token_refresh_runs,
         "ddb_read_requests": ddb_read_requests,
         "ddb_rru": ddb_read_requests * shared["ddb_rru_per_read_request"],
         "ddb_writes": ddb_writes,
@@ -226,6 +264,8 @@ def derive_usage(
         "cloudwatch_log_gb": log_gb,
         "ddb_items": ddb_items,
         "ddb_group_items": group_items,
+        "ddb_name_items": name_items,
+        "ddb_search_items": search_items,
         "ddb_commute_items": commute_items,
         "ddb_rent_items": rent_items,
         "ddb_table_size_gb": ddb_table_size_gb,
@@ -266,7 +306,7 @@ def aws_serverless(u: dict, p: dict, shared: dict) -> list[dict]:
     ))
     out.append(line(
         "Lambda compute (arm64)",
-        f"{u['lambda_gb_seconds']:,.0f} GB-s @256 MB",
+        f"{u['lambda_gb_seconds']:,.0f} GB-s (256/1024/128 MB per function)",
         u["lambda_gb_seconds"] * L["arm64_gb_second"],
         min(u["lambda_gb_seconds"], L["free_gb_seconds_per_month"]) * L["arm64_gb_second"],
         "always free",
@@ -556,8 +596,9 @@ def main() -> None:
         "",
         f"Demand scale factor: **x{args.scale}**. Status: **partially measured** "
         "(per-request operation counts measured 20 and 27 October 2026; demand, Lambda "
-        "duration for non-lookup routes, cold-start share and log volume still "
-        "assumed, and still owned by #30 and #34).",
+        "duration for non-lookup routes and cold-start share still assumed, and "
+        "still owned by #30. Log volume per invocation was measured at 595 B by "
+        "#34 on 3 November and is no longer assumed).",
         "",
         f"Prices: {prices['meta']['source']}",
         "",
@@ -623,7 +664,10 @@ def main() -> None:
             f"Stored item stock, from the implemented lifecycle: "
             f"{u['ddb_items']:,.0f} items = {u['ddb_group_items']:,.0f} group and "
             f"member records (30-day GROUP_LIFETIME with DynamoDB TTL, so about one "
-            f"month's arrivals) + {u['ddb_commute_items']:,.0f} commute records (one "
+            f"month's arrivals) + {u['ddb_name_items']:,.0f} NAME# reservations (one "
+            f"per member, expiring with them) + {u['ddb_search_items']:,.0f} SEARCH# "
+            f"records (one per search, expiring with the GROUP, so this is an upper "
+            f"bound) + {u['ddb_commute_items']:,.0f} commute records (one "
             f"current item per station/town; a newer routing profile replaces the "
             f"record rather than accumulating) + {u['ddb_rent_items']:,.0f} retained "
             f"rent snapshot items (no ttl). Hypothetical only, never priced: "
@@ -631,6 +675,15 @@ def main() -> None:
             f"lengthened to {shared['hypothetical_retention_months']} months and "
             f"superseded commute profiles were kept. Both sit inside the 25 GB "
             f"always-free allowance, so only PITR is payable either way.",
+            "",
+            f"Scheduled work, demand-independent: "
+            f"{u['lambda_token_refresh_runs']:,.0f} token-refresh invocations "
+            f"(every 15 minutes, 128 MiB, {shared['token_refresh_duration_ms']:,.0f} ms "
+            f"measured mean) and {u['lambda_ingest_runs']:,.0f} rent ingestion run "
+            f"(monthly, 1,024 MiB, {shared['ingest_duration_ms']:,.0f} ms measured "
+            f"mean) together account for "
+            f"{u['lambda_gb_seconds_scheduled']:,.0f} of the "
+            f"{u['lambda_gb_seconds']:,.0f} Lambda GB-seconds.",
             "",
             "### A. AWS serverless (deployed architecture)",
             "",
