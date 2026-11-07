@@ -298,46 +298,37 @@ it('reopens saved edits for the editor and a second member with separate fresh q
   expect(last.headers.get('authorization')).toBe(`Bearer ${'N'.repeat(43)}`);
 });
 
-it.each([500, 502, 503, 504])(
-  'does not promise unchanged preferences after a committed PUT returns %s',
+it.each([500, 502, 503, 504, 0, -1])(
+  'reads the group after an uncertain committed save (%s)',
   async (status) => {
     const serverGroup = readyGroup();
     transport.mockImplementation(async (input) => {
-      const body = await (input as Request).json();
+      const request = input as Request;
+      if (request.method === 'GET') return json({ group: serverGroup });
+      const body = await request.json();
       serverGroup.members[0]!.budget = body.budget;
+      if (status === 0) throw new TypeError('response lost after commit');
+      if (status === -1)
+        throw new DOMException('response lost after commit', 'TimeoutError');
       return json({ error: { code: 'SERVICE_UNAVAILABLE' } }, status);
     });
     mount();
     field('Your monthly rent budget (SGD)', '1850');
     submit();
-    await screen.findByText(/Could not save your preferences/);
-    expect(serverGroup.members[0]!.budget).toBe(1850);
-    expect(screen.queryByText(/saved group inputs are unchanged/)).toBeNull();
-    expect(screen.getByText(/Refresh your group to confirm/)).toBeTruthy();
-    expect(saved).not.toHaveBeenCalled();
-    expect(
-      (
-        screen.getByLabelText(
-          'Your monthly rent budget (SGD)',
-        ) as HTMLInputElement
-      ).value,
-    ).toBe('1850');
+    await waitFor(() => expect(saved).toHaveBeenCalledOnce());
+    expect(transport).toHaveBeenCalledTimes(2);
+    expect(cache.getQueryData(groupKey(membership))).toEqual(serverGroup);
   },
 );
 
-it('does not claim a timed-out PUT left saved preferences unchanged', async () => {
-  const serverGroup = readyGroup();
-  transport.mockImplementation(async (input) => {
-    const body = await (input as Request).json();
-    serverGroup.members[0]!.budget = body.budget;
-    throw new DOMException('response lost after commit', 'TimeoutError');
-  });
+it('preserves edits and gives an uncertain outcome when the confirmation read fails', async () => {
+  transport.mockRejectedValue(new TypeError('network unavailable'));
   mount();
   field('Your monthly rent budget (SGD)', '1850');
   submit();
-  await screen.findByText(/We could not confirm the result/);
-  expect(serverGroup.members[0]!.budget).toBe(1850);
-  expect(screen.queryByText(/saved group inputs are unchanged/)).toBeNull();
+  await screen.findByText('Could not confirm your preferences were saved');
+  expect(screen.getByText(/Refresh your group to check/)).toBeTruthy();
+  expect(saved).not.toHaveBeenCalled();
   expect(
     (
       screen.getByLabelText(
@@ -345,6 +336,19 @@ it('does not claim a timed-out PUT left saved preferences unchanged', async () =
       ) as HTMLInputElement
     ).value,
   ).toBe('1850');
+});
+
+it('does not report success when the confirmation read differs', async () => {
+  transport.mockImplementation(async (input) =>
+    (input as Request).method === 'GET'
+      ? json({ group: readyGroup() })
+      : json({ error: { code: 'SERVICE_UNAVAILABLE' } }, 503),
+  );
+  mount();
+  field('Your monthly rent budget (SGD)', '1850');
+  submit();
+  await screen.findByText('Could not confirm your preferences were saved');
+  expect(saved).not.toHaveBeenCalled();
 });
 
 it('focuses the first invalid field and associates its validation message', () => {
