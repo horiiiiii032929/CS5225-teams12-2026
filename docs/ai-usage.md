@@ -787,3 +787,9 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Verification: both queues confirmed `0/0` at **12:01:46 SGT** and all five alarms back to `OK` by **12:07:32 SGT**, both posted on #30. Only the two drill messages were deleted, by receipt handle; the role has no `sqs:PurgeQueue`. No OneMap quota was spent — Phase A fails in `_parse()` before `_route()` and Phase B in `_point()` before any HTTP call — so the 729 warm catalog pairs were untouched. The DLQ message's single-use receipt handle is redacted from the retained evidence. 41 offline evaluation tests and Prettier pass.
 
 - Review follow-up (@shyamgj1900, #98): he re-reviewed the drill files, confirmed both earlier Phase-B corrections and the step-5 filter, and flagged the `ReceiptHandle` in `docs/evaluation/e5/raw/2026-11-07/dlq_message.json`. The value was already a placeholder before the branch was pushed, but the deviation appeared nowhere in prose, which is the actual defect: D-E5 says raw output is never edited, so an edited field has to be declared or the whole directory becomes untrustworthy. The E5 README now names the one file, the one field, why the token is inert — single-use, its message deleted at 12:01:46 SGT, lease expired — and states that nothing else in the directory was altered. Prettier passes. No AWS call, deployment or data change.
+
+## 8 November 2026 — issue 38 integrated report draft
+
+- Tool: Codex, directed by Mani to assemble the evidence-backed final-report draft.
+- Contribution: integrated the implemented architecture, team contribution handoff, merged evaluation evidence, cost comparison and explicit remaining limitations into the course-required report structure.
+- Verification: claims were cross-checked against merged source and dated evidence; no new experiment, deployment or submission was claimed.
