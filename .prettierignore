@@ -12,6 +12,9 @@ apps/web/src/routeTree.gen.ts
 # Machine-generated evaluation evidence must not be reformatted
 docs/evaluation/**/*.json
 docs/evaluation/**/*.jsonl
+# Raw run output is kept byte-for-byte, whatever its extension: the evaluation
+# README says raw output is never edited, and reformatting is an edit.
+docs/evaluation/**/raw/**
 
 # Machine-generated acceptance evidence must not be reformatted
 tools/acceptance/evidence/
