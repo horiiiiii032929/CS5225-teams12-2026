@@ -76,6 +76,58 @@ python3 scripts/build_town_points.py       # regenerates data/towns.json
 
 Each script writes a timestamped summary and raw archive into `evidence/`. `measure_rate_limit.py` and the ad-hoc `scripts/adhoc/threshold.py` deliberately drive the API into 429 and consume shared quota — do not run them while someone else is testing.
 
+## 5 November 2026 — reviewed-destination coverage and snapping error (#19 / E8)
+
+[`evidence/coverage_20261105T093324Z.json`](evidence/coverage_20261105T093324Z.json), produced by `scripts/measure_route_coverage.py` **v1.1.0**, operator @lukerspace, OneMap user 27958. 1,050 calls, no retries and no rate limiting; the client's 250 calls/min guard was never hit.
+
+**What changed from the 14 October run.** Destinations no longer come from a hard-coded list of search queries. They come from #30's reviewed catalogue, [`tools/load/destinations.json`](../../../tools/load/destinations.json) (version 1, reviewed 2 November), where every entry carries a reviewed label, a full address and a pinned `stationKey`. Each destination is geocoded from its **address**, and the snapped station is required to be the reviewed one rather than whatever comes back nearest. That removes the defect #55 recorded: on 14 October, SIT resolved to DigiPen and Tampines Hub to an enabling-services hub, which is why that run could not count as a completed audit. The old behaviour is kept under `--legacy-queries` so the earlier artifacts stay reproducible.
+
+**Coverage — 27 towns × 30 destinations = 810 pairs.**
+
+| Result                         | Pairs    | Note                                                                         |
+| ------------------------------ | -------- | ---------------------------------------------------------------------------- |
+| Routed                         | **780**  | every one of the 26 routable towns is 30/30                                  |
+| Marked `unavailable`           | **30**   | all of them TENGAH, which has no rail service; "No route found" per pair     |
+| Errors                         | **0**    | the 30 upstream 404s are classified as unavailable, never as 0 minutes (D06) |
+| **Coverage of routable towns** | **100%** | 780 of 780                                                                   |
+
+Commute times across the 780 routed pairs: median 33.0 min, p95 62.3 min, max 82.4 min.
+
+**Station pinning held.** All 30 reviewed `stationKey` values appeared in their destination's nearest-station list, so no destination fell back to a guessed station (`stationPinMismatches` is empty). One label still differs from the reviewed one: `suntecCity` geocodes to `GOLDEN VILLAGE (GV SUNTEC CITY)` — the reviewed address resolves to a cinema inside the right complex, so the coordinates are usable but the label is not the reviewed venue name. That is the one residual instance of the #55 class of defect, down from several.
+
+**Snapping error — 90 comparisons (3 probe towns × 30 destinations).** Median absolute error **4.1 min**, maximum **16.8 min**. The signed numbers are the finding: **82 of 90 comparisons are negative**, mean −4.9 min, so representing a destination by its MRT station **systematically understates** the commute, because the walk from station to actual address is never counted. It scales with that walk:
+
+| Station-to-address distance | Comparisons | Median signed error | Worst |
+| --------------------------- | ----------- | ------------------- | ----- |
+| under 200 m                 | 45          | −2.4 min            | −4.8  |
+| 200–500 m                   | 27          | −6.5 min            | −16.8 |
+| 500 m and over              | 18          | −11.9 min           | −16.6 |
+
+Worst cases: Changi Airport Terminal 3 from ANG MO KIO (72.0 exact vs 55.2 snapped, −16.8) and Ngee Ann Polytechnic from three towns (−16.6, −15.9, −14.3). The remaining eight comparisons are positive, up to **+5.6 min**: `deltaMinutes` is `snappedMinutes - exactMinutes`, so there the snapped route is **slower** than the route to the exact address and the station estimate overstates that commute rather than understating it. Why it is slower is not established here — the run records the two durations only, so attributing it to the lines or access paths involved would need a per-itinerary comparison this measurement does not make.
+
+**Limitations, stated rather than buried.** The three probe towns are the first three alphabetically (ANG MO KIO, BEDOK, BISHAN), so the snapping sample is north/east weighted and is not a random sample of origins. Routes use the client defaults — weekday 08:30, `date=10-13-2026`, TRANSIT, up to 3 itineraries with the shortest taken — so the figures are one departure time, not a daily profile. This run measures OneMap directly; it is not a measurement of the deployed worker, whose per-job records remain the operator's receipt.
+
+**Completeness is now part of the artifact, because it was not before.** @saravanamani1999 found on #97 that the evaluator could publish an incomplete audit that looked clean: a destination whose geocoding or nearest-station lookup failed was printed and then skipped, `coverage.totalPairs` was computed from only the destinations that survived, failed snapping comparisons were printed and not retained, and the script still exited 0. A single transient OneMap failure was therefore enough to produce a smaller-but-apparently-perfect run. From **v1.2.0** every run records a `completeness` block — planned against completed destinations, pairs and snapping comparisons, plus each destination and snapping failure with its stage and error type — and exits **non-zero** when any planned work produced no observation. Evidence is written first and kept either way, per D-E5. An `unavailable` or `error` pair is not missing work: it is a recorded observation, lives in `pairs`, and does not make a run incomplete.
+
+The artifact above was produced by v1.1.0 and has no `completeness` block. It is retrospectively verifiable as complete from its own contents — 810 pairs is exactly 27 towns × 30 destinations, 90 comparisons is exactly 3 probe towns × 30 destinations, `errors` is 0 and `stationPinMismatches` is empty — and `tools/evaluation/tests/test_route_coverage.py` asserts that, so a later edit to the file would fail the suite. The raw output is not regenerated to add the new fields.
+
+## 7 November 2026 — deployed reconciliation of the same 810 pairs (#19)
+
+Reported by @shyamgj1900 on [#19](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/19#issuecomment-6704556686) as an operator reading, not produced by anything in this directory. A strongly consistent scan of `FlatSplit-eval` at revision `e2d3780`, 7 November 16:34 SGT, against the 810 pairs above. The table held **729** `COMMUTE#<station> / TOWN#<town>` items — 27 stations x 27 towns — all written by the 6 November warm-up between 19:47:35 and 19:53:16 SGT, profile `pt-v1:2026-11`, routing date 2026-11-09 08:30, source `onemap:routingsvc/route?routeType=pt`. 729 items serve 810 pairs because the 30 reviewed destinations pin onto 27 distinct stations.
+
+| Check                                | Result                                                        |
+| ------------------------------------ | ------------------------------------------------------------- |
+| Pairs with a deployed record         | **810 / 810**, none missing                                   |
+| Status agreement with this run       | **810 / 810** — 780 `ok`/`ok`, 30 `unavailable`/`unavailable` |
+| Travel time, deployed minus this run | mean +0.06, median 0.00, median abs 0.03, p95 abs 0.05 min    |
+| Within 2 minutes                     | **760 / 780**                                                 |
+
+**The 30 unavailables agree on the outcome and differ on the mechanism.** All of them are TENGAH. This run got OneMap's "No route found" per pair, 30 upstream 404s. The deployed records are `NON_ROUTABLE_TOWN` with `attempts: 0` and no `minutes`: the deployed path classifies the town as non-routable **at enqueue and never asks OneMap at all**. Same honest result, one fewer provider call.
+
+**One disclosed limitation: multi-line interchanges.** All 20 of the pairs more than 2 minutes apart are the single destination pinned to `OUTRAM_PARK`, and they differ by almost exactly **±5.7 min** with the sign following the line — **+5.7** for towns reached on the East-West line (Bedok, Clementi, Jurong East, Tampines and others) and **−5.7** for North-East line towns (Hougang, Punggol, Sengkang, Serangoon, Kallang/Whampoa). Shyam reads that as this run and the deployed station table using **different points inside the Outram Park interchange** — its EW, NE and TE platforms are far enough apart to be separate boarding points — rather than a routing or caching fault, and the symmetry of the figure supports that over a timing or data difference. Neither dataset records itineraries, so **the cause is not established here**; what is established is the size. For a station serving more than one line, the choice of point inside the interchange can move a modelled commute by about one interchange transfer, in either direction. Outram Park is the only such destination in this catalogue, so the effect is bounded at one of 30 destinations in this run and is not corrected in the figures above.
+
+Shyam's working files, his copy of this run's evidence and the raw table scan are on the operator machine rather than in this tree. They can be committed under `docs/evaluation/feasibility/` if @saravanamani1999 wants the scan itself kept, in which case it needs its own dated directory under D-E5 rather than being folded into the 5 November artifact.
+
 ## 14 October handoff corrections
 
 The current table includes all 27 HDB rental keys, including `CENTRAL` and the documented non-routable `TENGAH`. Historical measurements used `CENTRAL AREA`; interpret that label as the `CENTRAL` key without rewriting raw artifacts. The regeneration script now refuses fuzzy station matches and retains TENGAH's explicit unavailable reference instead of silently generating a 26-town table.
