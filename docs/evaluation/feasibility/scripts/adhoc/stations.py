@@ -1,5 +1,5 @@
 import json, re, time, urllib.parse, urllib.request, urllib.error
-BASE="https://www.onemap.gov.sg"; UA={"User-Agent":"CS5225-FlatSplit-feasibility/1.0"}
+BASE="https://www.onemap.gov.sg"; UA={"User-Agent":"CS5224-FlatSplit-feasibility/1.0"}
 def search(q):
     url=BASE+"/api/common/elastic/search?"+urllib.parse.urlencode({"searchVal":q,"returnGeom":"Y","getAddrDetails":"Y"})
     try:

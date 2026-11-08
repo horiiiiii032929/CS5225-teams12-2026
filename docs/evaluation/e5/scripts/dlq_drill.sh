@@ -1,5 +1,5 @@
 #!/bin/bash
-# CS5225 #27 / E5 eval drill. Run INSIDE the README credential subshell.
+# CS5224 #27 / E5 eval drill. Run INSIDE the README credential subshell.
 # Procedure: docs/evaluation/e5/procedure.md
 #
 # Usage: bash dlq_drill.sh <step>

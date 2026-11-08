@@ -1,7 +1,7 @@
 import json, time, urllib.parse, urllib.request, statistics, sys
 
 BASE = "https://www.onemap.gov.sg"
-UA = {"User-Agent": "CS5225-FlatSplit-feasibility/1.0"}
+UA = {"User-Agent": "CS5224-FlatSplit-feasibility/1.0"}
 
 def get(path, params=None, token=None, timeout=20):
     url = BASE + path + ("?" + urllib.parse.urlencode(params) if params else "")
