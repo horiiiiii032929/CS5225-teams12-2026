@@ -29,8 +29,12 @@ Conventions:
 | E5 failure, alarm and dead-letter recovery           | [e5/](e5/)                         | Drill measured on `eval` 7 Nov; three of seven metrics, rest unmeasured                  |
 | E6 bad-file/PITR recovery                            | [e6/](e6/)                         | Procedure; not run                                                                       |
 | E8 rent and commute audit                            | [e8/](e8/)                         | Rent audit, 810-pair reviewed coverage, and the 7 Nov deployed reconciliation of all 810 |
-| E9 hosting costs                                     | [e9/](e9/)                         | Shared-dev usage measured; tagged bill and account type remain pending                   |
+| E9 hosting costs                                     | [e9/](e9/)                         | Shared-dev usage measured; no tagged bill; allowances assumed; B/C node sizing assumed   |
 | Other experiments                                    | planned                            | Execution after implementation, 30 Oct–8 Nov baseline                                    |
+
+For a one-page cross-issue view of the rental-and-commute pipeline — what it established,
+what it explicitly did not, and which artifact holds each figure — see
+[data-workstream-summary.md](data-workstream-summary.md) (#42, 8 Nov 2026).
 
 Use lowercase experiment IDs going forward; the named feasibility archive and historical raw files remain. A renamed directory does not change its measurements.
 
