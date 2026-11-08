@@ -21,16 +21,17 @@ Conventions:
 - **No credentials in this tree.** Scripts read tokens from the environment.
 - **A run without its script is incomplete evidence** and must be labelled as such, because D-E5 requires the script version.
 
-| Evidence                                             | Directory                          | Status                                                                                   |
-| ---------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------- |
-| OneMap feasibility and source-level commute coverage | [feasibility/](feasibility/)       | Reviewed archive, with discrepancies and candidate-selection limitations                 |
-| #15 commute-worker routing, verified live            | [worker-routing/](worker-routing/) | Module verified against live OneMap on 20 Oct                                            |
-| #15 queue drain, concurrency and deduplication       | [worker-queue/](worker-queue/)     | Measured off a real queue on 26 Oct; emulated AWS, replayed OneMap                       |
-| E5 failure, alarm and dead-letter recovery           | [e5/](e5/)                         | Drill measured on `eval` 7 Nov; three of seven metrics, rest unmeasured                  |
-| E6 bad-file/PITR recovery                            | [e6/](e6/)                         | Procedure; not run                                                                       |
-| E8 rent and commute audit                            | [e8/](e8/)                         | Rent audit, 810-pair reviewed coverage, and the 7 Nov deployed reconciliation of all 810 |
-| E9 hosting costs                                     | [e9/](e9/)                         | Shared-dev usage measured; no tagged bill; allowances assumed; B/C node sizing assumed   |
-| Other experiments                                    | planned                            | Execution after implementation, 30 Oct–8 Nov baseline                                    |
+| Evidence                                             | Directory                          | Status                                                                                    |
+| ---------------------------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| OneMap feasibility and source-level commute coverage | [feasibility/](feasibility/)       | Reviewed archive, with discrepancies and candidate-selection limitations                  |
+| #15 commute-worker routing, verified live            | [worker-routing/](worker-routing/) | Module verified against live OneMap on 20 Oct                                             |
+| #15 queue drain, concurrency and deduplication       | [worker-queue/](worker-queue/)     | Measured off a real queue on 26 Oct; emulated AWS, replayed OneMap                        |
+| E5 failure, alarm and dead-letter recovery           | [e5/](e5/)                         | Drill measured on `eval` 7 Nov; three of seven metrics, rest unmeasured                   |
+| E6 bad-file/PITR recovery                            | [e6/](e6/)                         | Procedure; not run                                                                        |
+| E8 rent and commute audit                            | [e8/](e8/)                         | Rent audit, 810-pair reviewed coverage, and the 7 Nov deployed reconciliation of all 810  |
+| E9 hosting costs                                     | [e9/](e9/)                         | Shared-dev usage measured; no tagged bill; allowances assumed; B/C node sizing assumed    |
+| #36 deployed architecture and evidence map           | [architecture/](architecture/)     | Figure from the `eval` template, 8 Nov; live read-back pending; latency still pending #30 |
+| Other experiments                                    | planned                            | Execution after implementation, 30 Oct–8 Nov baseline                                     |
 
 For a one-page cross-issue view of the rental-and-commute pipeline — what it established,
 what it explicitly did not, and which artifact holds each figure — see
