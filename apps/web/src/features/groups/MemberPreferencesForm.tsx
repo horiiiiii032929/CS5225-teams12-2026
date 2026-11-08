@@ -16,6 +16,7 @@ import {
   ApiError,
   errorMessage,
   groupKey,
+  groupOptions,
   savePreferences,
   searchPlaces,
 } from './api';
@@ -124,6 +125,32 @@ export function MemberPreferencesForm({
         maxCommute: commuteValue,
       }),
     retry: false,
+    onError: async (error) => {
+      // A transport failure or server error can arrive after the write committed.
+      // Read the authoritative group before presenting the outcome.
+      if (
+        !(error instanceof ApiError) ||
+        (error.status > 0 && error.status < 500)
+      )
+        return;
+      try {
+        await queryClient.cancelQueries({ queryKey: groupKey(membership) });
+        const group = await queryClient.fetchQuery(groupOptions(membership));
+        const current = group.members.find(
+          (item) => item.memberId === membership.memberId,
+        );
+        if (
+          current &&
+          current.name === name.trim() &&
+          current.destination?.placeId === selectedPlace?.placeId &&
+          current.budget === budgetValue &&
+          current.maxCommute === commuteValue
+        )
+          onSaved();
+      } catch {
+        // Leave the form and its inputs in place when the read cannot confirm it.
+      }
+    },
     onSuccess: async (group) => {
       // Immediately hide old-revision results, even if the subsequent read fails.
       await queryClient.cancelQueries({ queryKey: groupKey(membership) });
@@ -304,11 +331,21 @@ export function MemberPreferencesForm({
           </Field>
           {save.isError && (
             <Alert variant="destructive">
-              <AlertTitle>Could not save your preferences</AlertTitle>
+              <AlertTitle>
+                {save.error instanceof ApiError &&
+                save.error.status > 0 &&
+                save.error.status < 500
+                  ? 'Could not save your preferences'
+                  : 'Could not confirm your preferences were saved'}
+              </AlertTitle>
               <AlertDescription>
                 {save.error instanceof ApiError && save.error.status === 404
                   ? 'This group or selected destination is no longer available. Search for the destination again and select a fresh result; if saving still fails, refresh your group.'
-                  : errorMessage(save.error)}
+                  : !(save.error instanceof ApiError) ||
+                      save.error.status === 0 ||
+                      save.error.status >= 500
+                    ? 'Refresh your group to check the saved preferences before trying again.'
+                    : errorMessage(save.error)}
               </AlertDescription>
             </Alert>
           )}

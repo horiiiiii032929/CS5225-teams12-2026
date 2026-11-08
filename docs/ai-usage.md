@@ -788,6 +788,17 @@ For future entries, record the requested issue, tool, contribution, checks actua
 
 - Review follow-up (@shyamgj1900, #98): he re-reviewed the drill files, confirmed both earlier Phase-B corrections and the step-5 filter, and flagged the `ReceiptHandle` in `docs/evaluation/e5/raw/2026-11-07/dlq_message.json`. The value was already a placeholder before the branch was pushed, but the deviation appeared nowhere in prose, which is the actual defect: D-E5 says raw output is never edited, so an edited field has to be declared or the whole directory becomes untrustworthy. The E5 README now names the one file, the one field, why the token is inert — single-use, its message deleted at 12:01:46 SGT, lease expired — and states that nothing else in the directory was altered. Prettier passes. No AWS call, deployment or data change.
 
+## 8 November 2026 — #26 ambiguous preference-save recovery
+
+- Tool: GPT-6.1 Terra (Codex), directed to test deployed #24 and #26 journeys and repair observed defects.
+- Contribution: a controlled browser test dropped a successful preference-save response; the deployed form incorrectly reported a definite failure. On ambiguous network or server errors, the form now cancels any earlier group read and fetches a fresh authoritative group. It closes only if the stored values match the attempted save; otherwise it preserves the form and asks the user to check the saved state. Definite client errors retain their specific feedback.
+- Verification: focused frontend tests cover committed 5xx, network failure and timeout, as well as a failed or differing confirmation read; typecheck, lint and a browser retest against local fixed frontend with the deployed API were run. The browser interception simulated a lost response; it did not simulate an AWS or provider outage. Local verification does not establish deployment.
+
+## 8 November 2026 — #24/#26 versioned browser-evidence handoff
+
+- Tool: GPT-6.1 Terra executed all deployed and local browser journeys; coordinating Codex reviewed source, assertions, artifact portability and sanitized publication. Added a dated criterion matrix, redacted JSON observations and selected focused PNGs under `docs/qa/evidence/2026-11-08`. The full local/Drive bundle also contains portable scripts and contextual screenshots; private browser state is excluded.
+- Results: deployed #24 passed two-/five-member desktop/mobile map selection, keyboard list controls and visible Tab focus, actual distinct-member response mapping, bounded Axe checks and no document overflow. Initial repeated-pin and programmatic-focus setup observations are retained with corrected runs. #26 real empty guidance and controlled status recovery passed; the ambiguous-save fix passed 113 web tests, web lint/typecheck, build, both source-fix CI runs and the local fixed-client/live-API browser retest. #26 stays open for deployment and deployed retest; current local AWS STS returned ExpiredToken. Public Drive sharing awaits a signed-in account step and is not claimed verified. No participant outcomes, provider outage/recovery, physical-device pass or new AWS deployment is inferred.
+
 ## 8 November 2026 — issue 38 integrated report draft
 
 - Tool: Codex, directed by Mani to assemble the evidence-backed final-report draft.

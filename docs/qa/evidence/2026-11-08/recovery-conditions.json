@@ -1,0 +1,81 @@
+[
+  {
+    "name": "2-suggestions-0",
+    "options": [
+      "DSO (KENT RIDGE) BUILDING · 27 MEDICAL DRIVE DSO (KENT RIDGE) BUILDING SINGAPORE 117510",
+      "KENT RIDGE HILL RESIDENCES · 50 SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 118167",
+      "KENT RIDGE HILL RESIDENCES · 66A SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 117327"
+    ]
+  },
+  {
+    "name": "2-suggestions-1",
+    "options": [
+      "DSO (KENT RIDGE) BUILDING · 27 MEDICAL DRIVE DSO (KENT RIDGE) BUILDING SINGAPORE 117510",
+      "KENT RIDGE HILL RESIDENCES · 50 SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 118167",
+      "KENT RIDGE HILL RESIDENCES · 66A SOUTH BUONA VISTA ROAD KENT RIDGE HILL RESIDENCES SINGAPORE 117327"
+    ]
+  },
+  {
+    "name": "2-mobile-map",
+    "pins": 25,
+    "firstPin": "Show Jurong East on map, rank 1",
+    "detailChanged": true,
+    "spacePressed": "true",
+    "enterPressed": "true",
+    "focus": {
+      "tag": "BUTTON",
+      "outline": "none",
+      "outlineWidth": "3px",
+      "boxShadow": "none"
+    },
+    "overflow": false,
+    "violations": [],
+    "detail": "Rank 2 · Selected town\n\nQueenstown\n\nMap reference: QUEENSTOWN MRT STATION (EW19).\n\nMonthly rent / person\nS$1,513\nLongest commute\n13 min\nCommute gap\n0 min\nEach flatmate’s commute in Queenstown\nFlatmate\tCommute\tTheir limit\nAlex\t13 min\t120 min\nJamie\t13 min\t120 min\n\nWhole-flat estimate: S$3,025, split equally; bills excluded. Times are rounded up for display; the search uses the original values.\n\nRent source: HDB rental approvals (data.gov.sg). Period: 2025-11/2026-10. Public transport, weekday 08:30 departure; station-to-station. Route calculation date unavailable.",
+    "errors": []
+  },
+  {
+    "name": "2-desktop-map",
+    "pins": 25,
+    "firstPin": "Show Jurong East on map, rank 1",
+    "detailChanged": true,
+    "spacePressed": "true",
+    "enterPressed": "true",
+    "focus": {
+      "tag": "BUTTON",
+      "outline": "none",
+      "outlineWidth": "3px",
+      "boxShadow": "none"
+    },
+    "overflow": false,
+    "violations": [],
+    "detail": "Rank 2 · Selected town\n\nQueenstown\n\nMap reference: QUEENSTOWN MRT STATION (EW19).\n\nMonthly rent / person\nS$1,513\nLongest commute\n13 min\nCommute gap\n0 min\nEach flatmate’s commute in Queenstown\nFlatmate\tCommute\tTheir limit\nAlex\t13 min\t120 min\nJamie\t13 min\t120 min\n\nWhole-flat estimate: S$3,025, split equally; bills excluded. Times are rounded up for display; the search uses the original values.\n\nRent source: HDB rental approvals (data.gov.sg). Period: 2025-11/2026-10. Public transport, weekday 08:30 departure; station-to-station. Route calculation date unavailable.",
+    "errors": []
+  },
+  {
+    "name": "keyboard-tab-focus",
+    "label": "Show Jurong East on map, rank 1",
+    "focusVisible": true,
+    "outline": "rgb(71, 134, 117) solid 3px",
+    "offset": "3px"
+  },
+  {
+    "name": "controlled-503",
+    "text": "Find your middle ground\n\nOne shortlist. Everyone’s limits respected.\n\nNeeds attention\n\nEvery flatmate’s budget and commute limit is a hard requirement.\n\nCould not check search progress\nThe service or rental data is temporarily unavailable. Refresh your group to confirm its saved inputs before retrying.\nCheck progress again"
+  },
+  {
+    "name": "controlled-503-retry",
+    "recovered": true
+  },
+  {
+    "name": "controlled-slow-loading",
+    "text": "Find your middle ground\n\nOne shortlist. Everyone’s limits respected.\n\nReady to search\n\nEvery flatmate’s budget and commute limit is a hard requirement.\n\nLoading your latest search…\n\nFind our neighbourhoods"
+  },
+  {
+    "name": "controlled-timeout",
+    "text": "Find your middle ground\n\nOne shortlist. Everyone’s limits respected.\n\nNeeds attention\n\nEvery flatmate’s budget and commute limit is a hard requirement.\n\nCould not check search progress\nThe request took too long. We could not confirm the result. Refresh your group before retrying.\nCheck progress again"
+  },
+  {
+    "name": "controlled-timeout-retry",
+    "recovered": true
+  }
+]
