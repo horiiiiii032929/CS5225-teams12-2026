@@ -799,7 +799,19 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Tool: GPT-6.1 Terra executed all deployed and local browser journeys; coordinating Codex reviewed source, assertions, artifact portability and sanitized publication. Added a dated criterion matrix, redacted JSON observations and selected focused PNGs under `docs/qa/evidence/2026-11-08`. The full local/Drive bundle also contains portable scripts and contextual screenshots; private browser state is excluded.
 - Results: deployed #24 passed two-/five-member desktop/mobile map selection, keyboard list controls and visible Tab focus, actual distinct-member response mapping, bounded Axe checks and no document overflow. Initial repeated-pin and programmatic-focus setup observations are retained with corrected runs. #26 real empty guidance and controlled status recovery passed; the ambiguous-save fix passed 113 web tests, web lint/typecheck, build, both source-fix CI runs and the local fixed-client/live-API browser retest. #26 stays open for deployment and deployed retest; current local AWS STS returned ExpiredToken. Public Drive sharing awaits a signed-in account step and is not claimed verified. No participant outcomes, provider outage/recovery, physical-device pass or new AWS deployment is inferred.
 
+## 8 November 2026 — issue 38 integrated report draft
+
+- Tool: Codex, directed by Mani to assemble the evidence-backed final-report draft.
+- Contribution: integrated the implemented architecture, team contribution handoff, merged evaluation evidence, cost comparison and explicit remaining limitations into the course-required report structure.
+- Verification: claims were cross-checked against merged source and dated evidence; no new experiment, deployment or submission was claimed.
+
 ## 8 November 2026 — PR 102 factual integration review
 
 - Tool: Codex, directed by Hikaru to review and merge ready PRs. Checked the data summary against its committed E8/E9/coverage artifacts and current issue scope; bounded the September recommendation-coverage statistic to its dated snapshot, added the distinct October 94/35 quality counts, narrowed absolute data-integrity wording, distinguished Ming's credential handoff from Shyam's scheduled-refresh implementation, and retained explicit acceptance decisions for unmeasured criteria. Updated the E9 index boundary to match the accepted no-tagged-bill/assumed-allowance status.
 - Verification: focused Prettier and Git whitespace checks; no new experiment, browser interaction, AWS operation or measurement. Original author contribution and evidence are preserved.
+
+## 8 November 2026 — PR 101 report integration review
+
+- Tool: Codex, directed by Hikaru to review and merge ready PRs. Preserved the report author's commits and both append-only AI log histories while resolving the conflict with current main. Corrected the report's cost-model boundaries, quiet/idle distinction, dated rental snapshot populations, invite-credential transport wording, worker budget-counter permissions, contribution attribution and uncited references. Integrated the dated browser findings without claiming deployment or participant outcomes; retained CS5224 from the supplied course specification.
+- Contribution: added a reproducible ReportLab renderer and regenerated the review PDF from the corrected Markdown. The component diagram is a report-specific vector layout of the source paths; the accompanying README explains regeneration and its limitation. Generated report PDFs are marked binary in Git.
+- Verification: reconciled figures to committed evidence; checked report Markdown/README formatting and renderer Ruff checks, rendered the A4 PDF and inspected all nine pages. The ten-page limit is enforced during generation. This merge introduces no new experiment, AWS operation, deployment or submission; issue #38's acceptance checklist remains outstanding.
