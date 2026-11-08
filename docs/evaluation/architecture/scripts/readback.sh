@@ -3,6 +3,7 @@
 # architecture figure. Prints no secrets: only resource types, names and
 # configuration that the CDK template already declares.
 # Usage: STACK=FlatSplit-eval docs/evaluation/architecture/scripts/readback.sh > raw/<date>/readback.txt
+# Needs AWS read access to the stack; python3 is used only to parse JSON.
 set -euo pipefail
 STACK=${STACK:-FlatSplit-eval}
 aws() { command aws --output json "$@"; }

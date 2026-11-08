@@ -6,12 +6,12 @@ This page gives the component figure for the evaluated deployment, which paths a
 
 ## Which revision this describes
 
-| Item                | Value                                                                                                                                                                                                                                                                              |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Evaluated stack     | `FlatSplit-eval`, account `553455762180`, `ap-southeast-1`                                                                                                                                                                                                                         |
-| Deployed source     | `e2d3780e28028574f8ee3dd990c10257be9f8029`, created 4 Nov 2026 17:43 SGT ([#72](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/72))                                                                                                                                 |
-| Figure derived from | The CDK app (`infra/aws/src`) synthesised for `eval`. `git diff e2d3780 7e1006e -- infra services packages` is empty, so the template is the one deployed. `main` differs from the deployment only in `apps/web` (`MemberPreferencesForm`, #100), which changes no component here. |
-| Deployed read-back  | **Pending.** [`scripts/readback.sh`](scripts/readback.sh) records the live stack read-only. Its output goes to `raw/<date>/readback.txt`, and the table below is checked against it.                                                                                               |
+| Item                | Value                                                                                                                                                                                                                                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Evaluated stack     | `FlatSplit-eval`, account `553455762180`, `ap-southeast-1`                                                                                                                                                                                                                             |
+| Deployed source     | `e2d3780e28028574f8ee3dd990c10257be9f8029`, created 4 Nov 2026 17:43 SGT ([#72](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/72))                                                                                                                                     |
+| Figure derived from | The CDK app (`infra/aws/src`) synthesised for `eval`. `git diff e2d3780 7e1006e -- infra services packages` is empty, so the template is the one deployed. `main` differs from the deployment only in `apps/web` (`MemberPreferencesForm`, #100), which changes no component here.     |
+| Deployed read-back  | [`raw/2026-11-08/readback.txt`](raw/2026-11-08/readback.txt), captured 8 Nov 2026 19:35 SGT with the read-only [`scripts/readback.sh`](scripts/readback.sh). The stack is `CREATE_COMPLETE` with no update since 4 Nov, and its resource-type counts equal the synthesised template's. |
 
 ## Component figure
 
@@ -71,20 +71,20 @@ flowchart LR
 
 ### Components and deployed settings
 
-Settings come from the synthesised `eval` template. The "Read back" column is filled in from `readback.txt`.
+Settings come from the synthesised `eval` template. The "Read back" column records what the 8 Nov read-back confirmed; anything it did not query is marked as not read.
 
-| Component            | Setting that matters for evaluation                                                                                     | Read back  |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
-| CloudFront           | One origin for web and `/api/*`; API not cached; SPA rewrite in a CloudFront Function                                   | pending    |
-| API Gateway HTTP API | `$default` stage, rate 100 rps, burst 200                                                                               | pending    |
-| HTTP Lambda          | One function for all routes, Python 3.13 arm64, 256 MB, 30 s; no reserved concurrency                                   | pending    |
-| DynamoDB             | One table, on-demand, point-in-time recovery on, TTL on `ttl`; no GSIs                                                  | pending    |
-| SQS jobs → worker    | Visibility 180 s, `maxReceiveCount` 3, retention 4 days; batch 1, `MaximumConcurrency` 3, partial-batch failure         | pending    |
-| DLQ                  | Retention 14 days; `CommuteDlqNotEmpty` at ≥ 1 visible message                                                          | pending    |
-| Call budget          | `RATE#ONEMAP` counter in the stage's table: 250 calls/min in total, of which the worker may take 200                    | n/a (code) |
-| Token refresh        | `rate(15 minutes)`, 128 MB, 0 async retries; alarms `OneMapTokenRefreshFailing` and `OneMapTokenExpiring`               | pending    |
-| Rent ingestion       | `cron(0 19 2 * ? *)` UTC (03:00 SGT on the 3rd), 1024 MB, 600 s; raw files in a versioned bucket; `RentIngestionFailed` | pending    |
-| Alarms → SNS         | 5 alarms, each with one SNS action. The template has no subscription unless a budget email is supplied at deploy time   | pending    |
+| Component            | Setting that matters for evaluation                                                                                     | Read back                                           |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| CloudFront           | One origin for web and `/api/*`; API not cached; SPA rewrite in a CloudFront Function                                   | present (cache settings not read)                   |
+| API Gateway HTTP API | `$default` stage, rate 100 rps, burst 200                                                                               | matches                                             |
+| HTTP Lambda          | One function for all routes, Python 3.13 arm64, 256 MB, 30 s; no reserved concurrency                                   | matches                                             |
+| DynamoDB             | One table, on-demand, point-in-time recovery on, TTL on `ttl`; no GSIs                                                  | billing, PITR match (TTL not read)                  |
+| SQS jobs → worker    | Visibility 180 s, `maxReceiveCount` 3, retention 4 days; batch 1, `MaximumConcurrency` 3, partial-batch failure         | matches; 0/0 messages                               |
+| DLQ                  | Retention 14 days; `CommuteDlqNotEmpty` at ≥ 1 visible message                                                          | matches; 0 messages, alarm OK                       |
+| Call budget          | `RATE#ONEMAP` counter in the stage's table: 250 calls/min in total, of which the worker may take 200                    | n/a (code)                                          |
+| Token refresh        | `rate(15 minutes)`, 128 MB, 0 async retries; alarms `OneMapTokenRefreshFailing` and `OneMapTokenExpiring`               | matches (async retry not read)                      |
+| Rent ingestion       | `cron(0 19 2 * ? *)` UTC (03:00 SGT on the 3rd), 1024 MB, 600 s; raw files in a versioned bucket; `RentIngestionFailed` | matches (bucket versioning not read)                |
+| Alarms → SNS         | 5 alarms, each with one SNS action. The template has no subscription unless a budget email is supplied at deploy time   | **0 subscriptions**; all 5 alarms OK, 1 action each |
 
 ### What dev and eval share
 
@@ -117,6 +117,6 @@ The report's evaluation table summarises these results. This map gives the evide
 The report's component paths match this figure, with four omissions. I'm listing them here rather than editing the report, because the report's PDF renderer draws its own layout of that figure:
 
 1. Token refresh also calls **OneMap auth**, and OneMap is shared with dev.
-2. Alarms notify through an **SNS topic**. Whether anyone is subscribed is settled by the read-back.
+2. Alarms notify through an **SNS topic**, and on `eval` that topic has **no subscriptions** (8 Nov read-back). An alarm's state change is therefore visible in CloudWatch, but nobody is notified. The E5 drill observed the alarm state, not a notification, so the report should claim visibility, not alerting.
 3. Secrets Manager holds **two secrets**: the account login, which only token refresh can read, and the token, which the HTTP Lambda, the worker and token refresh can read.
 4. §2.2 could add one sentence saying the OneMap call budget is counted per stage, so the 250/min guard assumes one stage generates the OneMap traffic at a time.
