@@ -91,7 +91,7 @@ class OneMapClient:
         self.max_attempts = max_attempts
         self.timeout = timeout
         self._bucket = _TokenBucket(calls_per_min)
-        self._ua = user_agent or "CS5225-FlatSplit/1.0 (+github.com/horiiiiii032929)"
+        self._ua = user_agent or "CS5224-FlatSplit/1.0 (+github.com/horiiiiii032929)"
         #: 選用的 EvidenceRecorder。給它就會把每次 HTTP 往返原封不動存成 JSONL
         #: （Authorization header 會被遮蔽）。評估計畫 D-E5 要求保留原始數據。
         self.recorder = recorder
