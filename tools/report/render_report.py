@@ -6,26 +6,26 @@ The component figure is a report-specific layout of the source Mermaid paths.
 """
 
 from __future__ import annotations
+
 import argparse
 import html
 import math
-from pathlib import Path
 import re
+from pathlib import Path
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_LEFT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.utils import simpleSplit
 from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
-    PageBreak,
-    Preformatted,
-    LongTable,
-    TableStyle,
     Flowable,
+    LongTable,
+    PageBreak,
+    Paragraph,
+    Preformatted,
+    SimpleDocTemplate,
+    Spacer,
+    TableStyle,
 )
 
 REPO = Path(__file__).resolve().parents[2]
