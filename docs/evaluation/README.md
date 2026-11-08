@@ -32,6 +32,10 @@ Conventions:
 | E9 hosting costs                                     | [e9/](e9/)                         | Shared-dev usage measured; tagged bill and account type remain pending                   |
 | Other experiments                                    | planned                            | Execution after implementation, 30 Oct–8 Nov baseline                                    |
 
+For a one-page cross-issue view of the rental-and-commute pipeline — what it established,
+what it explicitly did not, and which artifact holds each figure — see
+[data-workstream-summary.md](data-workstream-summary.md) (#42, 8 Nov 2026).
+
 Use lowercase experiment IDs going forward; the named feasibility archive and historical raw files remain. A renamed directory does not change its measurements.
 
 ## 27 October — E10 preparation
