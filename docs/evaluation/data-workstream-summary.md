@@ -29,7 +29,7 @@ measurement.
 
 ## 2. What the pipeline established
 
-**Rental numbers are correct against their source.** The Q2 2026 audit compared
+**The rental audit quantifies agreement with HDB's benchmark.** The Q2 2026 audit compared
 medians computed from detailed HDB records against HDB's separately published
 quarterly town/flat-type medians. Of 81 possible 3/4/5-room groups, 72 had numeric
 published medians: **65 matched exactly**, the remaining seven differed by at most
@@ -38,14 +38,20 @@ values were `-` and every corresponding detailed group held fewer than 20 record
 the marker was preserved as missing evidence rather than read as zero.
 → `docs/evaluation/e8/README.md`, `rent-audit-summary.json`, `rent-audit-2026-q2.csv`
 
-**Weak rental evidence is labelled, not silently used.** For the production
-trailing-12-month window, **75 of 81** scoped groups were usable, five were
+**Weak rental evidence is labelled, not silently used.** For the September-ending
+trailing-12-month snapshot audited in E8, **75 of 81** scoped groups were usable, five were
 low-confidence and `TENGAH x 3-ROOM` was absent. `CENTRAL x 4-ROOM` had 204 rows and
 still failed the block-cluster stability rule, which is the case that justifies the
 quality flag existing at all. The 31 October deployed capture read **129 summaries,
 97 `USABLE` / 32 `LOW_CONFIDENCE`** under snapshot
 `rent-v1-r7-block-bootstrap-v1-2026-09-767a94819f4b`, period `2025-10/2026-09`.
 → `docs/evaluation/e8/deployed-audit-2026-10-31.md`, `raw/2026-10-31/deployed-audit.json`
+
+The later 3 November observation instead captured the October-ending snapshot,
+period `2025-11/2026-10`, with **129 summaries, 94 usable / 35 low-confidence**
+across all six flat types. These are different dated snapshots and populations;
+the 75/81 recommendation-scope figure must not be presented as current coverage.
+→ `docs/evaluation/e9/evidence/deployed-usage-20261103.json`
 
 **Route coverage is complete and its one gap is explicit.** The reviewed catalogue of
 30 destinations across 27 towns produced **810 pairs: 780 routable, all succeeded;
@@ -67,7 +73,7 @@ redelivered. Cleanup deleted only drill messages by receipt handle; both queues
 returned to zero and all alarms to `OK`.
 → `docs/evaluation/e5/README.md`, `procedure.md`, `scripts/dlq_drill.sh`
 
-**Nothing downstream can read a fabricated number.** In the deployed capture
+**Inspected unavailable routes retained unknown values.** In the deployed capture
 `TOWN#TENGAH` carries `status: "unavailable"`, `error: "NON_ROUTABLE_TOWN"`,
 `attempts: 0`, a never-retry `retryAfter` sentinel, and **no `minutes` attribute at
 all** — absent, not present-and-zero. Fractional minutes survive storage at full
@@ -107,7 +113,8 @@ empty DLQ and correctly decided not to redrive a permanently non-routable town.
    capture holds `2025-10/2026-09`. Because `routingProfileVersion` is an attribute
    and not part of the commute key, a profile rollover replaces the record, so the
    31 October minutes are a different generation from what the 4 November search
-   returned. Closing this needs about ten read-only `GetItem`s, no provider traffic.
+   returned. Closing this needs a short read-only producer-to-response capture,
+   with no provider traffic.
 5. **AWS costs are modelled, never billed (#45).** `ce:ListCostAllocationTags` is
    denied to a linked account and the `project` tag was never activated by the payer
    account, so no tagged bill will exist before submission. This is final for this
@@ -140,8 +147,9 @@ Quote these with their boundary attached, never bare:
 
 **Ming (@lukerspace)** — OneMap feasibility (#3); destination geocoding, station
 pinning and the place cache (#14); the queued commute worker, result cache and
-routing module (#15); route coverage and the snapping-error study (#19); the shared
-credential rotation that keeps `/places` alive (#72); the data refresh and
+routing module (#15); route coverage and the snapping-error study (#19); OneMap
+account/credential handoff and renewal requirements (#72; Shyam implemented the
+scheduled refresh Lambda and CDK wiring); the data refresh and
 failure-recovery runbook (#33); the E5 drill procedure; and the hosting cost model
 and its evidence (#45).
 
@@ -153,8 +161,8 @@ for the worker and cost work.
 
 **Open at handoff:** #15 awaits an authorisation decision from @shyamgj1900; #18
 awaits a short read-only capture; #45 awaits #30's outcome or an explicit
-assumed-sizing acceptance. Each has a stated default so none of them needs to remain
-open through submission.
+assumed-sizing acceptance. Any unmeasured criterion needs an explicit owner/reviewer
+and PM disposition; reaching the submission date does not itself satisfy it.
 
 ## 6. Reproducing any of it
 
