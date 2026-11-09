@@ -28,7 +28,7 @@ flowchart LR
   end
   subgraph ASYNC["Commute path (asynchronous)"]
     SQ[SQS commute jobs<br/>visibility 180 s, 3 receives] -.->|batch 1, max concurrency 3| W[Commute worker Lambda<br/>256 MB, 60 s]
-    SQ -.->|after 3rd receive| DLQ[SQS dead-letter queue<br/>14-day retention]
+    SQ -.->|unkeyable message, 3rd receive| DLQ[SQS dead-letter queue<br/>14-day retention]
   end
   subgraph SCHED["Scheduled jobs"]
     EB1[EventBridge rate 15 min] -.-> TOK[Token refresh Lambda<br/>128 MB, no async retry]
@@ -66,7 +66,7 @@ flowchart LR
   - Search submission.
   - Search status polls.
 - **Search submission does not wait for routes.** It pins the group revision, rent snapshot and routing profile, then reuses cached station-town commutes. Each missing pair gets a conditional claim and one SQS message. The response returns without waiting for those pairs. The browser then polls every 2 seconds, and status is derived when it's read, so there is no fan-in counter.
-- **The worker runs off the request path.** It processes one message per invocation, at most three at a time. Its result write requires a matching `jobId` and `pending` status, so a duplicate, late or injected message writes nothing. Failures are retried only by SQS redelivery (180 s apart, three receives, then the DLQ). The worker has no retry loop of its own.
+- **The worker runs off the request path.** It processes one message per invocation, at most three at a time. Its result write requires a matching `jobId` and `pending` status, so a duplicate, late or injected message writes nothing. Failures are retried only by SQS redelivery, 180 s apart; the worker has no retry loop of its own. If a keyable pair still fails on its third receive, the worker writes a terminal `unavailable` result and acknowledges the message, so that pair never reaches the DLQ. Only an unkeyable or unaccounted-for message is moved to the DLQ after its third receive. (Point from WK's review of #106.)
 - **Scheduled jobs touch the request path only through stored data.** Token refresh writes the token secret, which the HTTP Lambda and the worker read. Ingestion writes immutable rent snapshots before advancing `RENT/CURRENT`.
 
 ### Components and deployed settings
@@ -77,11 +77,11 @@ Settings come from the synthesised `eval` template. The "Read back" column recor
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
 | CloudFront           | One origin for web and `/api/*`; API not cached; SPA rewrite in a CloudFront Function                                   | present (cache settings not read)                   |
 | API Gateway HTTP API | `$default` stage, rate 100 rps, burst 200                                                                               | matches                                             |
-| HTTP Lambda          | One function for all routes, Python 3.13 arm64, 256 MB, 30 s; no reserved concurrency                                   | matches                                             |
+| HTTP Lambda          | One function for all routes, Python 3.13 arm64, 256 MB, 30 s; no reserved concurrency                                   | matches (reserved concurrency not read)             |
 | DynamoDB             | One table, on-demand, point-in-time recovery on, TTL on `ttl`; no GSIs                                                  | billing, PITR match (TTL not read)                  |
 | SQS jobs → worker    | Visibility 180 s, `maxReceiveCount` 3, retention 4 days; batch 1, `MaximumConcurrency` 3, partial-batch failure         | matches; 0/0 messages                               |
 | DLQ                  | Retention 14 days; `CommuteDlqNotEmpty` at ≥ 1 visible message                                                          | matches; 0 messages, alarm OK                       |
-| Call budget          | `RATE#ONEMAP` counter in the stage's table: 250 calls/min in total, of which the worker may take 200                    | n/a (code)                                          |
+| Call budget          | `RATE#ONEMAP` fixed-minute counter per stage: 250 calls per window, of which the worker may take 200                    | n/a (code)                                          |
 | Token refresh        | `rate(15 minutes)`, 128 MB, 0 async retries; alarms `OneMapTokenRefreshFailing` and `OneMapTokenExpiring`               | matches (async retry not read)                      |
 | Rent ingestion       | `cron(0 19 2 * ? *)` UTC (03:00 SGT on the 3rd), 1024 MB, 600 s; raw files in a versioned bucket; `RentIngestionFailed` | matches (bucket versioning not read)                |
 | Alarms → SNS         | 5 alarms, each with one SNS action. The template has no subscription unless a budget email is supplied at deploy time   | **0 subscriptions**; all 5 alarms OK, 1 action each |
@@ -92,7 +92,7 @@ The two stacks have separate tables, queues, functions, buckets, secrets and ala
 
 - **The AWS account and region.** Account-level Lambda concurrency and service quotas apply to both stages together.
 - **One OneMap team account, and so one token.** Since #72 both stages log in with the same team account, and OneMap gives both the same token. On 7 Nov dev picked up the new token 50 s after expiry and eval 3 min 23 s after.
-- **The OneMap call budget is counted per stage, not per account.** Each stage keeps its own `RATE#ONEMAP` counter. Dev and eval can each spend up to 250 calls/min, which together exceeds OneMap's published 300/min for what is one account. The budget only holds while one stage generates the OneMap traffic. This is why routing-heavy work (warm-ups, drills) has been run on one stage at a time. W1 and W2 read cached results and make no routing calls.
+- **The OneMap call budget is counted per stage, not per account.** Each stage keeps its own `RATE#ONEMAP` counter. Dev and eval can each spend up to 250 calls/min, which together exceeds OneMap's published 300/min for what is one account. So the guard needs one stage at a time to be the only source of OneMap traffic, and even then it is not a rolling limit. `call_budget.py` counts fixed epoch-minute windows, so up to 250 calls just before a minute boundary and 250 just after it can land within seconds. This is why routing-heavy work (warm-ups, drills) has been run on one stage at a time. W1 and W2 read cached results and make no routing calls.
 - **data.gov.sg** is the rental source for both stages' monthly ingestion.
 
 ## Evaluation evidence map
@@ -119,4 +119,4 @@ The report's component paths match this figure, with four omissions. I'm listing
 1. Token refresh also calls **OneMap auth**, and OneMap is shared with dev.
 2. Alarms notify through an **SNS topic**, and on `eval` that topic has **no subscriptions** (8 Nov read-back). An alarm's state change is therefore visible in CloudWatch, but nobody is notified. The E5 drill observed the alarm state, not a notification, so the report should claim visibility, not alerting.
 3. Secrets Manager holds **two secrets**: the account login, which only token refresh can read, and the token, which the HTTP Lambda, the worker and token refresh can read.
-4. §2.2 could add one sentence saying the OneMap call budget is counted per stage, so the 250/min guard assumes one stage generates the OneMap traffic at a time.
+4. §2.2 could add one sentence saying the OneMap call budget is a fixed-window count kept per stage. It assumes one stage generates the OneMap traffic at a time, and it does not guarantee OneMap's rolling quota.
