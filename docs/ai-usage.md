@@ -825,3 +825,14 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Verification: Prettier on both touched Markdown files; `python3 -m py_compile` on the six touched Python files; `bash -n` on the drill script; `git diff --check`; both CI checks passed on `af3db19` and `a95f2f9`. Confirmed no test asserts the changed `User-Agent`, that `client.py`'s is an overridable default, and that the string appears in no committed evidence artifact, so no archived run is invalidated and D-E5's never-edit-raw-output rule is untouched. Every figure quoted in the summary and in the four issue comments was re-read from its named artifact before posting.
 - Boundaries: no new measurement, no provider traffic, no deployed read, no AWS operation and no write of any kind was performed for this work. Nothing here closes an issue; #15, #18 and #45 each await another owner's decision or a short read-only capture.
 - Human follow-up: #18's remaining seven read-only `GetItem`s need someone with `dev` read access; the 4 November search record's 30-day `ttl` makes it readable until about 4 December.
+
+## 9 November 2026 — #30 operator prep, W1A reconciliation and destination pins
+
+- Tool: Claude Opus 5.5 (Claude Code), directed by Shyam as the `eval` operator.
+- Contribution:
+  - Found that 4 of the 30 load-test pins no longer resolved: OneMap now returns a different SIT Punggol address, two MBFC street addresses, and postcodes on the other two. Resolved the 9 Nov catalog from a disclosed copy that changes only those four addresses, then ran the cached warm-up (0 worker invocations).
+  - Posted the receipts and the scope answers (W1 only; at most 2 attempts and 2,880 requests).
+  - Reconstructed WK's W1A run (16:15–16:26 SGT) per minute from CloudWatch: 1,440 API Gateway requests, matching the client's 240 + 1,200; zero 4xx/5xx, Lambda errors and throttles; server-side p95 about 403 ms; zero worker and queue activity; no alarm state changes.
+  - This PR commits the four pins so the reviewed input matches the run.
+- Disclosed deviation: the operator's AWS session expired at 11:52 and worked again only at 17:07, so W1A had no live monitoring and no 15:55 receipt. The reconciliation was made after the run and could not have stopped it.
+- Verification: `pnpm test:load` (21 pass), the resolver tests (8 pass), `pnpm test:evidence`, Prettier. The AWS calls were read-only CloudWatch, SQS and Logs reads, plus the documented catalog lookups and warm-up searches on `eval`.
