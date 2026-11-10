@@ -835,6 +835,17 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Verification: Prettier on the touched Markdown; `git diff --check`; every cited line number opened and read in the working tree before it was written down. The 9 November follow-up re-read `docs/report/final-report-draft.md:184` and `docs/evaluation/data-workstream-summary.md:104` before the correction above was written, and read @shyamgj1900's `40884cb` so this chapter and the #36 write-up use one wording. CI result recorded on the pull request rather than claimed here.
 - Boundaries: no measurement, no provider traffic, no deployed read and no AWS operation of any kind. Nothing here closes an issue.
 
+## 9 November 2026 — #30 operator prep, W1A reconciliation and destination pins
+
+- Tool: Claude Opus 5.5 (Claude Code), directed by Shyam as the `eval` operator.
+- Contribution:
+  - Found that 4 of the 30 load-test pins no longer resolved: OneMap now returns a different SIT Punggol address, two MBFC street addresses, and postcodes on the other two. Resolved the 9 Nov catalog from a disclosed copy that changes only those four addresses, then ran the cached warm-up (0 worker invocations).
+  - Posted the receipts and the scope answers (W1 only; at most 2 attempts and 2,880 requests).
+  - Reconstructed WK's W1A run (16:15–16:26 SGT) per minute from CloudWatch: 1,440 API Gateway requests, matching the client's 240 + 1,200; zero 4xx/5xx, Lambda errors and throttles; server-side p95 about 403 ms; zero worker and queue activity; no alarm state changes.
+  - This PR commits the four pins so the reviewed input matches the run.
+- Disclosed deviation: the operator's AWS session expired at 11:52 and worked again only at 17:07, so W1A had no live monitoring and no 15:55 receipt. The reconciliation was made after the run and could not have stopped it.
+- Verification: `pnpm test:load` (21 pass), the resolver tests (8 pass), `pnpm test:evidence`, Prettier. The AWS calls were read-only CloudWatch, SQS and Logs reads, plus the documented catalog lookups and warm-up searches on `eval`.
+
 ## 10 November 2026 — merging the two open E9/#39 documentation pull requests, and putting #15's and #45's decisions to their owners
 
 - Tool: Claude Opus 5 (Claude Code), directed by Ming to check the repository's current state with `gh` and close out his own workstream. No code, infrastructure or evaluation artifact was changed.

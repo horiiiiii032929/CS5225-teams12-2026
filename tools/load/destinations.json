@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "reviewed": "2026-11-02, #30 (provisional weights accepted by WK)",
+  "version": 2,
+  "reviewed": "2026-11-09, #108 (four addresses re-pinned after OneMap results changed; weights as reviewed 2026-11-02, #30)",
   "weight_basis": "assumed tiers 1-5 by expected flat-sharer demand; not measured demand data",
   "destinations": [
     {
@@ -59,7 +59,7 @@
       "weight": 2,
       "query": "Singapore Institute of Technology",
       "label": "SINGAPORE INSTITUTE OF TECHNOLOGY",
-      "address": "13 NEW PUNGGOL ROAD SINGAPORE INSTITUTE OF TECHNOLOGY SINGAPORE 829979",
+      "address": "1 PUNGGOL COAST ROAD SINGAPORE INSTITUTE OF TECHNOLOGY SINGAPORE 828608",
       "stationKey": "PUNGGOL_COAST",
       "receipt": "https://www.singaporetech.edu.sg/"
     },
@@ -99,7 +99,7 @@
       "weight": 5,
       "query": "Marina Bay Financial Centre",
       "label": "MARINA BAY FINANCIAL CENTRE",
-      "address": "MARINA BAY FINANCIAL CENTRE",
+      "address": "8 MARINA BOULEVARD MARINA BAY FINANCIAL CENTRE SINGAPORE 018981",
       "stationKey": "DOWNTOWN",
       "receipt": "https://www.mbfc.com.sg/"
     },
@@ -129,7 +129,7 @@
       "weight": 3,
       "query": "Raffles City",
       "label": "RAFFLES CITY SHOPPING CENTRE",
-      "address": "252 NORTH BRIDGE ROAD RAFFLES CITY SHOPPING CENTRE",
+      "address": "252 NORTH BRIDGE ROAD RAFFLES CITY SHOPPING CENTRE SINGAPORE 179103",
       "stationKey": "CITY_HALL",
       "receipt": "https://www.capitaland.com/sg/malls/rafflescity/en.html"
     },
@@ -189,7 +189,7 @@
       "weight": 3,
       "query": "Changi City Point",
       "label": "CHANGI CITY POINT",
-      "address": "5 CHANGI BUSINESS PARK CENTRAL 1 CHANGI CITY POINT",
+      "address": "5 CHANGI BUSINESS PARK CENTRAL 1 CHANGI CITY POINT SINGAPORE 486038",
       "stationKey": "EXPO",
       "receipt": "https://www.changicitypoint.com.sg/"
     },
