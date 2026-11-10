@@ -1,0 +1,162 @@
+# captured_at: 2026-11-08T11:35:43Z
+# account: 553455762180
+# stack: FlatSplit-eval
+{
+    "status": "CREATE_COMPLETE",
+    "created": "2026-11-04T09:42:57.994000+00:00",
+    "updated": "2026-11-04T09:43:11.544000+00:00"
+}
+## resource types
+  1 AWS::ApiGatewayV2::Api
+  1 AWS::ApiGatewayV2::Integration
+  1 AWS::ApiGatewayV2::Route
+  1 AWS::ApiGatewayV2::Stage
+  1 AWS::CloudFront::Distribution
+  1 AWS::CloudFront::Function
+  1 AWS::CloudFront::OriginAccessControl
+  5 AWS::CloudWatch::Alarm
+  1 AWS::DynamoDB::Table
+  2 AWS::Events::Rule
+  5 AWS::IAM::Policy
+  6 AWS::IAM::Role
+  1 AWS::Lambda::EventInvokeConfig
+  1 AWS::Lambda::EventSourceMapping
+  6 AWS::Lambda::Function
+  1 AWS::Lambda::LayerVersion
+  3 AWS::Lambda::Permission
+  4 AWS::Logs::LogGroup
+  3 AWS::Logs::MetricFilter
+  2 AWS::S3::Bucket
+  2 AWS::S3::BucketPolicy
+  1 AWS::SNS::Topic
+  2 AWS::SQS::Queue
+  2 AWS::SQS::QueuePolicy
+  2 AWS::SecretsManager::Secret
+  1 Custom::CDKBucketDeployment
+  2 Custom::S3AutoDeleteObjects
+## lambda functions
+{
+    "fn": "ApiHttpHandler",
+    "runtime": "python3.13",
+    "arch": "arm64",
+    "memory": 256,
+    "timeout": 30,
+    "state": "Active",
+    "lastModified": "2026-11-04T09:44:21.338+0000"
+}
+{
+    "fn": "ApiCommuteWorker",
+    "runtime": "python3.13",
+    "arch": "arm64",
+    "memory": 256,
+    "timeout": 60,
+    "state": "Active",
+    "lastModified": "2026-11-04T09:44:21.258+0000"
+}
+{
+    "fn": "ApiOneMapTokenRefresh",
+    "runtime": "python3.13",
+    "arch": "arm64",
+    "memory": 128,
+    "timeout": 30,
+    "state": "Active",
+    "lastModified": "2026-11-04T09:43:53.575+0000"
+}
+{
+    "fn": "RentIngestionHandler",
+    "runtime": "python3.13",
+    "arch": "arm64",
+    "memory": 1024,
+    "timeout": 600,
+    "state": "Active",
+    "lastModified": "2026-11-04T09:43:58.723+0000"
+}
+## worker event source mapping
+[
+    {
+        "state": "Enabled",
+        "batch": 1,
+        "maxConcurrency": 3,
+        "reportFailures": [
+            "ReportBatchItemFailures"
+        ]
+    }
+]
+## queues
+{
+    "queue": "ApiCommuteJobs",
+    "attrs": {
+        "VisibilityTimeout": "180",
+        "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:ap-southeast-1:553455762180:FlatSplit-eval-ApiCommuteDlq5A1C45AD-n4LpNoZb1ix1\",\"maxReceiveCount\":3}",
+        "MessageRetentionPeriod": "345600",
+        "ApproximateNumberOfMessages": "0",
+        "ApproximateNumberOfMessagesNotVisible": "0"
+    }
+}
+{
+    "queue": "ApiCommuteDlq",
+    "attrs": {
+        "VisibilityTimeout": "30",
+        "MessageRetentionPeriod": "1209600",
+        "ApproximateNumberOfMessages": "0",
+        "ApproximateNumberOfMessagesNotVisible": "0"
+    }
+}
+## api stage throttling
+[
+    {
+        "stage": "$default",
+        "burst": 200,
+        "rate": 100.0
+    }
+]
+## table
+{
+    "billing": "PAY_PER_REQUEST",
+    "status": "ACTIVE",
+    "items": 1032
+}
+"ENABLED"
+## schedules
+{
+    "rule": "ApiOneMapTokenRefreshSchedule",
+    "schedule": "rate(15 minutes)",
+    "state": "ENABLED"
+}
+{
+    "rule": "RentIngestionMonthlySchedule",
+    "schedule": "cron(0 19 2 * ? *)",
+    "state": "ENABLED"
+}
+## alarms and notification
+[
+    {
+        "alarm": "FlatSplit-eval-CommuteAlarmsCommuteDlqNotEmptyF7769442-pqGC0L7DfpRz",
+        "state": "OK",
+        "actions": 1
+    },
+    {
+        "alarm": "FlatSplit-eval-CommuteAlarmsCommuteJobsStalledBD017C6C-spDtpagUajN9",
+        "state": "OK",
+        "actions": 1
+    },
+    {
+        "alarm": "FlatSplit-eval-CommuteAlarmsOneMapTokenExpiringE2BD398F-XbS8tBohAc1q",
+        "state": "OK",
+        "actions": 1
+    },
+    {
+        "alarm": "FlatSplit-eval-CommuteAlarmsOneMapTokenRefreshFailing2F3BF79B-EZFmy862pO18",
+        "state": "OK",
+        "actions": 1
+    },
+    {
+        "alarm": "FlatSplit-eval-CommuteAlarmsRentIngestionFailed77352AD1-IaiMNEomPgSd",
+        "state": "OK",
+        "actions": 1
+    }
+]
+{
+    "confirmed": "0",
+    "pending": "0"
+}
