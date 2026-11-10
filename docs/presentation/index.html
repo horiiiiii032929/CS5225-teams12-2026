@@ -494,8 +494,17 @@
           </tr>
           <tr>
             <th>AWS cost</th>
-            <td>Scenario models and operation-count assumptions exist.</td>
-            <td>A model is not an AWS bill or measured consumed capacity.</td>
+            <td>
+              Reproducible four-option model on measured request shapes, memory
+              and durations: US$0.96/month typical modelled payable against
+              US$85.94 for a university-hosted VM, about 90&times;. An idle
+              month is US$0.80 against US$243.50, about 304&times;.
+            </td>
+            <td>
+              Not an AWS bill. No tagged payer bill exists and allowance/credit
+              terms are unconfirmed. Self-hosted node counts assume
+              25&nbsp;req/s/node.
+            </td>
           </tr>
           <tr>
             <th>User study</th>
@@ -510,10 +519,13 @@
       <p class="source">
         #80 interpreter reproducibility is a numerical correction, not a new
         cost measurement. Drain arithmetic such as 78 pairs/~28s is
-        extrapolation, never measured throughput.
+        extrapolation, never measured throughput. #34's shared-dev observation
+        is accepted evidence and is no longer pending. The cost figures are
+        model outputs reconciled with the merged report; US$0.82 in the model's
+        table is the quiet scenario, not an idle month.
       </p>
       <footer>
-        <span>Pending measurements: #30 / #34 / #35 / #36 and #31</span
+        <span>Pending measurements: #30 / #35 / #36 and #31</span
         ><span>08</span>
       </footer>
     </section>
