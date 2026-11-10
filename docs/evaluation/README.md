@@ -23,6 +23,7 @@ Conventions:
 
 | Evidence                                             | Directory                          | Status                                                                                                       |
 | ---------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| E1 warm-read latency                                 | [e1/](e1/)                         | W1A warm p95 457 ms; no live monitoring, cold latency and capacity unmeasured                                |
 | OneMap feasibility and source-level commute coverage | [feasibility/](feasibility/)       | Reviewed archive, with discrepancies and candidate-selection limitations                                     |
 | #15 commute-worker routing, verified live            | [worker-routing/](worker-routing/) | Module verified against live OneMap on 20 Oct                                                                |
 | #15 queue drain, concurrency and deduplication       | [worker-queue/](worker-queue/)     | Measured off a real queue on 26 Oct; emulated AWS, replayed OneMap                                           |

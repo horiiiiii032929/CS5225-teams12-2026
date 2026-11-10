@@ -867,3 +867,8 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - What did not change: no figure, call volume, scenario total, option or node count moved today, and no evaluation evidence was produced, re-run or reinterpreted. The 9 November E1 acceptance is a warm-cache read-latency result and bears on #45 only by stating what it does not establish; it does not touch #15's unmeasured ceiling-enforcement item.
 - Verification: `gh` reads of every pull request, issue thread and check result cited above; both merged heads were green before merging, and the post-merge `main` CI result is recorded on the commit rather than claimed here. Every permalink in the four posted comments was resolved through the API before it was written down, and two draft links that pointed at the wrong #45 comment were corrected before posting. Prettier and `git diff --check` on this file.
 - Boundaries: no measurement, no provider traffic, no deployed read, no counter prefill and no AWS operation of any kind. Nothing here closes an issue: #15 and #45 both remain open on another owner's explicit decision, and the one-sentence §2.2 correction asked for on #38 is still @saravanamani1999's to write.
+
+## 10 November 2026 — W1A evidence archive
+
+- At WK's direction, Codex prepared the retained W1A raw records and original runner scripts for review in `docs/evaluation/e1/`, with hashes and explicit monitoring, cold-latency and capacity limitations.
+- Verification: checked sample-field shapes and common credential patterns; matched the four runner scripts to `236d850`; regenerated the summary with project Python 3.13 and compared it byte-for-byte with the retained summary. No network traffic to the application, AWS operation or rerun occurred.
