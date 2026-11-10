@@ -209,7 +209,10 @@ def render(source: Path, output: Path):
         spaceAfter=8,
     )
     story = []
-    lines = source.read_text().splitlines()
+    source_text = source.read_text()
+    version_match = re.search(r"final report draft (v\d+\.\d+)", source_text, re.I)
+    report_version = version_match.group(1) if version_match else "unversioned"
+    lines = source_text.splitlines()
     i = 0
     while i < len(lines):
         line = lines[i].strip()
@@ -320,7 +323,7 @@ def render(source: Path, output: Path):
         leftMargin=38,
         topMargin=37,
         bottomMargin=35,
-        title="FlatSplit Final Report Draft v0.2",
+        title=f"FlatSplit Final Report Draft {report_version}",
         author="CS5224 Group 12",
         subject="Evidence-backed review draft; pending gates retained",
     )
@@ -331,7 +334,9 @@ def render(source: Path, output: Path):
         c.setFont("Helvetica", 7)
         if doc.page > 1:
             c.drawString(
-                38, A4[1] - 22, "FlatSplit - evidence-backed review draft v0.2"
+                38,
+                A4[1] - 22,
+                f"FlatSplit - evidence-backed review draft {report_version}",
             )
         c.drawString(38, 20, "CS5224 Group 12 | Review draft, not a submission receipt")
         c.drawRightString(A4[0] - 38, 20, str(doc.page))
