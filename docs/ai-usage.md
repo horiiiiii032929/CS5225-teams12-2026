@@ -835,6 +835,13 @@ For future entries, record the requested issue, tool, contribution, checks actua
 - Verification: Prettier on the touched Markdown; `git diff --check`; every cited line number opened and read in the working tree before it was written down. The 9 November follow-up re-read `docs/report/final-report-draft.md:184` and `docs/evaluation/data-workstream-summary.md:104` before the correction above was written, and read @shyamgj1900's `40884cb` so this chapter and the #36 write-up use one wording. CI result recorded on the pull request rather than claimed here.
 - Boundaries: no measurement, no provider traffic, no deployed read and no AWS operation of any kind. Nothing here closes an issue.
 
+## 8 November 2026 — #36 deployed architecture figure and evidence map
+
+- Tool: Claude Opus 5.5 (Claude Code), directed by Shyam to draft his #36 deliverable after the 8 Nov #30 window was lost to missing operator prep.
+- Contribution: added `docs/evaluation/architecture/README.md`. It covers a component figure separating synchronous, asynchronous and scheduled paths, the deployed settings that matter for evaluation, the components dev and eval share, an evidence map for each evaluation claim with its limit, and four corrections proposed for the report's §2.2 figure. Also added the read-only `scripts/readback.sh` to record the live stack. Separately posted the W2 client-risk decision and the 9 Nov replacement window on #30.
+- Finding: the OneMap call budget is counted in each stage's table, while both stages use one OneMap account and token. The 250/min guard therefore holds only while a single stage generates the OneMap traffic.
+- Verification: the figure and settings were read from the synthesised `FlatSplit-eval` template (`pnpm synth`). `git diff e2d3780 7e1006e -- infra services packages` is empty, so the template matches the deployed source. `bash -n` passes on the read-back script. After Shyam refreshed the keys, the read-back ran against `FlatSplit-eval` at 19:35 SGT, and its output is committed unedited. Every queried setting matched the template. The alert topic has 0 subscriptions, which the doc records as a reporting boundary. The read-back made read-only AWS calls only; no write, deployment or measurement was performed.
+
 ## 9 November 2026 — #30 operator prep, W1A reconciliation and destination pins
 
 - Tool: Claude Opus 5.5 (Claude Code), directed by Shyam as the `eval` operator.
