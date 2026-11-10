@@ -875,3 +875,9 @@ For future entries, record the requested issue, tool, contribution, checks actua
 
 - At WK's direction, Codex prepared the retained W1A raw records and original runner scripts for review in `docs/evaluation/e1/`, with hashes and explicit monitoring, cold-latency and capacity limitations.
 - Verification: checked sample-field shapes and common credential patterns; matched the four runner scripts to `236d850`; regenerated the summary with project Python 3.13 and compared it byte-for-byte with the retained summary. No network traffic to the application, AWS operation or rerun occurred.
+
+## 11 November 2026 — issue 38 accepted-latency integration
+
+- Tool: Codex, directed by Mani to update the final-report draft after reviewing the report and evaluation handoffs.
+- Contribution: integrated the accepted warm-cache W1A result and its limits, corrected the on-premise bursty range, defined R-7 and W4, and retained unresolved participant, qualification and capacity decisions as explicit limitations.
+- Verification: cross-checked the wording against the accepted #30 receipt and merged #36/#110 evidence; formatted the source and regenerated and visually inspected the report PDF. No new measurement, deployment or issue disposition is claimed.
