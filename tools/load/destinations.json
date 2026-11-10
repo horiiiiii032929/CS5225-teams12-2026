@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "reviewed": "2026-11-02, #30 (provisional weights accepted by WK)",
+  "version": 2,
+  "reviewed": "2026-11-09, #108 (four addresses re-pinned after OneMap results changed; weights as reviewed 2026-11-02, #30)",
   "weight_basis": "assumed tiers 1-5 by expected flat-sharer demand; not measured demand data",
   "destinations": [
     {
