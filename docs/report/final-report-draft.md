@@ -183,7 +183,9 @@ one canonical station-town pair, so aliases and repeated searches share cached
 results. The worker processes one message per invocation with event-source
 maximum concurrency three. A fixed-window DynamoDB counter reserves up to 200
 routing calls/minute and leaves 50 of the shared 250-call budget for interactive
-destination lookup. This guard is implemented and locally tested; the deployed
+destination lookup. That count is kept per stage: it assumes one stage
+generates the OneMap traffic at a time, and it does not guarantee OneMap's
+rolling quota. This guard is implemented and locally tested; the deployed
 warm-up reached 125 calls/minute sustained without triggering it, so deployed
 enforcement at the ceiling remains unmeasured.
 
