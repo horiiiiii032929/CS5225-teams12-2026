@@ -10,6 +10,8 @@ Run `WK20261109W1A` measured cached complete-result reads against `FlatSplit-eva
 - `scripts/` contains the four scripts used for this run. Their bytes match `tools/load/` at reviewed revision `236d850`. The deployed application source revision is recorded separately in the run config; it is not the script revision.
 - `SHA256SUMS` hashes the archived files. Place IDs in the plan are expired target-local identifiers, not reusable credentials. Do not reuse this plan or config to generate traffic.
 - The archived log and records are the original retained output. The runner does not retain HTTP response bodies or capabilities; samples were checked for the expected allowlisted fields before publication.
+- The plan's `catalog_sha256` hashes the resolved catalog object, not the source `destinations.json` bytes. Its `catalog.review.revision` is a supplied review label, not proof of the exact source file passed to the resolver; those source bytes are not retained in this archive.
+- `k6.log` has no end-of-test summary block. The setup and measured request totals are established from `samples.jsonl` and its reproduced summary, not from the log.
 
 ## Reproduce the summary offline
 
