@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the canonical FlatSplit review draft.
+"""Render the canonical FlatSplit final report.
 Run from the repository root:
   uv run --no-project --with reportlab tools/report/render_report.py
 The component figure is a report-specific layout of the source Mermaid paths.
@@ -30,7 +30,7 @@ from reportlab.platypus import (
 
 REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "docs/report/final-report-draft.md"
-OUTPUT = REPO / "output/pdf/flatsplit-final-report-draft.pdf"
+OUTPUT = REPO / "output/pdf/Final.pdf"
 INK = colors.HexColor("#173b39")
 ACCENT = colors.HexColor("#167468")
 MUTED = colors.HexColor("#536467")
@@ -210,8 +210,6 @@ def render(source: Path, output: Path):
     )
     story = []
     source_text = source.read_text()
-    version_match = re.search(r"final report draft (v\d+\.\d+)", source_text, re.I)
-    report_version = version_match.group(1) if version_match else "unversioned"
     lines = source_text.splitlines()
     i = 0
     while i < len(lines):
@@ -323,9 +321,9 @@ def render(source: Path, output: Path):
         leftMargin=38,
         topMargin=37,
         bottomMargin=35,
-        title=f"FlatSplit Final Report Draft {report_version}",
+        title="FlatSplit Final Report",
         author="CS5224 Group 12",
-        subject="Evidence-backed review draft; pending gates retained",
+        subject="Evidence-backed group rental search",
     )
 
     def frame(c, doc):
@@ -336,9 +334,9 @@ def render(source: Path, output: Path):
             c.drawString(
                 38,
                 A4[1] - 22,
-                f"FlatSplit - evidence-backed review draft {report_version}",
+                "FlatSplit - final report",
             )
-        c.drawString(38, 20, "CS5224 Group 12 | Review draft, not a submission receipt")
+        c.drawString(38, 20, "CS5224 Group 12")
         c.drawRightString(A4[0] - 38, 20, str(doc.page))
         c.restoreState()
 

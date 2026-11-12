@@ -2,9 +2,9 @@
 
 **CS5224 Cloud Computing - Group 12**
 
-**Evidence-backed final report draft v0.3 - 11 November 2026 (SGT)**
+**Final report - 12 November 2026 (SGT)**
 
-**Canonical review source for issue [#38](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/38)**
+**Group 12 submission report for issue [#38](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/38)**
 
 | Team member               | Project identity            |
 | ------------------------- | --------------------------- |
@@ -15,14 +15,12 @@
 | Ramalingam Saravanamani   | Mani / `@saravanamani1999`  |
 | Shyam Ganesh Jayagopi     | Shyam / `@shyamgj1900`      |
 
-> **Draft status.** Architecture, rental-data quality, route coverage, deployed
-> failure handling, the independent operations walkthrough, and the corrected
-> cost model are integrated. The accepted #30 result covers warm-cache latency
-> only; cold latency, throughput and maximum capacity remain explicit
-> limitations. The final report must integrate #31 participant outcomes and the
-> final #35 qualification decision, or retain them as limitations. All
-> six members must fact-check contribution attribution and the final PDF before
-> submission on 13 November 2026 at 23:59 SGT.
+> **Evidence scope.** This report distinguishes deployed measurements, local
+> tests and modelled results. The participant study was not run before the
+> reporting cut-off. Reliability qualification is partial: bounded failure and
+> operational inspection were demonstrated, while transient provider recovery,
+> saturation enforcement, PITR restoration and several live security checks
+> remain unmeasured.
 
 ## Abstract
 
@@ -51,9 +49,11 @@ university-hosted VM. However, the cost figures are modelled rather than billed,
 station snapping systematically understates door-to-door commutes, and deployed
 transient recovery was not induced. An accepted warm-cache run completed
 1,200/1,200 reads at two requests/s with client p50/p95/p99 of 382/457/505 ms,
-meeting the 500 ms warm p95 objective in that run. Cold latency, cold-start
-share, sustained throughput and maximum capacity remain unmeasured, and no
-participant-study result has been integrated at this draft cut-off.
+meeting the 500 ms warm p95 objective in that run. No operator monitored the
+run live; its CloudWatch reconciliation was retrospective. Cold latency,
+cold-start share, sustained throughput and maximum capacity remain unmeasured.
+The prepared participant study was not run before the reporting cut-off, so no
+participant outcome is claimed.
 
 ## 1. Motivation and Business Case
 
@@ -147,7 +147,10 @@ models a fixed institutional allocation and is not sized from that input [1].
 
 ### 2.2 Cloud architecture
 
-The component paths below reflect the implemented design [8].
+The component paths below reflect the implemented design [8]. The architecture
+readback was captured from `FlatSplit-eval` on 8 November against deployed
+revision `e2d3780`; the stack does not expose a live source-revision output, so
+later deployment identity was not independently reconciled.
 
 ```mermaid
 flowchart LR
@@ -231,7 +234,7 @@ positive integral rents, complete trailing-12-month coverage and consistency
 with source metadata. Accepted files are archived in versioned S3 paths with a
 digest and manifest; rejected evidence never advances the current pointer.
 For every non-empty town-flat-type group, the publisher stores P25, median and
-P75 using the R-7 linear quantile rule, plus a deterministic 10,000-replicate
+P75 using the [R-7 linear quantile rule](../hdb-rental-data-profile.md), plus a deterministic 10,000-replicate
 block-cluster-bootstrap 95%
 interval. A group is usable only when it contains at least two independent
 blocks and the median interval width is at most 10% of the median. Weak evidence
@@ -280,7 +283,7 @@ Evidence is versioned with scripts, raw output, dates and limitations under
 `docs/evaluation/`. The table separates deployed measurements from local or
 modelled evidence.
 
-| Dimension           | Evidence at 10 Nov                          | Result                                                                                           | Boundary                                                                           |
+| Dimension           | Evidence at 12 Nov                          | Result                                                                                           | Boundary                                                                           |
 | ------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
 | Rental quality      | Source audit and dated deployed summaries   | 65/72 exact medians; S$0 median absolute error; 75/81 scoped groups usable in September snapshot | HDB against HDB; snapshot dates and flat-type populations differ                   |
 | Route coverage      | Live OneMap audit + deployed reconciliation | 780/780 routable pairs; 30/30 TENGAH pairs unavailable; 810/810 status agreement                 | Station-to-station, one weekday departure                                          |
@@ -291,7 +294,7 @@ modelled evidence.
 | Hosting cost        | Reproducible scenario model                 | US$0.96 typical serverless payable vs US$243.50 on-premise                                       | Demand, account allowances and node capacity partly assumed                        |
 | Warm-read latency   | Accepted W1A on deployed `eval` [12]        | 1,200/1,200 warm complete-result reads at offered 2/s; client p50/p95/p99 382/457/505 ms         | Warm cache only; no live monitoring; cold latency and cold-start share unmeasured  |
 | Throughput/capacity | **Not measured**                            | W2 was not run                                                                                   | No sustainable throughput, maximum capacity or fixed-instance baseline established |
-| User outcomes       | **Pending #31**                             | Protocol and fixtures exist; no participant result integrated                                    | Local QA is not a usability study                                                  |
+| User outcomes       | Study not run                               | Protocol and fixtures exist; no participant result is claimed                                    | Local QA is not a usability study                                                  |
 
 ### 3.1 Rental-number audit
 
@@ -356,6 +359,15 @@ share the provider account. The report therefore makes the narrower claim that
 the system does not loop and does not invent commute times; provider recovery
 is supported by code and local tests but unmeasured on AWS.
 
+The final reliability/security qualification is therefore partial rather than
+a blanket pass. Deployed evidence establishes three bounded receives followed
+by DLQ placement and alarm, one terminal permanent rejection, scoped cleanup,
+an enabled event-source mapping with maximum concurrency three, an independent
+operations walkthrough, and scheduled token-renewal timing. It does not
+establish transient OneMap recovery, jobs recovered by retry, deliberate
+token-warning alarm activation, retry-UI behaviour, PITR restoration, or a
+complete live least-privilege, redaction and public-exposure qualification.
+
 An independent teammate followed the operations runbook against `FlatSplit-eval`.
 The walkthrough found 26 successful town routes and TENGAH explicitly
 unavailable, confirmed null rather than zero commute values in a complete
@@ -399,9 +411,9 @@ asynchronous results, three-town comparison, keyboard map interaction, stale
 result removal and automated WCAG A/AA checks. The test uses the real local HTTP
 resolver and persistence, but synthetic rental/place records and injected
 commute completions. Automated accessibility checks are not a screen-reader or
-physical-device certification [10], and no participant outcome is claimed. The #31
-study must add task completion, interpretation and qualitative findings or be
-reported as not run.
+physical-device certification [10]. The prepared #31 participant study was not
+run before the 12 November reporting cut-off; therefore no task-completion,
+interpretation or qualitative participant outcome is claimed.
 
 The 8 November deployed engineering pass adds two-/five-member map and result
 checks at 390 x 844 and 1280 x 900, visible keyboard focus, no document overflow
@@ -456,8 +468,8 @@ historical benchmarks, not listings. Commutes are station-to-station and
 systematically omit the final walk. TENGAH remains visible but unrankable for
 commute comparison. Recovery from a deployed transient provider outage, the
 rate guard at saturation, PITR restoration, cold latency, sustained throughput,
-maximum capacity and participant understanding remain unmeasured at this
-cut-off. The accepted warm-cache run met its p95 objective but does not
+maximum capacity and participant understanding remain unmeasured. The accepted
+warm-cache run met its p95 objective but does not
 establish those broader properties.
 
 Priority future work is to:
@@ -517,18 +529,18 @@ fixtures must not be relabelled as cloud acceptance.
 
 ## 6. Team Contributions
 
-This draft attribution is based on issue ownership, merged pull requests and
-the contribution packets in #38. Every member must confirm or correct it during
-the 9-12 November factual review.
+This attribution is based on issue ownership, merged pull requests and the
+contribution packets in #38. It records implemented or evidenced work rather
+than inferring equal task volume from role labels.
 
-| Member                  | Main contributions                                                                                                                                          |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dong Langqing (Lucy)    | Member-input and results UI, local mobile/accessibility QA, reproducible demo preparation and presentation coordination                                     |
-| Horinouchi Hikaru       | Group/share/reopen integration, map/recovery UI, study-material preparation, directed deployed QA, coordination and cross-cutting review/evidence tracking  |
-| Hsieh Ming Cheng        | Destination resolution and station pinning, commute worker/reliability evidence, route-coverage evaluation, runbook and hosting-cost model                  |
-| Ku Wee Kiat             | Capability-backed group persistence, transactions and expiry; revision-aware search producer/status flow; backend verification and load-test preparation    |
-| Ramalingam Saravanamani | HDB rental profiling, ingestion and validated summaries; data-quality and deployed-cost evidence review; AWS deployment checks and final-report integration |
-| Shyam Ganesh Jayagopi   | Group HTTP APIs, filtering/ranking, AWS deployment, scheduled credential refresh, deployed E2E/operator receipts and evaluation support                     |
+| Member                  | Main contributions                                                                                                                                                 |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Dong Langqing (Lucy)    | Member-input and results UI, local mobile/accessibility QA, reproducible demo preparation and presentation coordination                                            |
+| Horinouchi Hikaru       | Group/share/reopen integration, map/recovery UI, study-material preparation, directed deployed QA, coordination and cross-cutting review/evidence tracking         |
+| Hsieh Ming Cheng        | Destination resolution and station pinning, commute worker/reliability evidence, route-coverage evaluation, runbook and hosting-cost model                         |
+| Ku Wee Kiat             | Capability-backed group persistence, transactions and expiry; revision-aware search producer/status flow; W1A execution, evidence handoff and backend verification |
+| Ramalingam Saravanamani | HDB rental profiling, ingestion and validated summaries; data-quality and deployed-cost evidence review; AWS deployment checks and final-report integration        |
+| Shyam Ganesh Jayagopi   | Group HTTP APIs, filtering/ranking, AWS deployment, scheduled credential refresh, deployed E2E/operator receipts and evaluation support                            |
 
 ## 7. AI-Assistance Declaration
 
@@ -536,7 +548,7 @@ The team used AI coding assistants for implementation support, review,
 documentation and evidence reconciliation. Team members directed decisions,
 reviewed generated changes, ran or supervised the recorded checks and retained responsibility
 for the submitted work. The repository's `docs/ai-usage.md` records the tools,
-scoped contributions and verification. This integrated draft was assembled with
+scoped contributions and verification. This report was assembled with
 Codex assistance from team-authored design documents, merged code, issue
 decisions and dated evidence; it introduces no new experimental result.
 
@@ -553,18 +565,4 @@ decisions and dated evidence; it introduces no new experimental result.
 9. FlatSplit Group 12, [API contract and DynamoDB access patterns](../api-contract.md), updated 2026.
 10. FlatSplit Group 12, [Mobile and accessibility review](../qa/mobile-accessibility.md), 2026.
 11. FlatSplit Group 12, [Deployed browser acceptance and save-recovery finding](../qa/evidence/2026-11-08/README.md), 8 Nov 2026.
-12. FlatSplit Group 12, [W1A warm-cache latency acceptance](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/30#issuecomment-6738327225), 9 Nov 2026.
-
-## Draft Completion Checklist
-
-- [x] Insert the accepted #30 warm-latency result and retain the explicit cold,
-      throughput and capacity limitations in the abstract and conclusion.
-- [ ] Insert #31 participant outcomes, or state that the study was not run.
-- [ ] Record the final #35 reliability/security qualification decision.
-- [ ] Re-run the #45 model if an applicable fixed-instance baseline replaces `sustained_rps_per_node`; W1/W2 alone does not.
-- [ ] Reconcile the architecture diagram and screenshots with the final deployed
-      revision; record that revision and capture time.
-- [ ] Confirm every contribution row with its named member.
-- [ ] Obtain all-six factual review and resolve comments.
-- [ ] Export to `Final.pdf`, verify the complete document is at most 10 pages,
-      and link the Canvas submission receipt in #38.
+12. FlatSplit Group 12, [E1 warm-read evidence](../evaluation/e1/README.md), 9 Nov 2026.
