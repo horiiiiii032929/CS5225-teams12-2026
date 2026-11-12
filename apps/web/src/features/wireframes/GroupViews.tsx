@@ -225,7 +225,7 @@ export function GroupLobby({
 }: {
   group: Group;
   onEdit: (id: string) => void;
-  onInvite: () => void;
+  onInvite: (trigger: HTMLButtonElement) => void;
   onSearch: () => void;
 }) {
   const ready = group.members.filter((m) => m.ready).length;
@@ -238,7 +238,10 @@ export function GroupLobby({
             Bring everyone’s needs to the table. Your shortlist starts here.
           </p>
         </div>
-        <Button variant="outline" onClick={onInvite}>
+        <Button
+          variant="outline"
+          onClick={(event) => onInvite(event.currentTarget)}
+        >
           <Link2 data-icon="inline-start" /> Invite flatmates
         </Button>
       </div>

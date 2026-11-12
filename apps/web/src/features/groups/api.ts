@@ -143,12 +143,13 @@ export async function joinGroup(
   groupId: string,
   inviteToken: string,
   name: string,
+  retryToken: string,
 ) {
   return zMembershipResponse.parse(
     unwrap(
       await sdk.joinGroup({
         path: { group_id: groupId },
-        body: { name },
+        body: { name, retryToken },
         headers: { Authorization: `Bearer ${inviteToken}` },
         signal: AbortSignal.timeout(35000),
       }),

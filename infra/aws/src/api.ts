@@ -302,12 +302,11 @@ export class Api extends Construct {
       }),
     );
 
-    // The worker completes claims and does nothing else: it cannot read a
-    // group, a place or a rent snapshot, cannot delete a claim, and cannot
-    // enqueue work. Contract A9's write is an UpdateItem on the pair.
+    // The worker reads the current commute claim before routing and completes
+    // it with a fenced update. It cannot read groups or enqueue work.
     commuteWorker.addToRolePolicy(
       new PolicyStatement({
-        actions: ['dynamodb:UpdateItem'],
+        actions: ['dynamodb:GetItem', 'dynamodb:UpdateItem'],
         resources: [props.table.tableArn],
         conditions: {
           'ForAllValues:StringLike': {

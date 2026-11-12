@@ -189,6 +189,8 @@ Authorization: Bearer inv_k7G2wq9XvT1pLzR4sN8bYc3mHf6dJa0eUu5iOo2rWlQ
 
 `201 Created` → `{ "group": Group, "memberId": "...", "memberToken": "..." }`. `inviteToken` is omitted because Jamie is not the organiser. Returns 409 `GROUP_FULL` when all places are taken, and 422 when the name is already used.
 
+Browsers may also send `retryToken`, a private random 32-byte value encoded as 43 base64url characters. Keep it out of links and logs. If the first response is lost, send the same value with the valid invitation. The API returns the original membership without taking another slot or changing the group. A different value cannot recover that membership.
+
 ### `PUT /groups/{groupId}/members/{memberId}` — save preferences
 
 Accepts that member's own `memberToken`; any other member's token gets 403. The whole preference set is sent each time.

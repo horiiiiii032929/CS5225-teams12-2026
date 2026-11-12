@@ -594,6 +594,10 @@ export type JoinGroupData = {
      * Name
      */
     name: string;
+    /**
+     * Retrytoken
+     */
+    retryToken?: string | null;
   };
   path: {
     /**

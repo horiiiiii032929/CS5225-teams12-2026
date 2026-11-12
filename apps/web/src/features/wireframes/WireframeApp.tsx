@@ -105,11 +105,13 @@ export function WireframeApp({
   const [paused, setPaused] = useState(initialPreview === 'processing');
   const {
     open: invite,
+    openFrom: openInvite,
     onOpenChange: setInvite,
     restoreFocus: restoreInviteFocus,
   } = useDialogState();
   const {
     open: help,
+    openFrom: openHelp,
     onOpenChange: setHelp,
     restoreFocus: restoreHelpFocus,
   } = useDialogState();
@@ -204,7 +206,7 @@ export function WireframeApp({
           variant="ghost"
           size="sm"
           aria-label="How it works"
-          onClick={() => setHelp(true)}
+          onClick={(event) => openHelp(event.currentTarget)}
         >
           <CircleHelp data-icon="inline-start" />
           <span className="hidden sm:inline">How it works</span>
@@ -295,9 +297,9 @@ export function WireframeApp({
                 setActiveMember(id);
                 go('preferences');
               }}
-              onInvite={() => {
+              onInvite={(trigger) => {
                 setCopyStatus('');
-                setInvite(true);
+                openInvite(trigger);
               }}
               onSearch={runSearch}
             />

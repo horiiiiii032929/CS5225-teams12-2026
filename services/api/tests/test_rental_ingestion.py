@@ -188,6 +188,10 @@ class FakeS3:
     def put_object(self, **kwargs: Any) -> None:
         self.puts.append(kwargs)
         if kwargs["Key"] == "raw/current.json":
+            if kwargs.get("IfNoneMatch") == "*" and self.current is not None:
+                raise ClientError(
+                    {"Error": {"Code": "PreconditionFailed"}}, "PutObject"
+                )
             self.current = kwargs["Body"]
 
     def get_object(self, **kwargs: Any) -> dict[str, Any]:
@@ -230,12 +234,34 @@ def test_valid_s3_write_updates_current_pointer_last() -> None:
     assert s3.puts[0]["IfNoneMatch"] == "*"
     assert s3.puts[1]["IfNoneMatch"] == "*"
     assert "IfMatch" not in s3.puts[-1]
+    assert s3.puts[-1]["IfNoneMatch"] == "*"
     assert pointer["sourceMonthTo"] == "2026-09"
     manifest = json.loads(s3.puts[1]["Body"])
     assert manifest["rowCount"] == 12 * 27 * 6
     assert manifest["sourceHeaders"]["etag"] == '"source-etag"'
     assert manifest["sourceUpdatedAt"] == "2026-10-02T10:06:14+08:00"
     assert manifest["sourceMetadata"]["datasetSize"] == 10_440_420
+
+
+def test_first_writer_cannot_overwrite_pointer_created_after_its_read() -> None:
+    newer = {"sourceMonthTo": "2026-10", "retrievedAt": "2026-10-20T00:00:00Z"}
+
+    class ConcurrentCreate(FakeS3):
+        def get_object(self, **kwargs: Any) -> dict[str, Any]:
+            try:
+                return super().get_object(**kwargs)
+            except ClientError:
+                self.current = json.dumps(newer).encode()
+                raise
+
+    s3 = ConcurrentCreate()
+    source = DownloadedSource(source_csv())
+    with pytest.raises(IngestionError, match="changed during ingestion"):
+        S3SnapshotWriter(s3, "bucket").write_valid(
+            source, validate_source(source.body), datetime(2026, 10, 19, tzinfo=UTC)
+        )
+    assert s3.current is not None
+    assert json.loads(s3.current) == newer
 
 
 def test_trailing_blank_csv_rows_are_ignored() -> None:

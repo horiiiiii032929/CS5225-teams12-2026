@@ -203,6 +203,9 @@ def _process(
         logger.error("Unusable commute job", extra={"reason": str(exc)})
         return True
 
+    if not results.owns_pending_claim(job.station_key, job.town, job.job_id):
+        return False
+
     try:
         resolved = _route(job)
     except RoutingUnroutable as exc:

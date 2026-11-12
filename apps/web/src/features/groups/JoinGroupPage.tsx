@@ -18,6 +18,8 @@ import { ApiError, groupKey, readGroup, joinGroup, errorMessage } from './api';
 import {
   captureInvite,
   clearInvite,
+  clearJoinRetry,
+  joinRetryToken,
   readMembership,
   saveMembership,
   validId,
@@ -55,8 +57,14 @@ export function JoinGroupPage({ groupId }: { groupId: string }) {
     [401, 403].includes(access.error.status);
   const join = useMutation({
     mutationFn: async (name: string) => {
-      const response = await joinGroup(groupId, token!, name);
-      saveMembership(response);
+      const response = await joinGroup(
+        groupId,
+        token!,
+        name,
+        joinRetryToken(groupId),
+      );
+      const { persisted } = saveMembership(response);
+      if (persisted) clearJoinRetry(groupId);
       clearInvite(groupId);
       return response.group.groupId;
     },
@@ -174,6 +182,14 @@ export function JoinGroupPage({ groupId }: { groupId: string }) {
                     <AlertTitle>Could not join the group</AlertTitle>
                     <AlertDescription>
                       {errorMessage(join.error)}
+                      {join.error instanceof ApiError &&
+                        (join.error.status === 0 ||
+                          join.error.status >= 500) && (
+                          <p>
+                            Try joining again in this browser to recover a join
+                            that may have completed.
+                          </p>
+                        )}
                     </AlertDescription>
                   </Alert>
                 )}

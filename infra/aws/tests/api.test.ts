@@ -158,7 +158,7 @@ test('table access separates group/commute writes from place/rent reads', () => 
       // The worker only ends claims: it cannot read a group, a place or a rent
       // snapshot, and cannot delete the pair it failed to route.
       CommuteWorker: {
-        'COMMUTE#*': ['dynamodb:UpdateItem'],
+        'COMMUTE#*': ['dynamodb:GetItem', 'dynamodb:UpdateItem'],
         'RATE#*': ['dynamodb:UpdateItem'],
       },
     },

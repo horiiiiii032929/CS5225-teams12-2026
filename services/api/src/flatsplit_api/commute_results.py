@@ -65,6 +65,15 @@ class CommuteResults:
         self.table = table
         self._clock = clock or (lambda: datetime.now(UTC))
 
+    def owns_pending_claim(self, station_key: str, town: str, job_id: str) -> bool:
+        item = self.table.get_item(
+            Key={"pk": f"COMMUTE#{station_key}", "sk": f"TOWN#{town}"},
+            ConsistentRead=True,
+        ).get("Item")
+        return bool(
+            item and item.get("jobId") == job_id and item.get("status") == "pending"
+        )
+
     def _write(
         self,
         station_key: str,
