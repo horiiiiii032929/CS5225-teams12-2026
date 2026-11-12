@@ -2,9 +2,9 @@
 
 **CS5224 Cloud Computing - Group 12**
 
-**Evidence-backed final report draft v0.2 - 8 November 2026 (SGT)**
+**Final report - 12 November 2026 (SGT)**
 
-**Canonical review source for issue [#38](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/38)**
+**Group 12 submission report for issue [#38](https://github.com/horiiiiii032929/CS5225-teams12-2026/issues/38)**
 
 | Team member               | Project identity            |
 | ------------------------- | --------------------------- |
@@ -15,13 +15,12 @@
 | Ramalingam Saravanamani   | Mani / `@saravanamani1999`  |
 | Shyam Ganesh Jayagopi     | Shyam / `@shyamgj1900`      |
 
-> **Draft status.** Architecture, rental-data quality, route coverage, deployed
-> failure handling, the independent operations walkthrough, and the corrected
-> cost model are integrated. The final report must replace the explicitly
-> marked pending sections with #30 latency/capacity, #31 participant outcomes,
-> and the final #35 qualification decision, or retain them as limitations. All
-> six members must fact-check contribution attribution and the final PDF before
-> submission on 13 November 2026 at 23:59 SGT.
+> **Evidence scope.** This report distinguishes deployed measurements, local
+> tests and modelled results. The participant study was not run before the
+> reporting cut-off. Reliability qualification is partial: bounded failure and
+> operational inspection were demonstrated, while transient provider recovery,
+> saturation enforcement, PITR restoration and several live security checks
+> remain unmeasured.
 
 ## Abstract
 
@@ -47,9 +46,14 @@ a CloudWatch alarm. The cost model estimates typical serverless cost at
 US$0.96/month under assumed allowances, against US$5.71 at list price,
 US$243.50 for self-managed on-premise hosting, and US$85.94 for a
 university-hosted VM. However, the cost figures are modelled rather than billed,
-station snapping systematically understates door-to-door commutes, deployed
-transient recovery was not induced, and the latency, capacity and participant
-study results remain pending at this draft cut-off.
+station snapping systematically understates door-to-door commutes, and deployed
+transient recovery was not induced. An accepted warm-cache run completed
+1,200/1,200 reads at two requests/s with client p50/p95/p99 of 382/457/505 ms,
+meeting the 500 ms warm p95 objective in that run. No operator monitored the
+run live; its CloudWatch reconciliation was retrospective. Cold latency,
+cold-start share, sustained throughput and maximum capacity remain unmeasured.
+The prepared participant study was not run before the reporting cut-off, so no
+participant outcome is claimed.
 
 ## 1. Motivation and Business Case
 
@@ -96,13 +100,13 @@ relocation periods, while the service may be almost idle between them. This
 favours request-priced serverless components over continuously running
 capacity. The corrected cost model compares four like-for-like options:
 
-| Hosting option                   | Quiet US$/month | Typical US$/month | Bursty US$/month | Important boundary                                          |
-| -------------------------------- | --------------: | ----------------: | ---------------: | ----------------------------------------------------------- |
-| AWS serverless, modelled payable |            0.82 |          **0.96** |         **2.09** | Assumed allowances; not an observed bill                    |
-| AWS serverless, list price       |            5.11 |          **5.71** |        **10.45** | Free-tier credits removed                                   |
-| AWS always-on VM                 |           38.32 |         **38.44** |        **56.92** | 2 nodes quiet/typical, 3 bursty; capacity assumed           |
-| Self-managed on-premise          |          243.50 |        **243.50** |       **274.87** | Range US$188.81-415.38; 2 nodes (3 bursty) assumed          |
-| University-hosted VM             |           85.94 |         **85.94** |        **85.94** | Range US$31.25-257.81; fixed allocation, not capacity-sized |
+| Hosting option                   | Quiet US$/month | Typical US$/month | Bursty US$/month | Important boundary                                                           |
+| -------------------------------- | --------------: | ----------------: | ---------------: | ---------------------------------------------------------------------------- |
+| AWS serverless, modelled payable |            0.82 |          **0.96** |         **2.09** | Assumed allowances; not an observed bill                                     |
+| AWS serverless, list price       |            5.11 |          **5.71** |        **10.45** | Free-tier credits removed                                                    |
+| AWS always-on VM                 |           38.32 |         **38.44** |        **56.92** | 2 nodes quiet/typical, 3 bursty; capacity assumed                            |
+| Self-managed on-premise          |          243.50 |        **243.50** |       **274.87** | Range US$188.81-415.38 (bursty US$220.18-446.74); 2 nodes (3 bursty) assumed |
+| University-hosted VM             |           85.94 |         **85.94** |        **85.94** | Range US$31.25-257.81; fixed allocation, not capacity-sized                  |
 
 At typical demand, modelled payable serverless cost is about 90 times lower than
 the university-hosted VM estimate (US$0.96 versus US$85.94). Serverless list price
@@ -143,7 +147,10 @@ models a fixed institutional allocation and is not sized from that input [1].
 
 ### 2.2 Cloud architecture
 
-The component paths below reflect the implemented design [8].
+The component paths below reflect the implemented design [8]. The architecture
+readback was captured from `FlatSplit-eval` on 8 November against deployed
+revision `e2d3780`; the stack does not expose a live source-revision output, so
+later deployment identity was not independently reconciled.
 
 ```mermaid
 flowchart LR
@@ -226,8 +233,9 @@ The monthly ingestion validates the exact schema, town and flat-type inventory,
 positive integral rents, complete trailing-12-month coverage and consistency
 with source metadata. Accepted files are archived in versioned S3 paths with a
 digest and manifest; rejected evidence never advances the current pointer.
-For every non-empty town-flat-type group, the publisher stores R-7 P25, median
-and P75 plus a deterministic 10,000-replicate block-cluster-bootstrap 95%
+For every non-empty town-flat-type group, the publisher stores P25, median and
+P75 using the [R-7 linear quantile rule](../hdb-rental-data-profile.md), plus a deterministic 10,000-replicate
+block-cluster-bootstrap 95%
 interval. A group is usable only when it contains at least two independent
 blocks and the median interval width is at most 10% of the median. Weak evidence
 remains visible but cannot affect affordability or ranking.
@@ -275,17 +283,18 @@ Evidence is versioned with scripts, raw output, dates and limitations under
 `docs/evaluation/`. The table separates deployed measurements from local or
 modelled evidence.
 
-| Dimension           | Evidence at 8 Nov                           | Result                                                                                           | Boundary                                                         |
-| ------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| Rental quality      | Source audit and dated deployed summaries   | 65/72 exact medians; S$0 median absolute error; 75/81 scoped groups usable in September snapshot | HDB against HDB; snapshot dates and flat-type populations differ |
-| Route coverage      | Live OneMap audit + deployed reconciliation | 780/780 routable pairs; 30/30 TENGAH pairs unavailable; 810/810 status agreement                 | Station-to-station, one weekday departure                        |
-| Snapping accuracy   | 90 address-vs-station comparisons           | Median absolute error 4.1 min; maximum 16.8; 82/90 understated                                   | Three alphabetically selected probe towns; not random            |
-| Failure containment | Deployed `eval` drill                       | Three deliveries, DLQ, alarm, no loop; permanent rejection delivered once                        | Transient provider recovery not induced                          |
-| Operational clarity | Independent #33 walkthrough                 | Correct cache/log/DLQ inspection and no-redrive decision                                         | One teammate and one permanent-unavailable case                  |
-| AWS usage           | 124-hour shared-dev capture                 | 763 HTTP requests, zero 5xx/Lambda errors; US$0.03377 variable list-cost estimate                | Not a controlled representative run or bill                      |
-| Hosting cost        | Reproducible scenario model                 | US$0.96 typical serverless payable vs US$243.50 on-premise                                       | Demand, account allowances and node capacity partly assumed      |
-| Latency/capacity    | **Pending #30**                             | No accepted W1/W2 result at this cut-off                                                         | 500 ms p95 remains a target, not a result                        |
-| User outcomes       | **Pending #31**                             | Protocol and fixtures exist; no participant result integrated                                    | Local QA is not a usability study                                |
+| Dimension           | Evidence at 12 Nov                          | Result                                                                                           | Boundary                                                                           |
+| ------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| Rental quality      | Source audit and dated deployed summaries   | 65/72 exact medians; S$0 median absolute error; 75/81 scoped groups usable in September snapshot | HDB against HDB; snapshot dates and flat-type populations differ                   |
+| Route coverage      | Live OneMap audit + deployed reconciliation | 780/780 routable pairs; 30/30 TENGAH pairs unavailable; 810/810 status agreement                 | Station-to-station, one weekday departure                                          |
+| Snapping accuracy   | 90 address-vs-station comparisons           | Median absolute error 4.1 min; maximum 16.8; 82/90 understated                                   | Three alphabetically selected probe towns; not random                              |
+| Failure containment | Deployed `eval` drill                       | Three deliveries, DLQ, alarm, no loop; permanent rejection delivered once                        | Transient provider recovery not induced                                            |
+| Operational clarity | Independent #33 walkthrough                 | Correct cache/log/DLQ inspection and no-redrive decision                                         | One teammate and one permanent-unavailable case                                    |
+| AWS usage           | 124-hour shared-dev capture                 | 763 HTTP requests, zero 5xx/Lambda errors; US$0.03377 variable list-cost estimate                | Not a controlled representative run or bill                                        |
+| Hosting cost        | Reproducible scenario model                 | US$0.96 typical serverless payable vs US$243.50 on-premise                                       | Demand, account allowances and node capacity partly assumed                        |
+| Warm-read latency   | Accepted W1A on deployed `eval` [12]        | 1,200/1,200 warm complete-result reads at offered 2/s; client p50/p95/p99 382/457/505 ms         | Warm cache only; no live monitoring; cold latency and cold-start share unmeasured  |
+| Throughput/capacity | **Not measured**                            | W2 was not run                                                                                   | No sustainable throughput, maximum capacity or fixed-instance baseline established |
+| User outcomes       | Study not run                               | Protocol and fixtures exist; no participant result is claimed                                    | Local QA is not a usability study                                                  |
 
 ### 3.1 Rental-number audit
 
@@ -340,14 +349,24 @@ zero and all alarms returned to `OK` [7]. The live event-source mapping was late
 read back as enabled with `MaximumConcurrency: 3`.
 
 This establishes bounded failure and visibility, not recovery from a transient
-OneMap outage. W4 required controlled upstream fault injection, but the deployed
-stack has no fault switch and the team chose not to add failure-only code to the
+OneMap outage. The planned transient-fault workload (W4 in the evaluation plan)
+required controlled upstream fault injection, but the deployed stack has no
+fault switch and the team chose not to add failure-only code to the
 shared evaluation stage during the release week. Redrive was demonstrated only
 as a mechanism: replaying a permanently invalid message failed again. The
 token-warning alarm was not deliberately triggered because `eval` and `dev`
 share the provider account. The report therefore makes the narrower claim that
 the system does not loop and does not invent commute times; provider recovery
 is supported by code and local tests but unmeasured on AWS.
+
+The final reliability/security qualification is therefore partial rather than
+a blanket pass. Deployed evidence establishes three bounded receives followed
+by DLQ placement and alarm, one terminal permanent rejection, scoped cleanup,
+an enabled event-source mapping with maximum concurrency three, an independent
+operations walkthrough, and scheduled token-renewal timing. It does not
+establish transient OneMap recovery, jobs recovered by retry, deliberate
+token-warning alarm activation, retry-UI behaviour, PITR restoration, or a
+complete live least-privilege, redaction and public-exposure qualification.
 
 An independent teammate followed the operations runbook against `FlatSplit-eval`.
 The walkthrough found 26 successful town routes and TENGAH explicitly
@@ -358,16 +377,24 @@ correctly decided not to redrive permanently non-routable TENGAH [5].
 ### 3.4 Performance and scalability
 
 The architecture bounds routing concurrency and caches canonical pairs, but an
-admission limit is not a capacity result. The prepared W1 workload offers two
-complete-result reads/s for 10 minutes; W2 ramps from one to 50 requests/s and
-holds 50 requests/s for five minutes. As of this draft, two attempted runs
-failed on the load client before producing an accepted backend measurement.
-Therefore the 500 ms warm-result p95 objective, sustainable HTTP throughput and
-VM node sizing remain unverified. #30 is scheduled to supply either a valid
-serverless result or an explicit final limitation. Updating the B/C node-capacity
-input additionally requires an applicable fixed-instance baseline; serverless
-W1/W2 throughput cannot substitute for it. The fixed university VM allocation
-does not use this capacity input.
+admission limit is not a capacity result. On 9 November, run `WK20261109W1A`
+produced the project's accepted E1 result: 1,200/1,200 successful warm
+complete-result reads at an offered two reads/s, with client HTTP p50/p95/p99
+of 382/457/505 ms. The agreed 500 ms warm-cache p95 objective was therefore met
+in that run [12]. A retrospective operator reconciliation reported 1,440 API
+Gateway requests - 240 setup plus 1,200 measured - with zero 4xx/5xx and no
+worker or queue activity.
+
+Four limitations travel with that result. No operator monitored the run live
+and the pre-window receipt was missing, so stop conditions could not have been
+enforced; this is an accepted procedural deviation rather than a monitored-run
+claim. Cold-request latency, cold-start share and a cold-cache comparison were
+not measured. W2 was not run, so sustainable HTTP throughput and maximum
+capacity remain unestablished. The summary was reproduced with project Python
+3.13 after system Python 3.9 failed, and k6 itself was not rerun. Updating the
+B/C node-capacity input additionally requires an applicable fixed-instance
+baseline; serverless W1/W2 throughput cannot substitute for it. The fixed
+university VM allocation does not use this capacity input.
 
 The deployed route-catalogue warm-up provides a narrower observation: 702 real
 routing calls completed over approximately five and a half minutes, about 125
@@ -384,9 +411,9 @@ asynchronous results, three-town comparison, keyboard map interaction, stale
 result removal and automated WCAG A/AA checks. The test uses the real local HTTP
 resolver and persistence, but synthetic rental/place records and injected
 commute completions. Automated accessibility checks are not a screen-reader or
-physical-device certification [10], and no participant outcome is claimed. The #31
-study must add task completion, interpretation and qualitative findings or be
-reported as not run.
+physical-device certification [10]. The prepared #31 participant study was not
+run before the 12 November reporting cut-off; therefore no task-completion,
+interpretation or qualitative participant outcome is claimed.
 
 The 8 November deployed engineering pass adds two-/five-member map and result
 checks at 390 x 844 and 1280 x 900, visible keyboard focus, no document overflow
@@ -440,14 +467,17 @@ The evidence also narrows the product claim. Rent figures are owner-declared
 historical benchmarks, not listings. Commutes are station-to-station and
 systematically omit the final walk. TENGAH remains visible but unrankable for
 commute comparison. Recovery from a deployed transient provider outage, the
-rate guard at saturation, PITR restoration, accepted latency/capacity, and
-participant understanding remain unmeasured at this cut-off.
+rate guard at saturation, PITR restoration, cold latency, sustained throughput,
+maximum capacity and participant understanding remain unmeasured. The accepted
+warm-cache run met its p95 objective but does not
+establish those broader properties.
 
 Priority future work is to:
 
 1. add station-to-address walking time or route to exact destinations while
    preserving cache sharing;
-2. complete W1/W2 and a matching fixed-instance baseline before updating B/C sizing;
+2. measure cold-read latency, run W2 and obtain a matching fixed-instance
+   baseline before updating B/C sizing;
 3. add a safe, isolated fault-injection path and run transient recovery and PITR
    drills;
 4. run the prepared participant study and refine weights based on whether users
@@ -499,18 +529,18 @@ fixtures must not be relabelled as cloud acceptance.
 
 ## 6. Team Contributions
 
-This draft attribution is based on issue ownership, merged pull requests and
-the contribution packets in #38. Every member must confirm or correct it during
-the 9-12 November factual review.
+This attribution is based on issue ownership, merged pull requests and the
+contribution packets in #38. It records implemented or evidenced work rather
+than inferring equal task volume from role labels.
 
-| Member                  | Main contributions                                                                                                                                          |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dong Langqing (Lucy)    | Member-input and results UI, local mobile/accessibility QA, reproducible demo preparation and presentation coordination                                     |
-| Horinouchi Hikaru       | Group/share/reopen integration, map/recovery UI, study-material preparation, directed deployed QA, coordination and cross-cutting review/evidence tracking  |
-| Hsieh Ming Cheng        | Destination resolution and station pinning, commute worker/reliability evidence, route-coverage evaluation, runbook and hosting-cost model                  |
-| Ku Wee Kiat             | Capability-backed group persistence, transactions and expiry; revision-aware search producer/status flow; backend verification and load-test preparation    |
-| Ramalingam Saravanamani | HDB rental profiling, ingestion and validated summaries; data-quality and deployed-cost evidence review; AWS deployment checks and final-report integration |
-| Shyam Ganesh Jayagopi   | Group HTTP APIs, filtering/ranking, AWS deployment, scheduled credential refresh, deployed E2E/operator receipts and evaluation support                     |
+| Member                  | Main contributions                                                                                                                                                 |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Dong Langqing (Lucy)    | Member-input and results UI, local mobile/accessibility QA, reproducible demo preparation and presentation coordination                                            |
+| Horinouchi Hikaru       | Group/share/reopen integration, map/recovery UI, study-material preparation, directed deployed QA, coordination and cross-cutting review/evidence tracking         |
+| Hsieh Ming Cheng        | Destination resolution and station pinning, commute worker/reliability evidence, route-coverage evaluation, runbook and hosting-cost model                         |
+| Ku Wee Kiat             | Capability-backed group persistence, transactions and expiry; revision-aware search producer/status flow; W1A execution, evidence handoff and backend verification |
+| Ramalingam Saravanamani | HDB rental profiling, ingestion and validated summaries; data-quality and deployed-cost evidence review; AWS deployment checks and final-report integration        |
+| Shyam Ganesh Jayagopi   | Group HTTP APIs, filtering/ranking, AWS deployment, scheduled credential refresh, deployed E2E/operator receipts and evaluation support                            |
 
 ## 7. AI-Assistance Declaration
 
@@ -518,7 +548,7 @@ The team used AI coding assistants for implementation support, review,
 documentation and evidence reconciliation. Team members directed decisions,
 reviewed generated changes, ran or supervised the recorded checks and retained responsibility
 for the submitted work. The repository's `docs/ai-usage.md` records the tools,
-scoped contributions and verification. This integrated draft was assembled with
+scoped contributions and verification. This report was assembled with
 Codex assistance from team-authored design documents, merged code, issue
 decisions and dated evidence; it introduces no new experimental result.
 
@@ -535,17 +565,4 @@ decisions and dated evidence; it introduces no new experimental result.
 9. FlatSplit Group 12, [API contract and DynamoDB access patterns](../api-contract.md), updated 2026.
 10. FlatSplit Group 12, [Mobile and accessibility review](../qa/mobile-accessibility.md), 2026.
 11. FlatSplit Group 12, [Deployed browser acceptance and save-recovery finding](../qa/evidence/2026-11-08/README.md), 8 Nov 2026.
-
-## Draft Completion Checklist
-
-- [ ] Insert accepted #30 latency, throughput and capacity results, or retain the
-      explicit limitation and update the abstract/conclusion.
-- [ ] Insert #31 participant outcomes, or state that the study was not run.
-- [ ] Record the final #35 reliability/security qualification decision.
-- [ ] Re-run the #45 model if an applicable fixed-instance baseline replaces `sustained_rps_per_node`; W1/W2 alone does not.
-- [ ] Reconcile the architecture diagram and screenshots with the final deployed
-      revision; record that revision and capture time.
-- [ ] Confirm every contribution row with its named member.
-- [ ] Obtain all-six factual review and resolve comments.
-- [ ] Export to `Final.pdf`, verify the complete document is at most 10 pages,
-      and link the Canvas submission receipt in #38.
+12. FlatSplit Group 12, [E1 warm-read evidence](../evaluation/e1/README.md), 9 Nov 2026.
