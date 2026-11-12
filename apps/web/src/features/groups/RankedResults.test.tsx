@@ -21,7 +21,7 @@ function mount(search = rankedSearchFixture()) {
     />,
   );
 }
-it('compares three server-ranked towns and matches fractional commutes by member ID', () => {
+it('compares three server-ranked towns and rounds commutes consistently with the map', () => {
   mount();
   const table = screen.getByRole('table');
   expect(
@@ -32,17 +32,18 @@ it('compares three server-ranked towns and matches fractional commutes by member
   const alex = within(table)
     .getByRole('rowheader', { name: 'Alex’s commute' })
     .closest('tr')!;
-  expect(alex.textContent).toContain('30.5 min');
+  expect(alex.textContent).toContain('31 min');
+  expect(alex.textContent).toContain('14 min to spare');
   expect(alex.textContent).toContain('S$400 to spare');
   const jamie = within(table)
     .getByRole('rowheader', { name: 'Jamie’s commute' })
     .closest('tr')!;
   expect(jamie.textContent).toContain('20 min');
-  expect(jamie.textContent).not.toContain('30.5 min');
+  expect(jamie.textContent).not.toContain('31 min');
   expect(
     within(table).getByRole('rowheader', { name: 'Commute gap' }).closest('tr')!
       .textContent,
-  ).toContain('10.5 min');
+  ).toContain('11 min');
   expect(screen.getByText(/Ranking weights/).textContent).toContain('35%');
 });
 it('lets users replace comparison towns without recomputing or reordering the server ranking', () => {

@@ -39,6 +39,10 @@ class CreateGroupRequest(BaseModel):
 
 class JoinGroupRequest(BaseModel):
     name: MemberName
+    retryToken: (
+        Annotated[str, StringConstraints(strict=True, pattern=r"^[A-Za-z0-9_-]{43}$")]
+        | None
+    ) = Field(default=None, repr=False)
 
 
 class PreferencesRequest(BaseModel):

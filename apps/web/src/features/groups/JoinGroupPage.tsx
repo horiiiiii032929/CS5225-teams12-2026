@@ -1,5 +1,5 @@
 import { ArrowRight, ShieldCheck } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from '@tanstack/react-router';
 import { skipToken, useMutation, useQuery } from '@tanstack/react-query';
 import { zJoinGroupBody } from '@flatsplit/contracts/api';
@@ -18,13 +18,28 @@ import { ApiError, groupKey, readGroup, joinGroup, errorMessage } from './api';
 import {
   captureInvite,
   clearInvite,
+  clearJoinRetry,
+  joinRetryToken,
   readMembership,
   saveMembership,
   validId,
 } from './membership';
 
 export function JoinGroupPage({ groupId }: { groupId: string }) {
-  const [token] = useState(() => captureInvite(groupId));
+  const [token, setToken] = useState(() => captureInvite(groupId));
+  useEffect(() => {
+    const captureUpdatedInvite = () => {
+      // Pasting a corrected link can change only the fragment on this route.
+      if (
+        window.location.hash &&
+        window.location.pathname.replace(/\/$/, '') === `/join/${groupId}`
+      ) {
+        setToken(captureInvite(groupId));
+      }
+    };
+    window.addEventListener('hashchange', captureUpdatedInvite);
+    return () => window.removeEventListener('hashchange', captureUpdatedInvite);
+  }, [groupId]);
   const [nameError, setNameError] = useState('');
   const membership = readMembership(groupId);
   const navigate = useNavigate();
@@ -42,8 +57,14 @@ export function JoinGroupPage({ groupId }: { groupId: string }) {
     [401, 403].includes(access.error.status);
   const join = useMutation({
     mutationFn: async (name: string) => {
-      const response = await joinGroup(groupId, token!, name);
-      saveMembership(response);
+      const response = await joinGroup(
+        groupId,
+        token!,
+        name,
+        joinRetryToken(groupId),
+      );
+      const { persisted } = saveMembership(response);
+      if (persisted) clearJoinRetry(groupId);
       clearInvite(groupId);
       return response.group.groupId;
     },
@@ -161,6 +182,14 @@ export function JoinGroupPage({ groupId }: { groupId: string }) {
                     <AlertTitle>Could not join the group</AlertTitle>
                     <AlertDescription>
                       {errorMessage(join.error)}
+                      {join.error instanceof ApiError &&
+                        (join.error.status === 0 ||
+                          join.error.status >= 500) && (
+                          <p>
+                            Try joining again in this browser to recover a join
+                            that may have completed.
+                          </p>
+                        )}
                     </AlertDescription>
                   </Alert>
                 )}

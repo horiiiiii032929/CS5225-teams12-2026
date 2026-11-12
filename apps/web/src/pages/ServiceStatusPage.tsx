@@ -11,14 +11,13 @@ export function ServiceStatusPage() {
       <Link to="/" search={{ review: 'create' }}>
         ← Back to FlatSplit
       </Link>
-      <p className="eyebrow">Scaffold verification</p>
       <h1>Service status</h1>
       <div aria-live="polite" role="status">
         {health.isPending && <p>Connecting to the Python API…</p>}
         {health.isError && (
           <p>
-            The API is unavailable. Start it with <code>pnpm dev:api</code>,
-            then refresh.
+            FlatSplit’s service is temporarily unavailable. Try refreshing the
+            status in a moment.
           </p>
         )}
         {health.isSuccess && (

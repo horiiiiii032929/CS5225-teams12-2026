@@ -284,6 +284,23 @@ def test_overlapping_joins_with_capacity_both_commit_in_order(
     assert result.group.revision == 3
 
 
+def test_overlapping_retries_return_one_membership(
+    store: GroupStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    group = create(store, size=2)
+    request = JoinGroupRequest(name="Jamie", retryToken="R" * 43)
+    completed: list[Membership] = []
+
+    def replay() -> None:
+        completed.append(store.join(group.group.groupId, group.inviteToken, request))
+
+    interleave(store, monkeypatch, replay)
+    response = store.join(group.group.groupId, group.inviteToken, request)
+    assert response == completed[0]
+    assert response.group.revision == 2
+    assert len(response.group.members) == 2
+
+
 def test_same_name_race_is_validation_not_a_partial_join(
     store: GroupStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:

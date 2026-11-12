@@ -262,6 +262,7 @@ def test_a_duplicate_delivery_does_not_overwrite_the_result(
     # A redelivery after the visibility timeout must not be a failure either.
     assert run(record(receives=2)) == []
     assert item(table) == first
+    assert len(routes.calls) == 1
 
 
 def test_a_newer_claim_keeps_the_pair_and_the_late_result_is_discarded(
@@ -273,6 +274,7 @@ def test_a_newer_claim_keeps_the_pair_and_the_late_result_is_discarded(
     assert stored["status"] == "pending"
     assert stored["jobId"] == "job-2"
     assert "minutes" not in stored
+    assert routes.calls == []
 
 
 def test_a_result_for_a_pair_that_no_longer_exists_is_not_resurrected(
@@ -281,6 +283,7 @@ def test_a_result_for_a_pair_that_no_longer_exists_is_not_resurrected(
     """A send that failed is rolled back; its in-flight message must not undo that."""
     assert run(record()) == []
     assert table.get_item(Key=KEY, ConsistentRead=True).get("Item") is None
+    assert routes.calls == []
 
 
 def test_an_already_finished_pair_is_left_alone(
@@ -289,6 +292,7 @@ def test_an_already_finished_pair_is_left_alone(
     claim(table, status="ok", minutes=Decimal("12.0"))
     assert run(record()) == []
     assert item(table)["minutes"] == Decimal("12.0")
+    assert routes.calls == []
 
 
 def test_no_route_closes_the_pair_for_a_day_without_a_minute_figure(

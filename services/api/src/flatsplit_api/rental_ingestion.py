@@ -498,6 +498,10 @@ class S3SnapshotWriter:
         }
         if etag is not None:
             put_kwargs["IfMatch"] = etag
+        elif current is None:
+            put_kwargs["IfNoneMatch"] = "*"
+        else:
+            raise IngestionError("The current rent pointer has no ETag.")
         try:
             self._client.put_object(**put_kwargs)
         except ClientError as exc:

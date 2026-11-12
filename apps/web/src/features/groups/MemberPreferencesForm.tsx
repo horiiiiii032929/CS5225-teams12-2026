@@ -91,9 +91,10 @@ export function MemberPreferencesForm({
 
   const budgetValue = Number(budget);
   const commuteValue = Number(maxCommute);
+  const normalizedName = name.trim().normalize('NFC');
   const errors: FormErrors = {
     name:
-      name.trim().length === 0 || name.trim().length > 30
+      normalizedName.length === 0 || normalizedName.length > 30
         ? 'Enter your first name (1 to 30 characters).'
         : '',
     destination: selectedPlace
@@ -119,7 +120,7 @@ export function MemberPreferencesForm({
   const save = useMutation({
     mutationFn: async () =>
       savePreferences(membership, {
-        name: name.trim(),
+        name: normalizedName,
         placeId: selectedPlace!.placeId,
         budget: budgetValue,
         maxCommute: commuteValue,
@@ -141,7 +142,7 @@ export function MemberPreferencesForm({
         );
         if (
           current &&
-          current.name === name.trim() &&
+          current.name === normalizedName &&
           current.destination?.placeId === selectedPlace?.placeId &&
           current.budget === budgetValue &&
           current.maxCommute === commuteValue

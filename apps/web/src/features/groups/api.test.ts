@@ -47,7 +47,13 @@ describe('generated API transport and response boundaries', () => {
     transport
       .mockResolvedValueOnce(json({ ...response, group }, 201))
       .mockResolvedValueOnce(json({ group }));
-    await joinGroup(membership.groupId, membership.inviteToken!, 'Jamie');
+    const retryToken = 'R'.repeat(43);
+    await joinGroup(
+      membership.groupId,
+      membership.inviteToken!,
+      'Jamie',
+      retryToken,
+    );
     const cache = new QueryClient();
     await cache.fetchQuery(groupOptions(membership));
     const [join, read] = transport.mock.calls.map(
@@ -56,6 +62,7 @@ describe('generated API transport and response boundaries', () => {
     expect(join!.headers.get('authorization')).toBe(
       `Bearer ${membership.inviteToken}`,
     );
+    expect(await join!.json()).toEqual({ name: 'Jamie', retryToken });
     expect(read!.headers.get('authorization')).toBe(
       `Bearer ${membership.memberToken}`,
     );
@@ -78,7 +85,12 @@ describe('generated API transport and response boundaries', () => {
       ),
     );
     try {
-      await joinGroup(membership.groupId, membership.inviteToken!, 'Jamie');
+      await joinGroup(
+        membership.groupId,
+        membership.inviteToken!,
+        'Jamie',
+        'R'.repeat(43),
+      );
       throw new Error('Expected rejection');
     } catch (error) {
       expect(error).toBeInstanceOf(ApiError);

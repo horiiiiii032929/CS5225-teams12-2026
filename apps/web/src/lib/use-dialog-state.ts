@@ -5,6 +5,10 @@ import { useCallback, useRef, useState } from 'react';
 export function useDialogState() {
   const [open, setOpen] = useState(false);
   const opener = useRef<HTMLElement | null>(null);
+  const openFrom = useCallback((trigger: HTMLElement) => {
+    opener.current = trigger;
+    setOpen(true);
+  }, []);
   const onOpenChange = useCallback((next: boolean) => {
     if (next && document.activeElement instanceof HTMLElement) {
       opener.current = document.activeElement;
@@ -15,5 +19,5 @@ export function useDialogState() {
     event.preventDefault();
     opener.current?.focus();
   }, []);
-  return { open, onOpenChange, restoreFocus };
+  return { open, openFrom, onOpenChange, restoreFocus };
 }

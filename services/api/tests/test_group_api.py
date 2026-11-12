@@ -177,6 +177,27 @@ def test_create_returns_credentials_once_and_is_uncacheable(table: Table) -> Non
     assert reread.body["group"]["members"] == group["members"]
 
 
+def test_join_replay_recovers_the_last_slot_without_leaking_it(table: Table) -> None:
+    created = create(size=2)
+    group = created.body["group"]
+    path = f"/api/groups/{group['groupId']}/members"
+    body = {"name": "Jamie", "retryToken": "R" * 43}
+    first = call("POST", path, body, group["inviteToken"])
+    assert first.status == 201
+    replay = call("POST", path, {**body, "name": "Changed draft"}, group["inviteToken"])
+    assert replay.status == 201
+    assert replay.body == first.body
+    assert len(replay.body["group"]["members"]) == 2
+    assert replay.body["memberToken"] != body["retryToken"]
+    assert replay.headers["cache-control"] == "no-store"
+    unrelated = call(
+        "POST", path, {**body, "retryToken": "S" * 43}, group["inviteToken"]
+    )
+    assert unrelated.status == 409
+    assert "memberToken" not in unrelated.body
+    assert call("POST", path, body, "wrong-invitation").status == 401
+
+
 @pytest.mark.parametrize("size", [2, 5])
 def test_full_journey_for_two_and_five_members(
     table: Table, clock: Clock, size: int

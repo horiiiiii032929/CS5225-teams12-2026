@@ -283,7 +283,6 @@
 .step-number {
   margin-left: auto;
   font-size: 12px;
-  opacity: 0.65;
   font-variant-numeric: tabular-nums;
 }
 .sidebar-bottom {
@@ -535,7 +534,7 @@
 .editorial-note p {
   margin-top: 17px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: var(--foreground);
 }
 .results-layout {
   display: grid;
@@ -633,7 +632,7 @@
 .rank-number {
   font-size: 15px;
   font-weight: 400;
-  color: #879b90;
+  color: var(--foreground);
   font-variant-numeric: tabular-nums;
   padding-top: 3px;
 }
@@ -749,7 +748,7 @@
   border-radius: 6px;
   margin: 18px 0 4px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: var(--foreground);
 }
 .explanation-note svg {
   flex-shrink: 0;
@@ -842,7 +841,7 @@
 }
 .fairness-note > p {
   font-size: 12px;
-  color: #5b7164;
+  color: var(--foreground);
   margin-top: 14px;
 }
 .fairness-note strong {
@@ -863,7 +862,7 @@
   font-size: 12px;
   line-height: 1.5;
   letter-spacing: 0;
-  color: #5b7164;
+  color: var(--foreground);
 }
 .data-note {
   display: flex;

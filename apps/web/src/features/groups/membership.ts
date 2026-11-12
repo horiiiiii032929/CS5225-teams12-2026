@@ -16,6 +16,7 @@ const prefix = 'flatsplit:membership:';
 const memory = new Map<string, Membership>();
 const unpersisted = new Set<string>();
 const invitations = new Map<string, string>();
+const joinRetries = new Map<string, string>();
 export const validId = (value: string) => /^[A-Za-z0-9_-]{22}$/.test(value);
 const validToken = (value: unknown): value is string =>
   typeof value === 'string' && /^[A-Za-z0-9_-]{43}$/.test(value);
@@ -112,18 +113,52 @@ export function inviteLink(
     ? `${origin}/join/${membership.groupId}#${membership.inviteToken}`
     : null;
 }
+export function joinRetryToken(groupId: string): string {
+  const key = `flatsplit:join-retry:${groupId}`;
+  try {
+    const stored = localStorage.getItem(key);
+    if (validToken(stored)) return stored;
+  } catch {
+    /* Keep retries available in the current tab. */
+  }
+  const previous = joinRetries.get(groupId);
+  if (previous) return previous;
+  const random = crypto.getRandomValues(new Uint8Array(32));
+  const token = btoa(String.fromCharCode(...random))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+  joinRetries.set(groupId, token);
+  try {
+    localStorage.setItem(key, token);
+  } catch {
+    /* The in-memory token still permits retry. */
+  }
+  return token;
+}
+
+export function clearJoinRetry(groupId: string) {
+  joinRetries.delete(groupId);
+  try {
+    localStorage.removeItem(`flatsplit:join-retry:${groupId}`);
+  } catch {
+    /* Best effort. */
+  }
+}
+
 export function captureInvite(groupId: string): string | null {
-  const hadFragment = !!window.location.hash;
   const key = `flatsplit:invite:${groupId}`;
   const fragment = window.location.hash.slice(1);
+  // The app-wide skip link uses an ordinary anchor on the join page too.
+  const hasInviteFragment = fragment !== '' && fragment !== 'main-content';
   // Strip before any API request; it must never become a query parameter.
-  if (window.location.hash)
+  if (hasInviteFragment)
     window.history.replaceState(
       window.history.state,
       '',
       window.location.pathname + window.location.search,
     );
-  if (!validId(groupId) || (hadFragment && !validToken(fragment))) {
+  if (!validId(groupId) || (hasInviteFragment && !validToken(fragment))) {
     clearInvite(groupId);
     return null;
   }

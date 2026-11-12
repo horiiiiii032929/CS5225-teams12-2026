@@ -6,6 +6,7 @@ Python values in transactions. All group writes share the original fixed TTL.
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import json
@@ -143,10 +144,10 @@ class GroupStore:
 
     @staticmethod
     def _new_member(
-        pk: str, name: str, ttl: int, joined_at: datetime
+        pk: str, name: str, ttl: int, joined_at: datetime, token: str | None = None
     ) -> tuple[dict[str, Any], str]:
         member_id = secrets.token_urlsafe(16)
-        token = secrets.token_urlsafe(32)
+        token = token if token is not None else secrets.token_urlsafe(32)
         return {
             "pk": pk,
             "sk": f"MEMBER#{joined_at.isoformat(timespec='microseconds')}#{member_id}",
@@ -215,8 +216,7 @@ class GroupStore:
         )
 
     @staticmethod
-    def _check_join(snapshot: _Snapshot, token: str | None, name: str) -> None:
-        GroupStore._invite(snapshot, token)
+    def _check_join(snapshot: _Snapshot, name: str) -> None:
         if snapshot.meta["memberCount"] >= snapshot.meta["size"]:
             raise ApiError(409, "GROUP_FULL", "This group has no places left.")
         if any(m["nameKey"] == _name_key(name) for m in snapshot.members):
@@ -254,16 +254,47 @@ class GroupStore:
     def _join_once(
         self, group_id: str, token: str | None, request: JoinGroupRequest
     ) -> Membership:
+        retry_member_token = None
+        if request.retryToken is not None:
+            # A retry can recover the exact capability without storing its value
+            # or giving a second invite holder access based on a name alone.
+            digest = hmac.digest(
+                request.retryToken.encode(),
+                f"flatsplit:join:v1:{group_id}".encode(),
+                "sha256",
+            )
+            retry_member_token = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
         snapshot = self._load(group_id)
         while True:
-            self._check_join(snapshot, token, request.name)
+            self._invite(snapshot, token)
+            if retry_member_token is not None:
+                token_hash = _hash(retry_member_token)
+                existing = next(
+                    (
+                        m
+                        for m in snapshot.members
+                        if hmac.compare_digest(m["tokenHash"], token_hash)
+                    ),
+                    None,
+                )
+                if existing is not None:
+                    return Membership(
+                        group=self._view(group_id, snapshot),
+                        memberId=existing["memberId"],
+                        memberToken=retry_member_token,
+                    )
+            self._check_join(snapshot, request.name)
             # A count CAS serializes joins (at most four can succeed). It also lets
             # us choose a strictly increasing timestamp even on tied/backward clocks.
             last_join = datetime.fromisoformat(snapshot.members[-1]["sk"].split("#")[1])
             now = self._now()
             joined_at = max(now, last_join + timedelta(microseconds=1))
             member, member_token = self._new_member(
-                snapshot.meta["pk"], request.name, int(snapshot.meta["ttl"]), joined_at
+                snapshot.meta["pk"],
+                request.name,
+                int(snapshot.meta["ttl"]),
+                joined_at,
+                retry_member_token,
             )
             update = {
                 "Update": {
@@ -293,8 +324,9 @@ class GroupStore:
                 if not self._conditional_failure(exc):
                     raise
                 current = self._load(group_id)
-                self._check_join(current, token, request.name)
                 if current.meta["memberCount"] == snapshot.meta["memberCount"]:
+                    self._invite(current, token)
+                    self._check_join(current, request.name)
                     raise
                 snapshot = current
                 continue

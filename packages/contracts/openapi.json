@@ -60,6 +60,13 @@
                     "maxLength": 30,
                     "minLength": 1,
                     "title": "Name"
+                  },
+                  "retryToken": {
+                    "anyOf": [
+                      { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+                      { "type": "null" }
+                    ],
+                    "title": "Retrytoken"
                   }
                 },
                 "type": "object",

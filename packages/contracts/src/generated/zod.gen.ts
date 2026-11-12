@@ -274,6 +274,10 @@ export const zReadGroupResponse = zGroupResponse;
  */
 export const zJoinGroupBody = z.object({
   name: z.string().min(1).max(30),
+  retryToken: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{43}$/)
+    .nullish(),
 });
 
 export const zJoinGroupPath = z.object({

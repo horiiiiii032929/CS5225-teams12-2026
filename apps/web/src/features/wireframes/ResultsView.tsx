@@ -92,11 +92,13 @@ export function ResultsView({
   const [selected, setSelected] = useState<string[]>([]);
   const {
     open: compare,
+    openFrom: openCompare,
     onOpenChange: setCompare,
     restoreFocus: restoreCompareFocus,
   } = useDialogState();
   const {
     open: method,
+    openFrom: openMethod,
     onOpenChange: setMethod,
     restoreFocus: restoreMethodFocus,
   } = useDialogState();
@@ -150,7 +152,7 @@ export function ResultsView({
               variant="outline"
               size="sm"
               disabled={comparison.length < 2}
-              onClick={() => setCompare(true)}
+              onClick={(event) => openCompare(event.currentTarget)}
             >
               <ArrowLeftRight data-icon="inline-start" /> Compare (
               {comparison.length}/3)
@@ -181,7 +183,10 @@ export function ResultsView({
           </div>
           <p className="ranking-caption" aria-live="polite">
             {priorities[priority].explanation}{' '}
-            <button className="text-link" onClick={() => setMethod(true)}>
+            <button
+              className="text-link"
+              onClick={(event) => openMethod(event.currentTarget)}
+            >
               How ranking works <Info size={13} />
             </button>
           </p>
@@ -420,7 +425,7 @@ export function ResultsView({
               </p>
               <button
                 className="text-link mt-3"
-                onClick={() => setMethod(true)}
+                onClick={(event) => openMethod(event.currentTarget)}
               >
                 Read the assumptions <ArrowRight size={14} />
               </button>
@@ -534,7 +539,7 @@ export function ResultsView({
 }
 function UsersStack({ count }: { count: number }) {
   return (
-    <div className="flex" aria-label={`${count} flatmates`}>
+    <div className="flex" role="img" aria-label={`${count} flatmates`}>
       {Array.from({ length: count }, (_, i) => (
         <span key={i} className={`stack-dot member-color-${i}`} />
       ))}
