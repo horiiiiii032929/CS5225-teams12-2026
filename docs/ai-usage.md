@@ -880,3 +880,5 @@ For future entries, record the requested issue, tool, contribution, checks actua
 
 - Codex fixed corrected invitations pasted into the same tab and aligned ranked commute display with the map. The comparison rounds spare minutes down. Added regression coverage for the same-tab invite and updated the fractional commute assertions.
 - Verification included 114 frontend tests, lint and the production build. Chromium and WebKit exercised the two fixes through the local production preview backed by the shared dev API. Chromium also verified committed saves with a dropped response and retries after missing or differing confirmation reads using browser interception and synthetic groups.
+
+- Follow-up browser QA reproduced a conflict between the same-tab invite handler and the app’s skip link. Codex preserved the ordinary content anchor and added a regression test for activation and reload. GPT-6.1 Terra verified both behaviors and a real synthetic-group join in Chromium and WebKit against the production preview.

@@ -113,17 +113,18 @@ export function inviteLink(
     : null;
 }
 export function captureInvite(groupId: string): string | null {
-  const hadFragment = !!window.location.hash;
   const key = `flatsplit:invite:${groupId}`;
   const fragment = window.location.hash.slice(1);
+  // The app-wide skip link uses an ordinary anchor on the join page too.
+  const hasInviteFragment = fragment !== '' && fragment !== 'main-content';
   // Strip before any API request; it must never become a query parameter.
-  if (window.location.hash)
+  if (hasInviteFragment)
     window.history.replaceState(
       window.history.state,
       '',
       window.location.pathname + window.location.search,
     );
-  if (!validId(groupId) || (hadFragment && !validToken(fragment))) {
+  if (!validId(groupId) || (hasInviteFragment && !validToken(fragment))) {
     clearInvite(groupId);
     return null;
   }
