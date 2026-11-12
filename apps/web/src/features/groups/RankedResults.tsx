@@ -4,13 +4,12 @@ import type {
   GroupView,
   SearchView,
 } from '@flatsplit/contracts/api';
+import { formatCommuteMinutes as minutes } from './format-commute';
 
 const money = (value: number | null) =>
   value === null
     ? 'Unavailable'
     : `S$${value.toLocaleString('en-SG', { maximumFractionDigits: 2 })}`;
-const minutes = (value: number | null) =>
-  value === null ? 'Unavailable' : `${value} min`;
 
 function MemberCommute({
   area,
@@ -37,7 +36,7 @@ function MemberCommute({
         {outcome?.commuteHeadroom === null ||
         outcome?.commuteHeadroom === undefined
           ? 'Headroom unavailable'
-          : `${outcome.commuteHeadroom} min to spare`}
+          : `${Math.floor(outcome.commuteHeadroom)} min to spare`}
       </p>
       <p className="live-caption">
         Budget {money(member.budget)} ·{' '}
@@ -85,6 +84,10 @@ export function RankedResults({
         {search.weights.averageCommute * 100}%, commute gap{' '}
         {search.weights.commuteGap * 100}%. A score is a comparison aid, not a
         probability.
+      </p>
+      <p className="live-caption">
+        Commute times round up and minutes to spare round down for display.
+        Ranking uses the original values.
       </p>
       <ol className="live-ranked-list">
         {search.ranked.map((area, index) => (

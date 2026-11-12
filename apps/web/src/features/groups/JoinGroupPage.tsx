@@ -1,5 +1,5 @@
 import { ArrowRight, ShieldCheck } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from '@tanstack/react-router';
 import { skipToken, useMutation, useQuery } from '@tanstack/react-query';
 import { zJoinGroupBody } from '@flatsplit/contracts/api';
@@ -24,7 +24,20 @@ import {
 } from './membership';
 
 export function JoinGroupPage({ groupId }: { groupId: string }) {
-  const [token] = useState(() => captureInvite(groupId));
+  const [token, setToken] = useState(() => captureInvite(groupId));
+  useEffect(() => {
+    const captureUpdatedInvite = () => {
+      // Pasting a corrected link can change only the fragment on this route.
+      if (
+        window.location.hash &&
+        window.location.pathname.replace(/\/$/, '') === `/join/${groupId}`
+      ) {
+        setToken(captureInvite(groupId));
+      }
+    };
+    window.addEventListener('hashchange', captureUpdatedInvite);
+    return () => window.removeEventListener('hashchange', captureUpdatedInvite);
+  }, [groupId]);
   const [nameError, setNameError] = useState('');
   const membership = readMembership(groupId);
   const navigate = useNavigate();

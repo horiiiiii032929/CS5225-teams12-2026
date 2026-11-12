@@ -1,13 +1,12 @@
 import { useId, useState } from 'react';
 import type { GroupView, SearchView } from '@flatsplit/contracts/api';
 import { points, WIDTH, HEIGHT, position, mapMarkers } from './town-map';
+import { formatCommuteMinutes as minutes } from './format-commute';
 
 const money = (value: number | null) =>
   value === null
     ? 'Unavailable'
     : `S$${Math.ceil(value).toLocaleString('en-SG')}`;
-const minutes = (value: number | null) =>
-  value === null ? 'Unavailable' : `${Math.ceil(value)} min`;
 
 /** #24's map/detail surface. #23 can reuse it with the public response/group
  * props; it owns neither fetches nor a second copy of server result data. */

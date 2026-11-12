@@ -47,6 +47,17 @@ function mount() {
     </QueryClientProvider>,
   );
 }
+it('accepts a corrected invite pasted into the same tab and strips its fragment', async () => {
+  window.history.replaceState(null, '', `/join/${membership.groupId}`);
+  mount();
+  expect(screen.getByText('This invite is incomplete')).toBeTruthy();
+
+  window.location.hash = membership.inviteToken!;
+
+  await screen.findByRole('button', { name: 'Join the group' });
+  expect(window.location.hash).toBe('');
+  expect(transport).not.toHaveBeenCalled();
+});
 describe('returning invite membership checks', () => {
   it('reopens a valid saved membership without consuming another group place', async () => {
     saveMembership(createdFixture());
