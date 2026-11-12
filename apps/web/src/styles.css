@@ -1812,13 +1812,6 @@
   display: grid;
   gap: 16px;
 }
-.town-explorer-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
 .town-eyebrow {
   color: var(--primary);
   font-size: 12px;
@@ -1830,60 +1823,79 @@
   line-height: 1.2;
   letter-spacing: -0.025em;
 }
-.town-map-key {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
+.town-explorer h4 + .live-caption {
+  margin-top: 6px;
 }
-.town-map-key > span {
-  width: 10px;
-  height: 10px;
-  background: var(--primary);
-  border-radius: 50%;
+.town-map-picker {
+  display: grid;
+  gap: 6px;
+  max-width: 320px;
+  font-size: 14px;
+  font-weight: 550;
 }
-.town-map-scroll {
+.town-map-picker select {
   width: 100%;
-  min-width: 0;
-  overflow: auto;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--secondary);
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--input);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
 }
 .town-map-canvas {
   position: relative;
-  width: 680px;
-  height: 400px;
+  min-width: 0;
+  border: 1px solid #c9d9db;
+  border-radius: 12px;
+  background: #e3eff4;
 }
-.town-map-grid {
-  stroke: var(--border);
-  stroke-dasharray: 4 6;
+.town-map-canvas svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
 }
-.town-map-axis {
-  fill: var(--muted-foreground);
-  font-size: 11px;
+.town-map-land {
+  fill: #f6f8ee;
+  stroke: #bbcdc3;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
 }
-.town-map-reference {
-  fill: var(--muted-foreground);
-  opacity: 0.45;
+.town-map-rail {
+  fill: none;
+  stroke: var(--mrt-line);
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.town-map-landmark,
+.town-map-north {
+  fill: #2d4d53;
+  font-size: 21px;
+  font-weight: 650;
+  paint-order: stroke;
+  stroke: #f7fbfc;
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+.town-map-anchor {
+  fill: var(--primary);
 }
 .town-map-leader {
   stroke: var(--primary);
   stroke-width: 1.5;
 }
-.town-map-north {
-  fill: var(--foreground);
-  font-size: 13px;
-}
 .town-map-pin {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 44px;
-  height: 44px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: 2px solid var(--primary);
   background: var(--card);
   color: var(--primary);
+  font-size: 11px;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
@@ -1891,63 +1903,67 @@
 .town-map-pin[aria-pressed='true'] {
   background: var(--primary);
   color: var(--primary-foreground);
-  box-shadow: 0 0 0 4px var(--card);
+  box-shadow: 0 0 0 3px var(--card);
 }
 .town-map-pin:hover {
-  box-shadow: 0 0 0 4px var(--input);
+  box-shadow: 0 0 0 3px var(--input);
 }
 .town-map-pin:focus-visible,
-.town-choice-list button:focus-visible,
-.town-map-scroll:focus-visible {
+.town-map-picker select:focus-visible {
   outline: 3px solid var(--ring);
   outline-offset: 3px;
 }
-.town-choice-list {
+.town-map-guide {
   display: grid;
-  gap: 8px;
-  list-style: none;
-  padding: 0;
+  gap: 7px;
 }
-.town-choice-list button {
+.town-map-legend {
   display: flex;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+  color: var(--foreground);
+  font-size: 12px;
+}
+.town-map-legend li {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  min-height: 60px;
-  width: 100%;
-  padding: 12px;
-  text-align: left;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--card);
-  cursor: pointer;
+  gap: 5px;
 }
-.town-choice-list button[aria-pressed='true'] {
-  background: var(--secondary);
-  border-color: var(--primary);
+.town-map-legend span {
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--mrt-line);
 }
-.town-choice-list button:hover {
-  border-color: var(--primary);
+.town-explorer [data-line='EW'] {
+  --mrt-line: #00834d;
 }
-.town-choice-rank {
+.town-explorer [data-line='NS'] {
+  --mrt-line: #c73137;
+}
+.town-explorer [data-line='NE'] {
+  --mrt-line: #863aa9;
+}
+.town-explorer [data-line='CC'] {
+  --mrt-line: #a86608;
+}
+.town-explorer [data-line='DT'] {
+  --mrt-line: #246eb5;
+}
+.town-explorer [data-line='TE'] {
+  --mrt-line: #79513e;
+}
+.town-map-sources a {
   color: var(--primary);
-  font-size: 14px;
-  min-width: 18px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
-.town-choice-name {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
-  font-weight: 550;
-}
-.town-choice-rent {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  font-size: 14px;
-}
-.town-choice-rent small {
-  display: block;
-  color: var(--muted-foreground);
-  font-size: 11px;
+@media (min-width: 700px) {
+  .town-map-pin {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
 }
 .town-detail {
   border-top: 1px solid var(--border);
@@ -2000,9 +2016,6 @@
   font-weight: 550;
 }
 @media (max-width: 420px) {
-  .town-choice-list button {
-    gap: 8px;
-  }
   .town-detail-metrics {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -2173,9 +2186,4 @@
 }
 .live-ranked-results > * {
   min-width: 0;
-}
-
-/* Selected map rows need full text contrast against the tinted background. */
-.town-choice-list button[aria-pressed='true'] .town-choice-rent small {
-  color: var(--foreground);
 }

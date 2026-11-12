@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import type { GroupView, SearchView } from '@flatsplit/contracts/api';
 import { points, WIDTH, HEIGHT, position, mapMarkers } from './town-map';
+import background from './town-map-background.json';
 import { formatCommuteMinutes as minutes } from './format-commute';
 
 const money = (value: number | null) =>
@@ -8,8 +9,21 @@ const money = (value: number | null) =>
     ? 'Unavailable'
     : `S$${Math.ceil(value).toLocaleString('en-SG')}`;
 
-/** #24's map/detail surface. #23 can reuse it with the public response/group
- * props; it owns neither fetches nor a second copy of server result data. */
+const mrtLineNames: Record<string, string> = {
+  EW: 'East–West',
+  NS: 'North–South',
+  NE: 'North East',
+  CC: 'Circle',
+  DT: 'Downtown',
+  TE: 'Thomson–East Coast',
+};
+
+const landmarks = [
+  { town: 'WOODLANDS', label: 'Woodlands', dx: -12, dy: -26 },
+  { town: 'PUNGGOL', label: 'Punggol', dx: 20, dy: -24 },
+  { town: 'JURONG EAST', label: 'Jurong East', dx: -32, dy: 34 },
+  { town: 'TAMPINES', label: 'Tampines', dx: 39, dy: -22 },
+];
 export function TownMapResults({
   search,
   group,
@@ -29,149 +43,129 @@ export function TownMapResults({
   const selected =
     search.ranked.find((area) => area.town === selectedTown) ??
     search.ranked[0]!;
-  const selectedPoint = points[selected.town];
-  const markers = mapMarkers(search.ranked);
-  const unmapped = search.ranked.filter((area) => !points[area.town]);
-  const select = (town: string) => setSelectedTown(town);
+  const stationName = points[selected.town]?.stationName
+    .replace(/ MRT STATION.*/, '')
+    .toLowerCase()
+    .replace(/\b\w/g, (initial) => initial.toUpperCase());
+  const pinned = search.ranked.slice(0, 3);
+  if (!pinned.some((area) => area.town === selected.town))
+    pinned.push(selected);
+  const markers = mapMarkers(pinned);
 
   return (
     <section className="town-explorer" aria-labelledby={`${id}-title`}>
-      <div className="town-explorer-heading">
-        <div>
-          <p className="town-eyebrow">Your shortlist, on the map</p>
-          <h4 id={`${id}-title`}>Find your bearings.</h4>
-        </div>
-        <span className="town-map-key">
-          <span aria-hidden="true" /> Recommended town
-        </span>
+      <div>
+        <h4 id={`${id}-title`}>Explore towns by MRT</h4>
+        <p className="live-caption" id={`${id}-map-help`}>
+          Choose a town by name or select a pin to see its reference station and
+          each flatmate’s commute.
+        </p>
       </div>
-      <p className="live-caption" id={`${id}-map-help`}>
-        Select a numbered pin or a town below. Points mark each town’s reference
-        MRT station, not a property or town boundary. On small screens, scroll
-        the map sideways.
-      </p>
+      <div className="town-map-picker">
+        <label htmlFor={`${id}-town`}>Town on map</label>
+        <select
+          id={`${id}-town`}
+          value={selected.town}
+          aria-controls={`${id}-detail`}
+          onChange={(event) => setSelectedTown(event.target.value)}
+        >
+          {search.ranked.map((area) => (
+            <option key={area.town} value={area.town}>
+              {area.rank}. {area.displayName}
+            </option>
+          ))}
+        </select>
+      </div>
       <div
-        className="town-map-scroll"
+        className="town-map-canvas"
         role="region"
         aria-label="Singapore town reference map"
         aria-describedby={`${id}-map-help`}
-        tabIndex={0}
+        style={{ aspectRatio: `${WIDTH} / ${HEIGHT}` }}
       >
-        <div className="town-map-canvas">
-          <svg
-            width={WIDTH}
-            height={HEIGHT}
-            viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-            aria-hidden="true"
-          >
-            {[103.7, 103.8, 103.9, 104].map((lon) => (
-              <g key={lon}>
-                <line
-                  x1={position({ lat: 0, lon }).x}
-                  x2={position({ lat: 0, lon }).x}
-                  y1={24}
-                  y2={HEIGHT - 28}
-                  className="town-map-grid"
-                />
-                <text
-                  x={position({ lat: 0, lon }).x}
-                  y={HEIGHT - 10}
-                  textAnchor="middle"
-                  className="town-map-axis"
-                >
-                  {lon.toFixed(1)}° E
-                </text>
-              </g>
-            ))}
-            {[1.3, 1.4].map((lat) => (
-              <g key={lat}>
-                <line
-                  x1={30}
-                  x2={WIDTH - 20}
-                  y1={position({ lat, lon: 0 }).y}
-                  y2={position({ lat, lon: 0 }).y}
-                  className="town-map-grid"
-                />
-                <text
-                  x={5}
-                  y={position({ lat, lon: 0 }).y - 8}
-                  className="town-map-axis"
-                >
-                  {lat.toFixed(1)}° N
-                </text>
-              </g>
-            ))}
-            {Object.entries(points).map(([town, point]) => {
-              const anchor = position(point);
-              return (
-                <circle
-                  key={town}
-                  cx={anchor.x}
-                  cy={anchor.y}
-                  r={3}
-                  className="town-map-reference"
-                />
-              );
-            })}
-            {markers.map(({ area, anchor, marker }) => (
+        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} aria-hidden="true">
+          <path d={background.land} className="town-map-land" />
+          {background.lines.map(({ code, path }) => (
+            <path
+              key={code}
+              d={path}
+              data-line={code}
+              className="town-map-rail"
+            />
+          ))}
+          {landmarks.map(({ town, label, dx, dy }) => {
+            const { x, y } = position(points[town]!);
+            return (
+              <text
+                key={town}
+                x={x + dx}
+                y={y + dy}
+                className="town-map-landmark"
+                textAnchor="middle"
+              >
+                {label}
+              </text>
+            );
+          })}
+          <text x={WIDTH - 52} y={37} className="town-map-north">
+            ↑ N
+          </text>
+          {markers.map(({ area, anchor, marker }) => (
+            <g key={area.town}>
               <line
-                key={area.town}
                 x1={anchor.x}
                 y1={anchor.y}
                 x2={marker.x}
                 y2={marker.y}
                 className="town-map-leader"
               />
-            ))}
-            <text x={WIDTH - 30} y={30} className="town-map-north">
-              ↑ N
-            </text>
-          </svg>
-          {markers.map(({ area, marker }) => (
-            <button
-              key={area.town}
-              type="button"
-              className="town-map-pin"
-              style={{ left: marker.x, top: marker.y }}
-              aria-label={`Show ${area.displayName} on map, rank ${area.rank}`}
-              aria-pressed={selected.town === area.town}
-              aria-controls={`${id}-detail`}
-              title={area.displayName}
-              onClick={() => select(area.town)}
-            >
-              {area.rank}
-            </button>
+              <circle
+                cx={anchor.x}
+                cy={anchor.y}
+                r={4}
+                className="town-map-anchor"
+              />
+            </g>
           ))}
-        </div>
-      </div>
-      {unmapped.length > 0 && (
-        <p className="live-caption">
-          No verified map point for{' '}
-          {unmapped.map((area) => area.displayName).join(', ')}. Their details
-          are available in the town list.
-        </p>
-      )}
-      <ol className="town-choice-list" aria-label="Recommended towns">
-        {search.ranked.map((area) => (
-          <li key={area.town}>
-            <button
-              type="button"
-              aria-pressed={selected.town === area.town}
-              aria-controls={`${id}-detail`}
-              onClick={() => select(area.town)}
-            >
-              <span className="town-choice-rank" aria-hidden="true">
-                {area.rank}
-              </span>
-              <span className="town-choice-name">{area.displayName}</span>
-              <span className="town-choice-rent">
-                {money(area.rentPerPerson)}
-                <small>/ person / month</small>
-              </span>
-            </button>
-          </li>
+        </svg>
+        {markers.map(({ area, marker }) => (
+          <button
+            key={area.town}
+            type="button"
+            className="town-map-pin"
+            style={{
+              left: `${(marker.x / WIDTH) * 100}%`,
+              top: `${(marker.y / HEIGHT) * 100}%`,
+            }}
+            aria-label={`Show ${area.displayName} on map, rank ${area.rank}`}
+            aria-pressed={selected.town === area.town}
+            aria-controls={`${id}-detail`}
+            title={area.displayName}
+            onClick={() => setSelectedTown(area.town)}
+          >
+            {area.rank}
+          </button>
         ))}
-      </ol>
+      </div>
+      <div className="town-map-guide">
+        <ul className="town-map-legend" aria-label="MRT lines">
+          {background.lines.map(({ code }) => (
+            <li key={code} data-line={code}>
+              <span aria-hidden="true" /> {mrtLineNames[code]}
+            </li>
+          ))}
+        </ul>
+        <p className="live-caption town-map-sources">
+          Schematic MRT lines ·{' '}
+          <a
+            href="https://www.lta.gov.sg/content/ltagov/en/map/train.html"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Full LTA system map (opens in a new tab)
+          </a>
+        </p>
+      </div>
       <section
         id={`${id}-detail`}
         className="town-detail"
@@ -184,12 +178,12 @@ export function TownMapResults({
         >
           <p className="town-eyebrow">Rank {selected.rank} · Selected town</p>
           <h4 id={`${id}-selected`}>{selected.displayName}</h4>
+          <p className="live-caption">
+            {stationName
+              ? `${stationName} MRT`
+              : `No verified map point for ${selected.displayName}.`}
+          </p>
         </div>
-        <p className="live-caption">
-          {selectedPoint
-            ? `Map reference: ${selectedPoint.stationName}.`
-            : 'No verified map point available.'}
-        </p>
         <dl className="town-detail-metrics">
           <div>
             <dt>Monthly rent / person</dt>
@@ -247,6 +241,21 @@ export function TownMapResults({
           calculation date unavailable.
         </p>
       </section>
+      <p className="live-caption town-map-sources">
+        Map data from{' '}
+        <a href="https://data.gov.sg/datasets/d_29f066d67df3eae91df8a42f443863c8/view">
+          SLA National Map Polygon
+        </a>{' '}
+        and{' '}
+        <a href="https://datamall.lta.gov.sg/content/datamall/en/static-data.html">
+          LTA Train Station
+        </a>
+        , accessed 13 November 2026 under the{' '}
+        <a href="https://data.gov.sg/open-data-licence">
+          Singapore Open Data Licence
+        </a>
+        .
+      </p>
     </section>
   );
 }

@@ -13,8 +13,8 @@ import { groupFixture, mapSearchFixture } from './test-fixtures';
 import referencePoints from './town-reference-points.json';
 
 afterEach(cleanup);
-describe('ranked town map and equivalent detail selection', () => {
-  it('selects the same detail from a numbered map pin and the ordinary town list', () => {
+describe('ranked town map and town selection', () => {
+  it('keeps the selected pin, town picker and details in sync', () => {
     render(
       <TownMapResults search={mapSearchFixture()} group={groupFixture()} />,
     );
@@ -23,13 +23,11 @@ describe('ranked town map and equivalent detail selection', () => {
       screen.getByRole('button', { name: 'Show Clementi on map, rank 2' }),
     );
     expect(screen.getByRole('heading', { name: 'Clementi' })).toBeTruthy();
-    const list = screen.getByRole('list', { name: 'Recommended towns' });
-    expect(
-      within(list)
-        .getByRole('button', { name: /Clementi/ })
-        .getAttribute('aria-pressed'),
-    ).toBe('true');
-    fireEvent.click(within(list).getByRole('button', { name: /Bishan/ }));
+    const picker = screen.getByRole<HTMLSelectElement>('combobox', {
+      name: 'Town on map',
+    });
+    expect(picker.value).toBe('CLEMENTI');
+    fireEvent.change(picker, { target: { value: 'BISHAN' } });
     expect(screen.getByRole('heading', { name: 'Bishan' })).toBeTruthy();
     expect(
       screen
@@ -40,6 +38,30 @@ describe('ranked town map and equivalent detail selection', () => {
     expect(within(screen.getByRole('table')).getByText('Jamie')).toBeTruthy();
     expect(screen.getByText(/2025-10\/2026-09/)).toBeTruthy();
     expect(screen.getByText(/Route calculation date unavailable/)).toBeTruthy();
+  });
+  it('can plot a lower-ranked town on demand without crowding the initial map', () => {
+    const search = mapSearchFixture();
+    search.ranked.push({
+      ...search.ranked[0]!,
+      town: 'WOODLANDS',
+      displayName: 'Woodlands',
+      rank: 4,
+    });
+    render(<TownMapResults search={search} group={groupFixture()} />);
+    const map = screen.getByRole('region', {
+      name: 'Singapore town reference map',
+    });
+    expect(within(map).getAllByRole('button')).toHaveLength(3);
+    const picker = screen.getByRole('combobox', { name: 'Town on map' });
+    fireEvent.change(picker, { target: { value: 'WOODLANDS' } });
+    expect(
+      within(map)
+        .getByRole('button', { name: /Show Woodlands/ })
+        .getAttribute('aria-pressed'),
+    ).toBe('true');
+    expect(screen.getByRole('heading', { name: 'Woodlands' })).toBeTruthy();
+    fireEvent.change(picker, { target: { value: 'BISHAN' } });
+    expect(within(map).getAllByRole('button')).toHaveLength(3);
   });
   it('drops removed towns and uses new response data without retaining an old result snapshot', () => {
     const search = mapSearchFixture();
@@ -121,7 +143,7 @@ describe('ranked town map and equivalent detail selection', () => {
             markers[i]!.marker.x - markers[j]!.marker.x,
             markers[i]!.marker.y - markers[j]!.marker.y,
           ),
-        ).toBeGreaterThanOrEqual(48);
+        ).toBeGreaterThanOrEqual(72);
       }
     }
   });

@@ -887,3 +887,9 @@ For future entries, record the requested issue, tool, contribution, checks actua
 
 - Codex implemented replay-safe joins, normalized-name save confirmation, preview accessibility and status recovery fixes, a worker claim check, and a conditional first write for the raw rent pointer.
 - GPT-6.1 Terra ran ten checks in Chromium and WebKit against the production frontend and real local API handler backed by Moto and synthetic fixtures. A separate Playwright run passed both the two- and five-member journeys. Moto retests confirmed that obsolete deliveries skip routing and that a first-publication race preserves the newer raw pointer.
+
+## 13 November 2026 — MRT map and results navigation
+
+- Codex replaced the coordinate grid with an MRT reference map using simplified SLA coastal outlines and LTA station locations. The results show three initial pins and a named picker for every ranked town. The selected station, rent and commute details sit below the map.
+- Browser checks found that WebKit required explicit arrow-key scrolling in the comparison table and that the refresh button could briefly lose contrast during a polling transition. The comparison now scrolls when focused and the refresh button transitions only colors.
+- Verification used Playwright with the local HTTP/Moto stack and synthetic results. It exercised the two- and five-member journeys, map selection, mobile layout, keyboard comparison and stale-result handling. The frontend unit suite, lint, type check, build and offline evidence tests also ran.
