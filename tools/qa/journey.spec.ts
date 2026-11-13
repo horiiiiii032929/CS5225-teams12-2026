@@ -188,6 +188,12 @@ for (const size of [2, 5]) {
     await owner.setViewportSize({ width: 1280, height: 900 });
     await audit(owner, 'results-map-desktop');
     await capture(owner, `${size}-results-desktop`);
+    if (size === 2) {
+      const searchAgain = owner.getByRole('button', { name: 'Search again' });
+      await searchAgain.hover();
+      await expect(searchAgain).toBeEnabled();
+      await audit(owner, 'search-again-hover');
+    }
     await owner.getByRole('button', { name: 'Edit your preferences' }).click();
     await owner.getByLabel('Your monthly rent budget (SGD)').fill('1900');
     await owner.getByRole('button', { name: 'Save my preferences' }).click();
