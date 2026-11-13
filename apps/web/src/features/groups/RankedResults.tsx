@@ -170,6 +170,22 @@ export function RankedResults({
               role="region"
               aria-label="Ranked town comparison"
               tabIndex={0}
+              onKeyDown={(event) => {
+                const tableRegion = event.currentTarget;
+                if (
+                  (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') ||
+                  event.target !== tableRegion ||
+                  tableRegion.scrollWidth <= tableRegion.clientWidth ||
+                  event.altKey ||
+                  event.ctrlKey ||
+                  event.metaKey ||
+                  event.shiftKey
+                )
+                  return;
+                event.preventDefault();
+                tableRegion.scrollLeft +=
+                  event.key === 'ArrowRight' ? 150 : -150;
+              }}
             >
               <table>
                 <caption className="sr-only">

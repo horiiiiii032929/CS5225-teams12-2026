@@ -234,6 +234,7 @@ export function SearchProgress({
       <div className="live-search-actions">
         {!status.isError && (
           <Button
+            className="transition-colors hover:bg-secondary-foreground"
             disabled={!canSearch || submission.isPending || !!pending}
             onClick={() => submission.mutate()}
           >

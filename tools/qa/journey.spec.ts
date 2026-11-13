@@ -82,6 +82,7 @@ test.afterAll(() => {
 for (const size of [2, 5]) {
   test(`${size}-member sharing, editing, results and mobile accessibility`, async ({
     browser,
+    browserName,
     baseURL,
   }) => {
     const contexts = await Promise.all(
@@ -144,6 +145,15 @@ for (const size of [2, 5]) {
         .getByRole('region', { name: 'Ranked town comparison' })
         .getByRole('rowheader', { name: 'Alex’s commute' }),
     ).toBeVisible();
+    const map = owner.getByRole('region', {
+      name: 'Singapore town reference map',
+    });
+    await expect(map.locator('path.town-map-rail')).toHaveCount(6);
+    expect(
+      await map.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true);
     await audit(owner, 'results-map-mobile');
     await capture(owner, `${size}-results-mobile`);
     const mapButton = owner.getByRole('button', {
@@ -152,7 +162,13 @@ for (const size of [2, 5]) {
     await mapButton.focus();
     await owner.keyboard.press('Space');
     await expect(mapButton).toHaveAttribute('aria-pressed', 'true');
-    await owner.keyboard.press('Tab');
+    const picker = owner.getByRole('combobox', { name: 'Town on map' });
+    await expect(picker).toHaveValue('CLEMENTI');
+    await expect(
+      owner.getByRole('table', { name: 'Each flatmate’s commute in Clementi' }),
+    ).toBeVisible();
+    // macOS WebKit uses Option+Tab to include buttons in the focus order.
+    await owner.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
     await expect(owner.locator(':focus')).toHaveAttribute(
       'class',
       /town-map-pin/,
@@ -165,9 +181,19 @@ for (const size of [2, 5]) {
     await expect
       .poll(() => comparison.evaluate((element) => element.scrollLeft))
       .toBeGreaterThan(0);
+    await owner.keyboard.press('ArrowLeft');
+    await expect
+      .poll(() => comparison.evaluate((element) => element.scrollLeft))
+      .toBe(0);
     await owner.setViewportSize({ width: 1280, height: 900 });
     await audit(owner, 'results-map-desktop');
     await capture(owner, `${size}-results-desktop`);
+    if (size === 2) {
+      const searchAgain = owner.getByRole('button', { name: 'Search again' });
+      await searchAgain.hover();
+      await expect(searchAgain).toBeEnabled();
+      await audit(owner, 'search-again-hover');
+    }
     await owner.getByRole('button', { name: 'Edit your preferences' }).click();
     await owner.getByLabel('Your monthly rent budget (SGD)').fill('1900');
     await owner.getByRole('button', { name: 'Save my preferences' }).click();

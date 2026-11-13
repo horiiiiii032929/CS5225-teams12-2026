@@ -216,6 +216,7 @@ function MemberGroup({ membership }: { membership: Membership }) {
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="transition-colors"
                   disabled={group.isFetching}
                   onClick={() => {
                     void group.refetch();

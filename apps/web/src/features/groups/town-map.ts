@@ -7,19 +7,15 @@ export const points: Readonly<
   Record<string, { stationName: string; lat: number; lon: number }>
 > = referencePoints;
 export const WIDTH = 680;
-export const HEIGHT = 400;
+export const HEIGHT = 425;
 const PAD = 42;
-const bounds = { west: 103.68, east: 104.01, south: 1.245, north: 1.465 };
+const PIN_SPACING = 72;
+// The bundled coastline and rail paths use this same projection.
+const bounds = { west: 103.6, east: 104.04, south: 1.215, north: 1.49 };
 export function position(point: { lat: number; lon: number }) {
   return {
-    x:
-      PAD +
-      ((point.lon - bounds.west) / (bounds.east - bounds.west)) *
-        (WIDTH - PAD * 2),
-    y:
-      PAD +
-      ((bounds.north - point.lat) / (bounds.north - bounds.south)) *
-        (HEIGHT - PAD * 2),
+    x: ((point.lon - bounds.west) / (bounds.east - bounds.west)) * WIDTH,
+    y: ((bounds.north - point.lat) / (bounds.north - bounds.south)) * HEIGHT,
   };
 }
 
@@ -32,8 +28,9 @@ export function mapMarkers(areas: readonly AreaResult[]) {
     if (!point) return [];
     const anchor = position(point);
     const candidates = [anchor];
-    for (let y = PAD; y <= HEIGHT - PAD; y += 48) {
-      for (let x = PAD; x <= WIDTH - PAD; x += 48) candidates.push({ x, y });
+    for (let y = PAD; y <= HEIGHT - PAD; y += PIN_SPACING) {
+      for (let x = PAD; x <= WIDTH - PAD; x += PIN_SPACING)
+        candidates.push({ x, y });
     }
     candidates.sort(
       (a, b) =>
@@ -43,11 +40,11 @@ export function mapMarkers(areas: readonly AreaResult[]) {
     const marker = candidates.find((candidate) =>
       placed.every(
         (other) =>
-          Math.hypot(other.x - candidate.x, other.y - candidate.y) >= 48,
+          Math.hypot(other.x - candidate.x, other.y - candidate.y) >=
+          PIN_SPACING,
       ),
     );
-    // At most 26 verified towns share 91 grid slots. If a future inventory
-    // exhausts those slots, retain the accessible list rather than overlap pins.
+    // A town without a marker remains available in the selector.
     if (!marker) return [];
     placed.push(marker);
     return [{ area, point, anchor, marker }];
